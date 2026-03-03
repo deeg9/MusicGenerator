@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Next.js scaffold + Drizzle schema + RunPod/R2/error lib modules
+- [x] 01-01-PLAN.md — Next.js scaffold + Drizzle schema + RunPod/R2/error lib modules
 - [ ] 01-02-PLAN.md — RunPod pod setup + ACE-Step validation + external service deployment
 - [ ] 01-03-PLAN.md — API routes (generate, status, audio) + end-to-end verification
 
@@ -90,7 +90,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure Foundation | 0/3 | Planning complete | - |
+| 1. Infrastructure Foundation | 1/3 | In Progress | - |
 | 2. Generation API | 0/TBD | Not started | - |
 | 3. Playback and Download | 0/TBD | Not started | - |
 | 4. UX Polish | 0/TBD | Not started | - |

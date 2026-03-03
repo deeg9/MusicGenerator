@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-03-03T20:02:51.593Z"
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-03-03T21:09:24.758Z"
 last_activity: 2026-03-03 — Roadmap created, phases derived from 15 v1.0 requirements
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -26,27 +26,27 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 ## Current Position
 
 Phase: 1 of 4 (Infrastructure Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-03 — Roadmap created, phases derived from 15 v1.0 requirements
+Plan: 1 of 3 in current phase (01-01 complete)
+Status: Executing
+Last activity: 2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 6 min
+- Total execution time: 0.1 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01 — Infrastructure Foundation | 1 of 3 | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: —
+- Last 5 plans: 6 min
 - Trend: —
 
 *Updated after each plan completion*
@@ -62,6 +62,9 @@ Recent decisions affecting current work:
 - [Pre-phase]: Async polling pattern is mandatory — never poll RunPod inside a Vercel function (10s/60s timeout)
 - [Pre-phase]: Atomic two-phase credit deduction required from first implementation (hold on submit, confirm on success, refund on failure)
 - [Pre-phase]: Clerk for auth (best Next.js App Router DX), Drizzle ORM (7KB vs Prisma 300KB for cold start performance)
+- [Phase 01-01]: Zod v4 uses .issues not .errors on ZodError — updated src/env.ts accordingly
+- [Phase 01-01]: AbortController for fetch timeouts: 30s submit/download, 90s polling — timeouts unref() to not block Node.js exit
+- [Phase 01-01]: scripts/ excluded from tsconfig.json — scripts run via tsx, not Next.js TypeScript build
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-03T20:02:51.591Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-infrastructure-foundation/01-CONTEXT.md
+Last session: 2026-03-03T21:09:24.756Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None
