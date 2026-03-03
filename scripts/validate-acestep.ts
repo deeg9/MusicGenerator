@@ -13,7 +13,7 @@
  *   - @/lib/runpod module (built in Plan 01-01)
  */
 
-import { submitGeneration, pollResult } from "@/lib/runpod";
+import { submitGenerationJob, queryJobStatus } from "@/lib/runpod";
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -68,7 +68,13 @@ async function runGeneration(
 
   let taskId: string;
   try {
-    taskId = await submitGeneration(payload);
+    const submitResponse = await submitGenerationJob({
+      prompt: payload.prompt,
+      lyrics: payload.lyrics,
+      audioDuration: payload.audio_duration,
+      batchSize: payload.batch_size,
+    });
+    taskId = submitResponse.task_id;
     console.log(`        task_id=${taskId}`);
   } catch (err) {
     return {
@@ -85,7 +91,7 @@ async function runGeneration(
 
   while (Date.now() < deadline) {
     try {
-      const response = await pollResult(taskId);
+      const response = await queryJobStatus(taskId);
       const status = response?.status as number | undefined;
 
       if (status === 1) {
