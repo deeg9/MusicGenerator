@@ -10,14 +10,14 @@ Anyone can create a unique, personal song in seconds — no musical skill requir
 
 ## Current Milestone: v1.0 — Core Generation
 
-**Goal:** Ship a working web app where users can generate, preview, and download AI-created songs with account and credit management.
+**Goal:** Ship a working web app where users can generate, preview, and download AI-created songs — validate the core generation experience before adding accounts and billing.
 
 **Target features:**
 - Text-to-music generation (describe a vibe or provide custom lyrics)
-- Song preview and download
-- User accounts and authentication
-- Credit-based usage system with free tier
-- Payment integration for premium tiers
+- Genre/style tags, duration presets, instrumental toggle
+- Dual variant generation (2 songs per click)
+- Waveform playback and MP3/WAV download
+- Landing page with examples
 
 ## Requirements
 
@@ -31,13 +31,12 @@ Anyone can create a unique, personal song in seconds — no musical skill requir
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Text-to-music generation via ACE-Step 1.5
-- [ ] Custom lyrics input with genre/style selection
-- [ ] Song preview playback in browser
-- [ ] Song download (audio file)
-- [ ] User signup/login
-- [ ] Credit system (free daily allowance + paid tiers)
-- [ ] Payment processing (Stripe)
+- [ ] Text-to-music generation via ACE-Step 1.5 (text prompt + custom lyrics)
+- [ ] Genre/style tags, duration presets, instrumental toggle
+- [ ] Dual variant generation (batch_size=2)
+- [ ] Waveform playback (wavesurfer.js) + MP3/WAV download
+- [ ] Async polling infrastructure (RunPod + ACE-Step API)
+- [ ] Landing page with examples and CTA
 
 ### Out of Scope
 
@@ -82,4 +81,4 @@ Anyone can create a unique, personal song in seconds — no musical skill requir
 | RunPod for prototype hosting | Cheapest GPU hosting for low-volume prototype (~$0.20/hr) | — Pending |
 
 ---
-*Last updated: 2026-03-03 after project initialization*
+*Last updated: 2026-03-03 after roadmap creation*
