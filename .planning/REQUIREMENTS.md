@@ -78,27 +78,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GEN-01 | — | Pending |
-| GEN-02 | — | Pending |
-| GEN-03 | — | Pending |
-| GEN-04 | — | Pending |
-| GEN-05 | — | Pending |
-| GEN-06 | — | Pending |
-| PLAY-01 | — | Pending |
-| PLAY-02 | — | Pending |
-| PLAY-03 | — | Pending |
-| INFRA-01 | — | Pending |
-| INFRA-02 | — | Pending |
-| INFRA-03 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
+| GEN-01 | Phase 2 | Pending |
+| GEN-02 | Phase 2 | Pending |
+| GEN-03 | Phase 2 | Pending |
+| GEN-04 | Phase 2 | Pending |
+| GEN-05 | Phase 2 | Pending |
+| GEN-06 | Phase 2 | Pending |
+| PLAY-01 | Phase 3 | Pending |
+| PLAY-02 | Phase 3 | Pending |
+| PLAY-03 | Phase 3 | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Pending |
+| UX-01 | Phase 4 | Pending |
+| UX-02 | Phase 4 | Pending |
+| UX-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15 ⚠️
+- Mapped to phases: 15
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-03 after initial definition*
+*Last updated: 2026-03-03 after roadmap creation*
