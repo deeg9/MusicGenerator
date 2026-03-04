@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Checkpoint 01-02-PLAN.md Task 2: awaiting external service deployment (RunPod, Supabase, R2)"
-last_updated: "2026-03-04T18:46:05.545Z"
+stopped_at: "Checkpoint 01-03-PLAN.md Task 2: awaiting end-to-end generation verification (human-verify)"
+last_updated: "2026-03-04T20:44:23.299Z"
 last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 33
 ---
 
@@ -50,6 +50,7 @@ Progress: [███░░░░░░░] 33%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01-infrastructure-foundation P03 | 10min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,9 @@ Recent decisions affecting current work:
 - [Phase 01-01]: AbortController for fetch timeouts: 30s submit/download, 90s polling — timeouts unref() to not block Node.js exit
 - [Phase 01-01]: scripts/ excluded from tsconfig.json — scripts run via tsx, not Next.js TypeScript build
 - [Phase 01-02]: supervisord with autorestart=true chosen for ACE-Step crash recovery — recovers sub-second vs pod restart boot time
+- [Phase 01-infrastructure-foundation]: Always generate 2 variants (batchSize=2) — simplifies frontend which always shows 2 options
+- [Phase 01-infrastructure-foundation]: RunPod poll timeout returns current DB state unchanged — do NOT mark failed on timeout
+- [Phase 01-infrastructure-foundation]: Next.js 16 App Router route params are async (Promise<{...}>) — must await params before destructuring
 
 ### Pending Todos
 
@@ -73,12 +77,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 1]: ACE-Step API field names unconfirmed — `caption` vs `prompt` for style input. Validate against live instance before building generation API.
-- [Phase 1]: Instrumental toggle mechanism unconfirmed — empty `lyrics` field vs `[instrumental]` tag. Test in Phase 1.
-- [Phase 1]: ACE-Step memory leak (GitHub #142) confirmed open. Worker restart policy must be configured before load testing.
+- [Phase 1]: ACE-Step API field names confirmed — `prompt` for style, `lyrics` for lyrics, `audio_duration`, `batch_size`. Response wraps in `{"data": {...}}`.
+- [Phase 1]: query_result endpoint returns empty array despite jobs succeeding — need to investigate /v1/audio?path= as result retrieval mechanism.
+- [Phase 1]: 24 GB VRAM GPUs (RTX 3090/4090) OOM on ACE-Step — need 32+ GB. Currently using RTX PRO 4500 (32 GB).
+- [Phase 1]: RTX 5090 incompatible with ACE-Step Docker image (requires PyTorch 2.8+).
 
 ## Session Continuity
 
-Last session: 2026-03-04T18:45:59.931Z
-Stopped at: Checkpoint 01-02-PLAN.md Task 2: awaiting external service deployment (RunPod, Supabase, R2)
+Last session: 2026-03-04T20:44:23.297Z
+Stopped at: Checkpoint 01-03-PLAN.md Task 2: awaiting end-to-end generation verification (human-verify)
 Resume file: None

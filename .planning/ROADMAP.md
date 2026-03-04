@@ -12,7 +12,7 @@ MusicGenerator ships in four phases: stand up the infrastructure and validate th
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure Foundation** - Supabase schema, RunPod/ACE-Step validated end-to-end, async polling API
+- [x] **Phase 1: Infrastructure Foundation** - Supabase schema, RunPod/ACE-Step validated end-to-end, async polling API (completed 2026-03-04)
 - [ ] **Phase 2: Generation API** - All input options wired through BFF to ACE-Step with async polling
 - [ ] **Phase 3: Playback and Download** - In-browser waveform player and MP3/WAV download
 - [ ] **Phase 4: UX Polish** - Loading states, mode switching, and landing page
@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The Next.js app boots and serves API routes
   4. Supabase schema is migrated (generations, outputs tables exist and Drizzle ORM can query them)
   5. A generation error returns a clear error response with a retry signal rather than a silent hang
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 01-01-PLAN.md — Next.js scaffold + Drizzle schema + RunPod/R2/error lib modules
@@ -90,7 +90,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure Foundation | 2/3 | In Progress|  |
+| 1. Infrastructure Foundation | 3/3 | Complete   | 2026-03-04 |
 | 2. Generation API | 0/TBD | Not started | - |
 | 3. Playback and Download | 0/TBD | Not started | - |
 | 4. UX Polish | 0/TBD | Not started | - |
