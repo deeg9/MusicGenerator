@@ -58,7 +58,7 @@ submit_task() {
     -d "$payload") || { err "POST /release_task failed (curl exit $?)"; return 1; }
 
   local task_id
-  task_id=$(echo "$response" | jq -r '.task_id // empty')
+  task_id=$(echo "$response" | jq -r '.data.task_id // .task_id // empty')
   if [[ -z "$task_id" ]]; then
     err "No task_id in response: $response"
     return 1
@@ -82,20 +82,27 @@ poll_task() {
     fi
 
     local response
-    response=$(curl -sf "${RUNPOD_URL}/query_result?task_id=${task_id}") || {
-      warn "GET /query_result failed (elapsed ${elapsed}s), retrying..."
+    response=$(curl -sf -X POST "${RUNPOD_URL}/query_result" \
+      -H "Content-Type: application/json" \
+      -d "{\"task_id_list\":[\"${task_id}\"]}") || {
+      warn "POST /query_result failed (elapsed ${elapsed}s), retrying..."
       sleep "$POLL_INTERVAL"
       continue
     }
 
-    local status
-    status=$(echo "$response" | jq -r '.status // -1')
+    # Response: { data: [{ task_id, result: "JSON string", status }], code, error }
+    local status result_json
+    status=$(echo "$response" | jq -r '.data[0].status // -1')
+    result_json=$(echo "$response" | jq -r '.data[0].result // "[]"')
 
-    if (( status == RESULT_DONE )); then
-      echo "$response"
+    if [[ "$status" == "$RESULT_DONE" ]]; then
+      # Parse the result JSON string and attach audio file paths
+      local audio_urls
+      audio_urls=$(echo "$result_json" | jq -r '[.[] | .file // empty]')
+      echo "{\"status\":${status},\"audio_urls\":${audio_urls},\"raw_result\":${result_json}}"
       return 0
-    elif (( status == RESULT_FAILED )); then
-      err "Task $task_id returned status=failed: $response"
+    elif [[ "$status" == "$RESULT_FAILED" ]]; then
+      err "Task $task_id returned status=$status: $response"
       return 1
     fi
 
@@ -124,8 +131,8 @@ run_generation() {
 
   # Count audio URLs in the result (field may be audio_urls or audio_url depending on version)
   audio_count=$(echo "$result" | jq '[
-    (.audio_urls // []),
-    (if .audio_url then [.audio_url] else [] end)
+    (.data.audio_urls // .audio_urls // []),
+    (if (.data.audio_url // .audio_url) then [(.data.audio_url // .audio_url)] else [] end)
   ] | add | length')
 
   info "Elapsed: ${elapsed}s"
@@ -156,7 +163,10 @@ run_generation() {
 # ──────────────────────────────────────────────────────────────
 PASS_COUNT=0
 FAIL_COUNT=0
-declare -A TIMINGS
+TIMING_1="n/a" TIMING_2="n/a" TIMING_3="n/a" TIMING_4="n/a" TIMING_5="n/a"
+
+set_timing() { eval "TIMING_$1=\"$2\""; }
+get_timing() { eval "echo \"\$TIMING_$1\""; }
 
 run_test() {
   local test_num="$1"
@@ -168,11 +178,11 @@ run_test() {
   if run_generation "$label" "$payload" "$expected_audio"; then
     ok "Test $test_num — $label (${LAST_ELAPSED}s)"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
-    TIMINGS[$test_num]="${LAST_ELAPSED}s"
+    set_timing "$test_num" "${LAST_ELAPSED}s"
   else
     err "Test $test_num — $label FAILED"
     FAIL_COUNT=$(( FAIL_COUNT + 1 ))
-    TIMINGS[$test_num]="FAILED"
+    set_timing "$test_num" "FAILED"
   fi
 }
 
@@ -193,14 +203,16 @@ main() {
   echo "Test 1: Health check"
   local t1_start
   t1_start=$(date +%s)
-  if curl -sf "${RUNPOD_URL}/" -o /dev/null; then
-    ok "Test 1 — Health check (GET /) returned 200"
+  local http_code
+  http_code=$(curl -s -o /dev/null -w "%{http_code}" "${RUNPOD_URL}/health")
+  if [[ "$http_code" == "200" ]]; then
+    ok "Test 1 — Health check (GET /health) returned 200"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
-    TIMINGS[1]="$(( $(date +%s) - t1_start ))s"
+    set_timing 1 "$(( $(date +%s) - t1_start ))s"
   else
     err "Test 1 — Health check FAILED (non-200 or connection refused)"
     FAIL_COUNT=$(( FAIL_COUNT + 1 ))
-    TIMINGS[1]="FAILED"
+    set_timing 1 "FAILED"
   fi
 
   # Test 2: Basic generation with custom lyrics
@@ -231,7 +243,9 @@ main() {
     fi
 
     # Health check between generations to detect unresponsive pod
-    if ! curl -sf "${RUNPOD_URL}/" -o /dev/null; then
+    local hc_code
+    hc_code=$(curl -s -o /dev/null -w "%{http_code}" "${RUNPOD_URL}/health")
+    if [[ "$hc_code" != "200" ]]; then
       warn "Health check failed after stress generation #${i} — pod may have crashed"
     fi
   done
@@ -239,11 +253,11 @@ main() {
   if (( stress_fail == 0 )); then
     ok "Test 5 — Sequential stress test (5/5 passed)"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
-    TIMINGS[5]="${stress_pass}/5 passed"
+    set_timing 5 "${stress_pass}/5 passed"
   else
     err "Test 5 — Sequential stress test (${stress_fail}/5 failed)"
     FAIL_COUNT=$(( FAIL_COUNT + 1 ))
-    TIMINGS[5]="${stress_pass}/5 passed"
+    set_timing 5 "${stress_pass}/5 passed"
   fi
 
   # ────────────────────────────────────────────────
@@ -256,11 +270,11 @@ main() {
   echo ""
   printf "  %-6s %-40s %s\n" "Test" "Name" "Result"
   printf "  %-6s %-40s %s\n" "------" "----------------------------------------" "----------"
-  printf "  %-6s %-40s %s\n" "1" "Health check"                        "${TIMINGS[1]:-n/a}"
-  printf "  %-6s %-40s %s\n" "2" "Basic generation (custom lyrics)"    "${TIMINGS[2]:-n/a}"
-  printf "  %-6s %-40s %s\n" "3" "Instrumental mode"                   "${TIMINGS[3]:-n/a}"
-  printf "  %-6s %-40s %s\n" "4" "Dual variant (batch_size=2)"         "${TIMINGS[4]:-n/a}"
-  printf "  %-6s %-40s %s\n" "5" "Sequential stress (5 generations)"   "${TIMINGS[5]:-n/a}"
+  printf "  %-6s %-40s %s\n" "1" "Health check"                        "$(get_timing 1)"
+  printf "  %-6s %-40s %s\n" "2" "Basic generation (custom lyrics)"    "$(get_timing 2)"
+  printf "  %-6s %-40s %s\n" "3" "Instrumental mode"                   "$(get_timing 3)"
+  printf "  %-6s %-40s %s\n" "4" "Dual variant (batch_size=2)"         "$(get_timing 4)"
+  printf "  %-6s %-40s %s\n" "5" "Sequential stress (5 generations)"   "$(get_timing 5)"
   echo ""
   echo "  Passed: $PASS_COUNT / $(( PASS_COUNT + FAIL_COUNT ))"
   echo ""
