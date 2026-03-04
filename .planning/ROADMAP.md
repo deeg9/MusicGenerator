@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The Next.js app boots and serves API routes
   4. Supabase schema is migrated (generations, outputs tables exist and Drizzle ORM can query them)
   5. A generation error returns a clear error response with a retry signal rather than a silent hang
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 01-01-PLAN.md — Next.js scaffold + Drizzle schema + RunPod/R2/error lib modules
@@ -90,7 +90,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure Foundation | 1/3 | In Progress | - |
+| 1. Infrastructure Foundation | 2/3 | In Progress|  |
 | 2. Generation API | 0/TBD | Not started | - |
 | 3. Playback and Download | 0/TBD | Not started | - |
 | 4. UX Polish | 0/TBD | Not started | - |

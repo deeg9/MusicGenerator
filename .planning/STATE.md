@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-03-03T21:09:24.758Z"
-last_activity: 2026-03-03 — Roadmap created, phases derived from 15 v1.0 requirements
+status: executing
+stopped_at: "Checkpoint 01-02-PLAN.md Task 2: awaiting external service deployment (RunPod, Supabase, R2)"
+last_updated: "2026-03-04T18:46:05.545Z"
+last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 33
 ---
 
@@ -65,6 +65,7 @@ Recent decisions affecting current work:
 - [Phase 01-01]: Zod v4 uses .issues not .errors on ZodError — updated src/env.ts accordingly
 - [Phase 01-01]: AbortController for fetch timeouts: 30s submit/download, 90s polling — timeouts unref() to not block Node.js exit
 - [Phase 01-01]: scripts/ excluded from tsconfig.json — scripts run via tsx, not Next.js TypeScript build
+- [Phase 01-02]: supervisord with autorestart=true chosen for ACE-Step crash recovery — recovers sub-second vs pod restart boot time
 
 ### Pending Todos
 
@@ -78,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-03T21:09:24.756Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-03-04T18:45:59.931Z
+Stopped at: Checkpoint 01-02-PLAN.md Task 2: awaiting external service deployment (RunPod, Supabase, R2)
 Resume file: None

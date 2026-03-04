@@ -24,7 +24,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: ACE-Step 1.5 turbo model runs on RunPod GPU with restart policy for memory leak mitigation
+- [x] **INFRA-01**: ACE-Step 1.5 turbo model runs on RunPod GPU with restart policy for memory leak mitigation
 - [ ] **INFRA-02**: Next.js frontend communicates with ACE-Step via async polling (submit → poll → retrieve)
 - [ ] **INFRA-03**: Generation errors display clearly with retry option
 
@@ -87,7 +87,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAY-01 | Phase 3 | Pending |
 | PLAY-02 | Phase 3 | Pending |
 | PLAY-03 | Phase 3 | Pending |
-| INFRA-01 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 1 | Pending |
 | INFRA-03 | Phase 1 | Pending |
 | UX-01 | Phase 4 | Pending |
