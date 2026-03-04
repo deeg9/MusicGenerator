@@ -33,6 +33,19 @@ export interface QueryJobStatusResponse {
   code?: number;
 }
 
+interface RawQueryResultItem {
+  task_id: string;
+  result: string; // JSON-encoded string
+  status: JobStatusCode;
+}
+
+interface RawQueryResultEnvelope {
+  data: RawQueryResultItem[];
+  code: number;
+  error: string | null;
+  timestamp?: number;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,19 +135,37 @@ export async function queryJobStatus(taskId: string): Promise<QueryJobStatusResp
     throw new Error(`ACE-Step query failed: HTTP ${response.status} ${response.statusText}`);
   }
 
-  const raw = (await response.json()) as Record<string, unknown>;
+  const raw = (await response.json()) as RawQueryResultEnvelope;
 
-  // Normalize response — handle both flat and enveloped formats
-  const statusCode = (raw.status as JobStatusCode | undefined) ?? 0;
-  const data = (raw.data as JobStatusData | null) ?? null;
-  const error = (raw.error as string | null) ?? null;
+  // Response format: { data: [{ task_id, result: "JSON string", status }], code, error }
+  const taskResult = raw.data?.[0];
+
+  if (!taskResult) {
+    // No task data returned — treat as still running
+    return { status: 0, data: null, error: null, timestamp: raw.timestamp, code: raw.code };
+  }
+
+  const statusCode = taskResult.status;
+  let audioUrls: string[] = [];
+
+  if (statusCode === 1 && taskResult.result) {
+    try {
+      // result is a JSON string containing array of { file, generation_info }
+      const parsed = JSON.parse(taskResult.result) as Array<{ file?: string }>;
+      audioUrls = parsed
+        .map((item) => item.file)
+        .filter((f): f is string => typeof f === 'string');
+    } catch {
+      console.warn('[runpod] Failed to parse task result JSON:', taskResult.result);
+    }
+  }
 
   return {
     status: statusCode,
-    data,
-    error,
-    timestamp: raw.timestamp as number | undefined,
-    code: raw.code as number | undefined,
+    data: audioUrls.length > 0 ? { audio_urls: audioUrls } : null,
+    error: raw.error,
+    timestamp: raw.timestamp,
+    code: raw.code,
   };
 }
 
