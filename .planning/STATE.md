@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Checkpoint 01-03-PLAN.md Task 2: awaiting end-to-end generation verification (human-verify)"
-last_updated: "2026-03-04T20:44:23.299Z"
+stopped_at: Completed 01-03-PLAN.md — Phase 1 Infrastructure Foundation complete
+last_updated: "2026-03-04T21:43:44.387Z"
 last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
@@ -51,6 +51,7 @@ Progress: [███░░░░░░░] 33%
 
 *Updated after each plan completion*
 | Phase 01-infrastructure-foundation P03 | 10min | 1 tasks | 3 files |
+| Phase 01-infrastructure-foundation P03 | 47min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 01-infrastructure-foundation]: Always generate 2 variants (batchSize=2) — simplifies frontend which always shows 2 options
 - [Phase 01-infrastructure-foundation]: RunPod poll timeout returns current DB state unchanged — do NOT mark failed on timeout
 - [Phase 01-infrastructure-foundation]: Next.js 16 App Router route params are async (Promise<{...}>) — must await params before destructuring
+- [Phase 01-infrastructure-foundation]: queryJobStatus parses nested ACE-Step envelope: raw.data[0].status and JSON.parse(raw.data[0].result) for audio URLs
+- [Phase 01-infrastructure-foundation]: R2 presigned URL 403 is token permission issue (needs Object Read scope) — audio uploads correctly, not blocking Phase 2
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T20:44:23.297Z
-Stopped at: Checkpoint 01-03-PLAN.md Task 2: awaiting end-to-end generation verification (human-verify)
+Last session: 2026-03-04T21:43:44.385Z
+Stopped at: Completed 01-03-PLAN.md — Phase 1 Infrastructure Foundation complete
 Resume file: None
