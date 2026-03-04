@@ -48,9 +48,12 @@ Plans:
   3. User selects a duration preset (Short, Standard, Full) and the output audio matches the chosen length
   4. User enables instrumental mode and the output contains no vocals
   5. Frontend polls /api/status/:jobId every 2.5 seconds — the Vercel function never times out waiting for RunPod
-**Plans**: TBD
+**Plans:** 3 plans
 
-Plans: (to be created by plan-phase)
+Plans:
+- [ ] 02-01-PLAN.md — Wire format_input into BFF generation flow
+- [ ] 02-02-PLAN.md — Build generation form UI with all input controls
+- [ ] 02-03-PLAN.md — Polling hook, results display, and page wiring
 
 ---
 
@@ -91,6 +94,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Foundation | 3/3 | Complete   | 2026-03-04 |
-| 2. Generation API | 0/TBD | Not started | - |
+| 2. Generation API | 0/3 | Not started | - |
 | 3. Playback and Download | 0/TBD | Not started | - |
 | 4. UX Polish | 0/TBD | Not started | - |
