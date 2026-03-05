@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { DM_Sans, Libre_Baskerville, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const dmSans = DM_Sans({
   variable: '--font-dm-sans',
@@ -30,9 +32,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${dmSans.variable} ${libreBaskerville.variable} ${geistMono.variable} antialiased`}>
-        {children}
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+          <div className="min-h-screen">
+            <header className="flex justify-end p-4">
+              <ThemeToggle />
+            </header>
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
