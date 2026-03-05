@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 03-01: Backend audio delivery with WAV-to-MP3 pipeline"
-last_updated: "2026-03-05T05:13:38.004Z"
+stopped_at: "Completed 03-02: Waveform player UI, auto-pause, URL persistence — awaiting human verification (Task 3 checkpoint)"
+last_updated: "2026-03-05T05:19:00.093Z"
 last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 33
 ---
 
@@ -56,6 +56,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 02-generation-api P02 | 7min | 2 tasks | 5 files |
 | Phase 02-generation-api P03 | 25min | 3 tasks | 6 files |
 | Phase 03-playback-and-download P01 | 18min | 3 tasks | 13 files |
+| Phase 03-playback-and-download PP02 | 3min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,10 @@ Recent decisions affecting current work:
 - [Phase 03-playback-and-download]: MP3 conversion failure is non-fatal: WAV-only fallback, mp3R2Key stays null
 - [Phase 03-playback-and-download]: Presigned URL expiry bumped from 1h to 24h — research recommendation
 - [Phase 03-playback-and-download]: vi.mock('@/env') pattern for testing modules with module-level env validation
+- [Phase 03-playback-and-download]: WaveformPlayer uses MP3 URL for playback (faster), falls back to WAV if null
+- [Phase 03-playback-and-download]: Auto-pause via isActive prop — GenerationResults owns activeVariantId, children are passive
+- [Phase 03-playback-and-download]: URL persistence via router.replace to avoid polluting browser history
+- [Phase 03-playback-and-download]: Suspense fallback=null on page.tsx required by Next.js App Router for useSearchParams
 
 ### Pending Todos
 
@@ -102,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T05:13:38.002Z
-Stopped at: Completed 03-01: Backend audio delivery with WAV-to-MP3 pipeline
+Last session: 2026-03-05T05:19:00.091Z
+Stopped at: Completed 03-02: Waveform player UI, auto-pause, URL persistence — awaiting human verification (Task 3 checkpoint)
 Resume file: None

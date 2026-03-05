@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Infrastructure Foundation** - Supabase schema, RunPod/ACE-Step validated end-to-end, async polling API (completed 2026-03-04)
 - [ ] **Phase 2: Generation API** - All input options wired through BFF to ACE-Step with async polling
-- [ ] **Phase 3: Playback and Download** - In-browser waveform player and MP3/WAV download
+- [x] **Phase 3: Playback and Download** - In-browser waveform player and MP3/WAV download (completed 2026-03-05)
 - [ ] **Phase 4: UX Polish** - Loading states, mode switching, and landing page
 
 ## Phase Details
@@ -66,7 +66,7 @@ Plans:
   2. User can download a generated song as an MP3 file that plays in standard media players
   3. User can download a generated song as a WAV file
   4. Both song variants from a generation are independently playable and downloadable without navigating away
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 03-01-PLAN.md — MP3 conversion pipeline, filename helper, schema + R2 + API updates
@@ -97,5 +97,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Foundation | 3/3 | Complete   | 2026-03-04 |
 | 2. Generation API | 3/4 | In Progress|  |
-| 3. Playback and Download | 1/2 | In Progress|  |
+| 3. Playback and Download | 2/2 | Complete   | 2026-03-05 |
 | 4. UX Polish | 0/TBD | Not started | - |
