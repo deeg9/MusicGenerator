@@ -3,7 +3,9 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { generations, outputs } from '@/db/schema';
 import { queryJobStatus, fetchAudioBuffer } from '@/lib/runpod';
-import { uploadAudioToR2, buildR2Key, getAudioPresignedUrl } from '@/lib/r2';
+import { uploadAudioToR2, buildR2Key, buildR2Mp3Key, getAudioPresignedUrl } from '@/lib/r2';
+import { convertWavToMp3 } from '@/lib/audio';
+import { buildDownloadFilename } from '@/lib/filename';
 import { classifyError } from '@/lib/errors';
 import type { InferSelectModel } from 'drizzle-orm';
 
@@ -22,8 +24,11 @@ interface OutputWithUrl {
   id: string;
   variantIndex: number;
   r2Key: string;
-  url: string | null;
+  url: string | null;        // WAV presigned URL
+  mp3Url: string | null;     // MP3 presigned URL
+  mp3FileSizeBytes: number | null;
   createdAt: Date;
+  promptText: string | null; // for filename display on client
 }
 
 interface StatusResponse {
@@ -97,6 +102,7 @@ export async function GET(
     const outputsWithUrls: OutputWithUrl[] = await buildOutputsWithUrls(
       generation.outputs ?? [],
       generation.status === 'completed',
+      generation.promptText,
     );
 
     return NextResponse.json(buildStatusResponse(generation, outputsWithUrls));
@@ -166,7 +172,7 @@ export async function GET(
   }
 
   if (runpodStatus.status === 1) {
-    // Job succeeded — download audio, upload to R2, insert output records
+    // Job succeeded — download audio, convert to MP3, upload both to R2, insert output records
     const audioUrls = runpodStatus.data?.audio_urls ?? [];
 
     // If ACE-Step returned audio URLs, download and upload each one
@@ -177,28 +183,63 @@ export async function GET(
     if (audioUrls.length > 0) {
       for (let i = 0; i < audioUrls.length; i++) {
         const audioPath = audioUrls[i];
-        const r2Key = buildR2Key(jobId, i);
+        const wavR2Key = buildR2Key(jobId, i);
+        const mp3R2Key = buildR2Mp3Key(jobId, i);
 
         try {
           const audioBuffer = await fetchAudioBuffer(audioPath);
-          await uploadAudioToR2(r2Key, audioBuffer);
+
+          // Upload WAV to R2
+          await uploadAudioToR2(wavR2Key, audioBuffer, 'audio/wav');
+
+          // Convert WAV to MP3 (non-fatal — fallback to WAV-only if conversion fails)
+          let mp3Buffer: Buffer | null = null;
+          let mp3FileSizeBytes: number | null = null;
+          let mp3KeyStored: string | null = null;
+
+          try {
+            mp3Buffer = await convertWavToMp3(audioBuffer);
+            mp3FileSizeBytes = mp3Buffer.byteLength;
+            await uploadAudioToR2(mp3R2Key, mp3Buffer, 'audio/mpeg');
+            mp3KeyStored = mp3R2Key;
+          } catch (mp3Error) {
+            const classified = classifyError(mp3Error);
+            console.error('[status] MP3 conversion failed (WAV-only fallback):', classified.technicalMessage, {
+              jobId,
+              variantIndex: i,
+            });
+          }
 
           const [insertedOutput] = await db
             .insert(outputs)
             .values({
               generationId: jobId,
               variantIndex: i,
-              r2Key,
+              r2Key: wavR2Key,
+              mp3R2Key: mp3KeyStored,
+              mp3FileSizeBytes,
             })
             .returning();
 
-          const presignedUrl = await getAudioPresignedUrl(r2Key);
+          // Generate presigned URLs with descriptive filenames
+          const wavFilename = buildDownloadFilename(generation.promptText, i, 'wav');
+          const wavPresignedUrl = await getAudioPresignedUrl(wavR2Key, 86400, wavFilename);
+
+          let mp3PresignedUrl: string | null = null;
+          if (mp3KeyStored) {
+            const mp3Filename = buildDownloadFilename(generation.promptText, i, 'mp3');
+            mp3PresignedUrl = await getAudioPresignedUrl(mp3KeyStored, 86400, mp3Filename);
+          }
+
           insertedOutputs.push({
             id: insertedOutput.id,
             variantIndex: insertedOutput.variantIndex,
             r2Key: insertedOutput.r2Key,
-            url: presignedUrl,
+            url: wavPresignedUrl,
+            mp3Url: mp3PresignedUrl,
+            mp3FileSizeBytes: insertedOutput.mp3FileSizeBytes,
             createdAt: insertedOutput.createdAt,
+            promptText: generation.promptText,
           });
         } catch (rawError) {
           const classified = classifyError(rawError);
@@ -276,24 +317,41 @@ export async function GET(
 async function buildOutputsWithUrls(
   generationOutputs: Output[],
   generateUrls: boolean,
+  promptText: string,
 ): Promise<OutputWithUrl[]> {
   const results: OutputWithUrl[] = [];
 
   for (const output of generationOutputs) {
     let url: string | null = null;
+    let mp3Url: string | null = null;
+
     if (generateUrls) {
       try {
-        url = await getAudioPresignedUrl(output.r2Key);
+        const wavFilename = buildDownloadFilename(promptText, output.variantIndex, 'wav');
+        url = await getAudioPresignedUrl(output.r2Key, 86400, wavFilename);
       } catch (err) {
-        console.error('[status] Failed to generate presigned URL:', err, { r2Key: output.r2Key });
+        console.error('[status] Failed to generate WAV presigned URL:', err, { r2Key: output.r2Key });
+      }
+
+      if (output.mp3R2Key) {
+        try {
+          const mp3Filename = buildDownloadFilename(promptText, output.variantIndex, 'mp3');
+          mp3Url = await getAudioPresignedUrl(output.mp3R2Key, 86400, mp3Filename);
+        } catch (err) {
+          console.error('[status] Failed to generate MP3 presigned URL:', err, { mp3R2Key: output.mp3R2Key });
+        }
       }
     }
+
     results.push({
       id: output.id,
       variantIndex: output.variantIndex,
       r2Key: output.r2Key,
       url,
+      mp3Url,
+      mp3FileSizeBytes: output.mp3FileSizeBytes,
       createdAt: output.createdAt,
+      promptText,
     });
   }
 
