@@ -86,12 +86,12 @@ Plans:
   3. Generation form inputs, tag chips, and submit button use brand accent colors (amber CTA, rounded pill chips, warm input borders)
   4. Waveform player shows the amber progress bar in both light and dark mode — switching themes updates waveform color immediately without page reload
   5. Example cards display with warm card backgrounds, brand typography, and correct hover states in both modes
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Hardcoded color grep audit + systematic token replacement across all components
-- [ ] 06-02-PLAN.md — Hero section redesign + generation form redesign (inputs, chips, CTA button)
-- [ ] 06-03-PLAN.md — Loading skeleton + error banners redesign; waveform JS re-init on resolvedTheme change; example cards redesign
+- [ ] 06-01-PLAN.md — OKLCH color utility + leaf component token swaps (EnhancedCaptionDisplay, LoadingAnimation, GenerationPage, GenerationForm submit)
+- [ ] 06-02-PLAN.md — Hero section redesign (6xl-7xl headline, amber glow, accent CTA, sky-blue typewriter)
+- [ ] 06-03-PLAN.md — WaveformPlayer theme sync via setOptions() + VariantCard full token rewrite + final grep audit
 
 ---
 
