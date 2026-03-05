@@ -118,13 +118,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-01 | Phase 4 | Complete |
 | UX-02 | Phase 4 | Complete |
 | UX-03 | Phase 4 | Complete |
+| BRAND-01 | Phase 5 | Pending |
+| BRAND-02 | Phase 5 | Pending |
+| BRAND-03 | Phase 5 | Pending |
+| BRAND-04 | Phase 5 | Pending |
+| COMP-01 | Phase 6 | Pending |
+| COMP-02 | Phase 6 | Pending |
+| COMP-03 | Phase 6 | Pending |
+| COMP-04 | Phase 6 | Pending |
+| COMP-05 | Phase 6 | Pending |
+| NEW-01 | Phase 7 | Pending |
+| NEW-02 | Phase 8 | Pending |
+| NEW-03 | Phase 8 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 15 total (all complete)
-- v1.1 requirements: 12 total
-- Mapped to phases: 15 (v1.0) + 0 (v1.1, pending roadmap)
-- Unmapped: 12 ⚠️
+- v1.1 requirements: 12 total (all mapped)
+- Mapped to phases: 15 (v1.0) + 12 (v1.1)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-05 after v1.1 requirements definition*
+*Last updated: 2026-03-05 after v1.1 roadmap creation*

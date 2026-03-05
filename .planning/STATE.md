@@ -1,65 +1,49 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: milestone
-status: executing
-stopped_at: Completed 04-03-PLAN.md — Phase 4 UX polish all verified end-to-end
-last_updated: "2026-03-05T18:13:43.743Z"
-last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
+milestone_name: Brand & Visual Redesign
+status: ready_to_plan
+stopped_at: Roadmap created for v1.1 — 4 phases (5-8), 12 requirements mapped
+last_updated: "2026-03-05"
+last_activity: "2026-03-05 — v1.1 roadmap created, ready to plan Phase 5"
 progress:
   total_phases: 4
-  completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
-  percent: 33
+  completed_phases: 0
+  total_plans: 10
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-03)
+See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Anyone can create a unique, personal song in seconds — no musical skill required.
-**Current focus:** Phase 1 — Infrastructure Foundation
+**Current focus:** Phase 5 — Token Foundation + Theme Infrastructure
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-05 — Milestone v1.1 started
+Phase: 5 of 8 (Token Foundation + Theme Infrastructure)
+Plan: 0 of 3 in current phase
+Status: Ready to plan
+Last activity: 2026-03-05 — v1.1 roadmap finalized, v1.0 complete (Phases 1-4)
 
 Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 1
-- Average duration: 6 min
-- Total execution time: 0.1 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01 — Infrastructure Foundation | 1 of 3 | 6 min | 6 min |
+**Velocity (v1.0 reference):**
+- Total plans completed (v1.0): 11
+- Average duration: ~15 min
+- Total execution time: ~2.7 hours
 
 **Recent Trend:**
-- Last 5 plans: 6 min
-- Trend: —
+- Last 5 plans (v1.0): 2min, 5min, 526031min (anomaly), 3min, 18min
+- Trend: Stable (excluding anomaly)
 
 *Updated after each plan completion*
-| Phase 01-infrastructure-foundation P03 | 10min | 1 tasks | 3 files |
-| Phase 01-infrastructure-foundation P03 | 47min | 2 tasks | 4 files |
-| Phase 02-generation-api P01 | 8 | 2 tasks | 2 files |
-| Phase 02-generation-api P02 | 7min | 2 tasks | 5 files |
-| Phase 02-generation-api P03 | 25min | 3 tasks | 6 files |
-| Phase 03-playback-and-download P01 | 18min | 3 tasks | 13 files |
-| Phase 03-playback-and-download PP02 | 3min | 2 tasks | 8 files |
-| Phase 04-ux-polish P01 | 2min | 3 tasks | 10 files |
-| Phase 04-ux-polish P02 | 5min | 2 tasks | 3 files |
-| Phase 04-ux-polish P03 | 526031min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -68,41 +52,11 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Pre-phase]: ACE-Step 1.5 turbo on RunPod Persistent Pod — NOT Serverless (20-60s cold starts break UX)
-- [Pre-phase]: Async polling pattern is mandatory — never poll RunPod inside a Vercel function (10s/60s timeout)
-- [Pre-phase]: Atomic two-phase credit deduction required from first implementation (hold on submit, confirm on success, refund on failure)
-- [Pre-phase]: Clerk for auth (best Next.js App Router DX), Drizzle ORM (7KB vs Prisma 300KB for cold start performance)
-- [Phase 01-01]: Zod v4 uses .issues not .errors on ZodError — updated src/env.ts accordingly
-- [Phase 01-01]: AbortController for fetch timeouts: 30s submit/download, 90s polling — timeouts unref() to not block Node.js exit
-- [Phase 01-01]: scripts/ excluded from tsconfig.json — scripts run via tsx, not Next.js TypeScript build
-- [Phase 01-02]: supervisord with autorestart=true chosen for ACE-Step crash recovery — recovers sub-second vs pod restart boot time
-- [Phase 01-infrastructure-foundation]: Always generate 2 variants (batchSize=2) — simplifies frontend which always shows 2 options
-- [Phase 01-infrastructure-foundation]: RunPod poll timeout returns current DB state unchanged — do NOT mark failed on timeout
-- [Phase 01-infrastructure-foundation]: Next.js 16 App Router route params are async (Promise<{...}>) — must await params before destructuring
-- [Phase 01-infrastructure-foundation]: queryJobStatus parses nested ACE-Step envelope: raw.data[0].status and JSON.parse(raw.data[0].result) for audio URLs
-- [Phase 01-infrastructure-foundation]: R2 presigned URL 403 is token permission issue (needs Object Read scope) — audio uploads correctly, not blocking Phase 2
-- [Phase 02-generation-api]: format_input called before every generation job with genre tags concatenated into prompt for better BPM/key LLM output
-- [Phase 02-generation-api]: Graceful fallback: format_input failure is non-fatal, generation proceeds with raw prompt
-- [Phase 02-generation-api]: Sub-components are stateless (no 'use client') — all state lives in GenerationForm
-- [Phase 02-generation-api]: Design tokens used throughout (bg-primary, text-muted-foreground, border-border) instead of hardcoded zinc/violet values
-- [Phase 02-generation-api]: useGenerationStatus dual-interval cleanup: single stopPolling() clears both poll and elapsed intervals, preventing timer leaks on unmount or jobId change
-- [Phase 02-generation-api]: setJobId(null) before new submission triggers useEffect cleanup and prevents simultaneous polling loops on regeneration
-- [Phase 02-generation-api]: page.tsx is a Server Component thin shell — only renders GenerationPage; all interactivity lives in client components
-- [Phase 03-playback-and-download]: drizzle-kit push hangs indefinitely — used direct SQL migration script for schema changes
-- [Phase 03-playback-and-download]: MP3 conversion failure is non-fatal: WAV-only fallback, mp3R2Key stays null
-- [Phase 03-playback-and-download]: Presigned URL expiry bumped from 1h to 24h — research recommendation
-- [Phase 03-playback-and-download]: vi.mock('@/env') pattern for testing modules with module-level env validation
-- [Phase 03-playback-and-download]: WaveformPlayer uses MP3 URL for playback (faster), falls back to WAV if null
-- [Phase 03-playback-and-download]: Auto-pause via isActive prop — GenerationResults owns activeVariantId, children are passive
-- [Phase 03-playback-and-download]: URL persistence via router.replace to avoid polluting browser history
-- [Phase 03-playback-and-download]: Suspense fallback=null on page.tsx required by Next.js App Router for useSearchParams
-- [Phase 04-ux-polish]: Phase state machine (idle/submitting/polling/done/error) replaces isSubmitting boolean for clean view swapping in GenerationPage
-- [Phase 04-ux-polish]: ExampleCard.tsx stub created for TypeScript compliance — full implementation deferred to Plan 03
-- [Phase 04-ux-polish]: Lyrics field always mounted (CSS grid-template-rows collapse) — preserves React state naturally without external state management
-- [Phase 04-ux-polish]: Segmented control pattern: absolute indicator div + relative z-10 buttons + translateX for position — no JS animation
-- [Phase 04-ux-polish]: ExampleCard resolves presigned URL asynchronously, starting with audioUrl as initial state so WaveformPlayer renders immediately
-- [Phase 04-ux-polish]: Slug-to-R2-key indirection via /api/examples/[slug] — R2 keys never exposed to client
-- [Phase 04-ux-polish]: Phase 4 human verification checkpoint approved — all UX polish features confirmed working end-to-end
+- [Pre-v1.1]: Warmer brand vs Suno dark aesthetic — differentiate as creative playground
+- [Pre-v1.1]: next-themes for dark mode toggle (no FOUC, App Router compatible)
+- [Pre-v1.1]: tailwind-merge v3 required (v2 doesn't understand Tailwind v4 CSS var colors)
+- [Pre-v1.1]: Typewriter + footer are copy-paste, not npm packages (Framer Motion + lucide already installed)
+- [Pre-v1.1]: wavesurfer waveform colors need JS re-init on resolvedTheme change (Shadow DOM doesn't inherit CSS vars)
 
 ### Pending Todos
 
@@ -110,13 +64,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 1]: ACE-Step API field names confirmed — `prompt` for style, `lyrics` for lyrics, `audio_duration`, `batch_size`. Response wraps in `{"data": {...}}`.
-- [Phase 1]: query_result endpoint returns empty array despite jobs succeeding — need to investigate /v1/audio?path= as result retrieval mechanism.
-- [Phase 1]: 24 GB VRAM GPUs (RTX 3090/4090) OOM on ACE-Step — need 32+ GB. Currently using RTX PRO 4500 (32 GB).
-- [Phase 1]: RTX 5090 incompatible with ACE-Step Docker image (requires PyTorch 2.8+).
+- [Pre-v1.1]: Exact OKLCH color values need contrast verification at accessiblepalette.com before Phase 5 token file is finalized — amber as foreground text on light backgrounds fails WCAG AA
+- [Pre-v1.1]: tailwind-merge v3/v4 compatibility edge cases confirmed via community (not official changelog) — watch for unexpected class conflicts in Phase 6
 
 ## Session Continuity
 
-Last session: 2026-03-05T18:03:25.737Z
-Stopped at: Completed 04-03-PLAN.md — Phase 4 UX polish all verified end-to-end
+Last session: 2026-03-05
+Stopped at: v1.1 roadmap created — Phase 5 ready to plan
 Resume file: None
