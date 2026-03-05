@@ -51,6 +51,7 @@ export function GenerationResults({ jobId, enhancedCaption }: GenerationResultsP
             <VariantCard
               key={output.id}
               variantIndex={output.variantIndex}
+              playbackUrl={output.playbackUrl}
               mp3Url={output.mp3Url}
               wavUrl={output.url}
               isActive={activeVariantId === output.id}

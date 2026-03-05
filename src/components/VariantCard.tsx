@@ -4,6 +4,7 @@ import { WaveformPlayer } from './WaveformPlayer';
 
 interface VariantCardProps {
   variantIndex: number;
+  playbackUrl: string | null;
   mp3Url: string | null;
   wavUrl: string | null;
   isActive: boolean;
@@ -27,6 +28,7 @@ function formatMB(bytes: number | null): string {
 
 export function VariantCard({
   variantIndex,
+  playbackUrl,
   mp3Url,
   wavUrl,
   isActive,
@@ -34,7 +36,7 @@ export function VariantCard({
   mp3FileSizeBytes,
   duration,
 }: VariantCardProps) {
-  const playbackUrl = mp3Url ?? wavUrl;
+  const audioUrl = playbackUrl ?? mp3Url ?? wavUrl;
   const durationStr = formatDuration(duration);
   const sizeStr = formatMB(mp3FileSizeBytes);
   const infoLine = [durationStr, sizeStr ? `${sizeStr} MP3` : ''].filter(Boolean).join(' · ');
@@ -52,8 +54,8 @@ export function VariantCard({
       <p className="text-sm font-medium text-zinc-400">Variant {variantIndex + 1}</p>
 
       {/* Waveform player or unavailable */}
-      {playbackUrl ? (
-        <WaveformPlayer url={playbackUrl} isActive={isActive} onPlay={onPlay} />
+      {audioUrl ? (
+        <WaveformPlayer url={audioUrl} isActive={isActive} onPlay={onPlay} />
       ) : (
         <p className="text-sm italic text-zinc-500">Audio unavailable</p>
       )}

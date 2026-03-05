@@ -8,8 +8,9 @@ interface Output {
   id: string;
   variantIndex: number;
   r2Key: string;
-  url: string | null;           // WAV presigned URL
-  mp3Url: string | null;        // MP3 presigned URL
+  url: string | null;           // Original audio presigned URL (for download)
+  mp3Url: string | null;        // MP3 320k presigned URL (for download)
+  playbackUrl: string | null;   // Presigned URL without Content-Disposition (for streaming)
   mp3FileSizeBytes: number | null;
   promptText: string | null;
   duration: number | null;

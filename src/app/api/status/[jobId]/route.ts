@@ -24,11 +24,12 @@ interface OutputWithUrl {
   id: string;
   variantIndex: number;
   r2Key: string;
-  url: string | null;        // WAV presigned URL
-  mp3Url: string | null;     // MP3 presigned URL
+  url: string | null;           // Original audio presigned URL (for download)
+  mp3Url: string | null;        // MP3 320k presigned URL (for download)
+  playbackUrl: string | null;   // Presigned URL without Content-Disposition (for streaming)
   mp3FileSizeBytes: number | null;
   createdAt: Date;
-  promptText: string | null; // for filename display on client
+  promptText: string | null;
 }
 
 interface StatusResponse {
@@ -223,7 +224,9 @@ export async function GET(
             })
             .returning();
 
-          // Generate presigned URLs with descriptive filenames
+          // Generate presigned URLs — separate playback (no Content-Disposition) from download
+          const playbackUrl = await getAudioPresignedUrl(mp3KeyStored ?? wavR2Key, 86400);
+
           const wavFilename = buildDownloadFilename(generation.promptText, i, 'wav');
           const wavPresignedUrl = await getAudioPresignedUrl(wavR2Key, 86400, wavFilename);
 
@@ -239,6 +242,7 @@ export async function GET(
             r2Key: insertedOutput.r2Key,
             url: wavPresignedUrl,
             mp3Url: mp3PresignedUrl,
+            playbackUrl,
             mp3FileSizeBytes: insertedOutput.mp3FileSizeBytes,
             createdAt: insertedOutput.createdAt,
             promptText: generation.promptText,
@@ -326,8 +330,16 @@ async function buildOutputsWithUrls(
   for (const output of generationOutputs) {
     let url: string | null = null;
     let mp3Url: string | null = null;
+    let playbackUrl: string | null = null;
 
     if (generateUrls) {
+      // Playback URL — no Content-Disposition, prefer MP3 key if available
+      try {
+        playbackUrl = await getAudioPresignedUrl(output.mp3R2Key ?? output.r2Key, 86400);
+      } catch (err) {
+        console.error('[status] Failed to generate playback presigned URL:', err, { r2Key: output.r2Key });
+      }
+
       try {
         const wavFilename = buildDownloadFilename(promptText, output.variantIndex, 'wav');
         url = await getAudioPresignedUrl(output.r2Key, 86400, wavFilename);
@@ -351,6 +363,7 @@ async function buildOutputsWithUrls(
       r2Key: output.r2Key,
       url,
       mp3Url,
+      playbackUrl,
       mp3FileSizeBytes: output.mp3FileSizeBytes,
       createdAt: output.createdAt,
       promptText,
