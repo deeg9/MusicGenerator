@@ -7,8 +7,7 @@ vi.mock('@/env', () => ({
     R2_ACCESS_KEY_ID: 'test-key',
     R2_SECRET_ACCESS_KEY: 'test-secret',
     R2_BUCKET_NAME: 'test-bucket',
-    RUNPOD_URL: 'https://test.runpod.io',
-    RUNPOD_API_KEY: 'test-runpod-key',
+    HEARTMULA_URL: 'https://test.runpod.io',
   },
 }));
 

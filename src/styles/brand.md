@@ -1,4 +1,4 @@
-# MusicGenerator Brand Kit
+# Notera Brand Kit
 
 Design language reference for the team. Adapted from Notera's visual identity for a music generation app.
 

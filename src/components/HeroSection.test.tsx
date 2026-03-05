@@ -25,11 +25,11 @@ describe('HeroSection', () => {
     expect(h1!.className).toContain('font-display');
   });
 
-  it('h1 has text-6xl class for large editorial headline', () => {
+  it('h1 has text-5xl class for sidebar-adjusted headline', () => {
     render(<HeroSection />);
     const h1 = document.querySelector('h1');
     expect(h1).not.toBeNull();
-    expect(h1!.className).toContain('text-6xl');
+    expect(h1!.className).toContain('text-5xl');
   });
 
   it('CTA link has bg-accent class (amber action color)', () => {
@@ -68,10 +68,9 @@ describe('HeroSection', () => {
     expect(wrapper!.className).toContain('text-primary');
   });
 
-  it('section inner content div has py-24 class for editorial padding', () => {
+  it('section inner content div has py-16 class for sidebar-adjusted padding', () => {
     render(<HeroSection />);
-    // The inner content container should have py-24
-    const contentDiv = document.querySelector('.py-24');
+    const contentDiv = document.querySelector('.py-16');
     expect(contentDiv).not.toBeNull();
   });
 });

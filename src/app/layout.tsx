@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Figtree, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { AppShell } from '@/components/layout/AppShell';
 
 const bricolage = Bricolage_Grotesque({
   variable: '--font-bricolage',
@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'MusicGenerator',
+  title: 'Notera',
   description: 'AI-powered music generation',
 };
 
@@ -35,12 +35,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${bricolage.variable} ${figtree.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          <div className="min-h-screen">
-            <header className="flex justify-end p-4">
-              <ThemeToggle />
-            </header>
-            {children}
-          </div>
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

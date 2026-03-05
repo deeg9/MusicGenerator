@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
+// Mock useReducedMotion
+vi.mock('@/hooks/useReducedMotion', () => ({
+  useReducedMotion: () => false,
+}));
+
 // Mock the useGenerationStatus hook
 const mockUseGenerationStatus = vi.fn();
 vi.mock('@/hooks/useGenerationStatus', () => ({
@@ -10,6 +15,18 @@ vi.mock('@/hooks/useGenerationStatus', () => ({
 // Mock WaveformPlayer to avoid wavesurfer.js complexity in integration tests
 vi.mock('./WaveformPlayer', () => ({
   WaveformPlayer: ({ url }: { url: string }) => <div data-testid="waveform-player" data-url={url} />,
+}));
+
+// Mock AudioPlayerContext
+vi.mock('@/contexts/AudioPlayerContext', () => ({
+  useAudioPlayer: () => ({
+    currentTrack: null,
+    isPlaying: false,
+    play: () => {},
+    pause: () => {},
+    resume: () => {},
+    stop: () => {},
+  }),
 }));
 
 // Mock EnhancedCaptionDisplay

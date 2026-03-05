@@ -1,14 +1,16 @@
 'use client';
 
+import { useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { WaveformPlayer } from './WaveformPlayer';
+import { useAudioPlayer } from '@/contexts/AudioPlayerContext';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface VariantCardProps {
   variantIndex: number;
   playbackUrl: string | null;
   mp3Url: string | null;
   wavUrl: string | null;
-  isActive: boolean;
-  onPlay: () => void;
   mp3FileSizeBytes: number | null;
   duration: number | null;
   promptText: string | null;
@@ -31,8 +33,6 @@ export function VariantCard({
   playbackUrl,
   mp3Url,
   wavUrl,
-  isActive,
-  onPlay,
   mp3FileSizeBytes,
   duration,
 }: VariantCardProps) {
@@ -40,22 +40,63 @@ export function VariantCard({
   const durationStr = formatDuration(duration);
   const sizeStr = formatMB(mp3FileSizeBytes);
   const infoLine = [durationStr, sizeStr ? `${sizeStr} MP3` : ''].filter(Boolean).join(' · ');
+  const audioPlayer = useAudioPlayer();
+  const reducedMotion = useReducedMotion();
+
+  const isNowPlaying = audioPlayer.currentTrack?.url === audioUrl && audioPlayer.isPlaying;
+
+  const handleRequestPlay = useCallback(() => {
+    if (!audioUrl) return;
+    audioPlayer.play({
+      url: audioUrl,
+      title: `Variant ${variantIndex + 1}`,
+      variantIndex,
+      mp3Url,
+      wavUrl,
+    });
+  }, [audioUrl, audioPlayer, variantIndex, mp3Url, wavUrl]);
 
   return (
-    <div
+    <motion.div
+      whileHover={reducedMotion ? undefined : { y: -2, boxShadow: '0 10px 15px -3px oklch(0 0 0 / 0.10), 0 4px 6px -4px oklch(0 0 0 / 0.10)' }}
+      whileTap={reducedMotion ? undefined : { scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className={[
         'rounded-xl border bg-card p-4 flex flex-col gap-4 transition-shadow shadow-subtle',
-        isActive
+        isNowPlaying
           ? 'border-primary/30 shadow-medium ring-2 ring-primary/50 shadow-primary/10'
           : 'border-border',
       ].join(' ')}
     >
       {/* Label */}
-      <p className="text-sm font-medium text-muted-foreground">Variant {variantIndex + 1}</p>
+      <div className="flex items-center gap-2">
+        <p className="text-sm font-medium text-muted-foreground">Variant {variantIndex + 1}</p>
+        {isNowPlaying && (
+          <div className="flex items-center gap-0.5" aria-label="Now playing">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="inline-block w-0.5 bg-primary animate-eq-bar"
+                style={{
+                  height: '12px',
+                  animationDelay: `${i * 0.15}s`,
+                  transformOrigin: 'bottom',
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Waveform player or unavailable */}
+      {/* Waveform player — visual-only, delegates play to bottom bar */}
       {audioUrl ? (
-        <WaveformPlayer url={audioUrl} isActive={isActive} onPlay={onPlay} />
+        <WaveformPlayer
+          url={audioUrl}
+          isActive={false}
+          onPlay={() => {}}
+          mode="visual-only"
+          onRequestPlay={handleRequestPlay}
+        />
       ) : (
         <p className="text-sm italic text-muted-foreground">Audio unavailable</p>
       )}
@@ -86,6 +127,6 @@ export function VariantCard({
           </a>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

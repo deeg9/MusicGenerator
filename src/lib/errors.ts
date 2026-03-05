@@ -63,7 +63,7 @@ function isModelError(error: unknown): boolean {
   if (error instanceof Error) {
     const msg = error.message.toLowerCase();
     return (
-      msg.includes('ace-step') ||
+      msg.includes('heartmula') ||
       msg.includes('model') ||
       msg.includes('cuda') ||
       msg.includes('out of memory') ||

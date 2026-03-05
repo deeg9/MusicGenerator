@@ -6,6 +6,23 @@ vi.mock('./WaveformPlayer', () => ({
   WaveformPlayer: () => <div data-testid="mock-waveform" />,
 }));
 
+// Mock useReducedMotion
+vi.mock('@/hooks/useReducedMotion', () => ({
+  useReducedMotion: () => false,
+}));
+
+// Mock AudioPlayerContext
+vi.mock('@/contexts/AudioPlayerContext', () => ({
+  useAudioPlayer: () => ({
+    currentTrack: null,
+    isPlaying: false,
+    play: () => {},
+    pause: () => {},
+    resume: () => {},
+    stop: () => {},
+  }),
+}));
+
 // Import after mocks
 import { VariantCard } from './VariantCard';
 
@@ -14,39 +31,12 @@ const baseProps = {
   playbackUrl: null,
   mp3Url: null,
   wavUrl: null,
-  isActive: false,
-  onPlay: () => {},
   mp3FileSizeBytes: null,
   duration: null,
   promptText: null,
 };
 
 describe('VariantCard', () => {
-  it('active card has ring-primary/50 and shadow-primary/10 class', () => {
-    const { container } = render(
-      <VariantCard
-        {...baseProps}
-        isActive={true}
-        mp3Url="http://example.com/audio.mp3"
-      />,
-    );
-    const card = container.firstChild as HTMLElement;
-    expect(card.className).toContain('ring-primary/50');
-    expect(card.className).toContain('shadow-primary/10');
-  });
-
-  it('inactive card has border-border class (not border-zinc-800)', () => {
-    const { container } = render(
-      <VariantCard
-        {...baseProps}
-        isActive={false}
-      />,
-    );
-    const card = container.firstChild as HTMLElement;
-    expect(card.className).toContain('border-border');
-    expect(card.className).not.toContain('border-zinc-800');
-  });
-
   it('card base has bg-card and shadow-subtle class', () => {
     const { container } = render(
       <VariantCard
@@ -56,6 +46,17 @@ describe('VariantCard', () => {
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain('bg-card');
     expect(card.className).toContain('shadow-subtle');
+  });
+
+  it('inactive card has border-border class (not border-zinc-800)', () => {
+    const { container } = render(
+      <VariantCard
+        {...baseProps}
+      />,
+    );
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).toContain('border-border');
+    expect(card.className).not.toContain('border-zinc-800');
   });
 
   it('Download MP3 link has bg-accent and text-accent-foreground class', () => {

@@ -21,7 +21,7 @@ export const generations = pgTable(
   'generations',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    runpodJobId: text('runpod_job_id').notNull(),
+    backendJobIds: text('backend_job_ids').array().notNull(),
     status: generationStatusEnum('status').notNull().default('pending'),
 
     // Inputs
@@ -43,7 +43,6 @@ export const generations = pgTable(
   },
   (table) => [
     index('generations_status_idx').on(table.status),
-    index('generations_runpod_job_idx').on(table.runpodJobId),
   ],
 );
 

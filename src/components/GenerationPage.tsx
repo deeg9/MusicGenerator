@@ -2,17 +2,26 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GenerationForm, type GenerationFormData } from './GenerationForm';
 import { GenerationResults } from './GenerationResults';
 import { LoadingAnimation, STAGE_DURATIONS } from './LoadingAnimation';
 import { useGenerationStatus } from '@/hooks/useGenerationStatus';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 type GenerationPhase = 'idle' | 'submitting' | 'polling' | 'done' | 'error';
+
+const phaseVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+};
 
 export function GenerationPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const reducedMotion = useReducedMotion();
 
   const initialJobId = searchParams.get('job');
   const [jobId, setJobId] = useState<string | null>(initialJobId);
@@ -23,6 +32,8 @@ export function GenerationPage() {
   const [stageIndex, setStageIndex] = useState(0);
 
   const lastFormData = useRef<GenerationFormData | null>(null);
+
+  const transitionDuration = reducedMotion ? 0 : 0.2;
 
   // Poll status when we have a jobId
   const { data, elapsedSeconds, error: hookError } = useGenerationStatus(
@@ -67,7 +78,7 @@ export function GenerationPage() {
     lastFormData.current = data;
     setPhase('submitting');
     setErrorMessage(null);
-    setJobId(null); // Clear previous results (prevents stale poll)
+    setJobId(null);
     setEnhancedCaption(null);
 
     try {
@@ -91,7 +102,6 @@ export function GenerationPage() {
       setJobId(newJobId);
       setEnhancedCaption(result.enhancedCaption ?? null);
 
-      // Persist jobId to URL so refresh restores results
       const params = new URLSearchParams(searchParams.toString());
       params.set('job', newJobId);
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -115,60 +125,117 @@ export function GenerationPage() {
     setErrorMessage(null);
   }
 
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">MusicGenerator</h1>
-          <p className="mt-2 text-muted-foreground">Create your own song in seconds</p>
-        </header>
+  function handleNewGeneration() {
+    setPhase('idle');
+    setJobId(null);
+    setEnhancedCaption(null);
+    setErrorMessage(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('job');
+    router.replace(params.toString() ? `${pathname}?${params}` : pathname, { scroll: false });
+  }
 
+  // Listen for navigate-create events from sidebar/hero
+  useEffect(() => {
+    function onNavigateCreate() {
+      if (phase !== 'idle') {
+        handleNewGeneration();
+      }
+    }
+    window.addEventListener('navigate-create', onNavigateCreate);
+    return () => window.removeEventListener('navigate-create', onNavigateCreate);
+  });
+
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-8">
+      <AnimatePresence mode="wait">
         {/* Form — shown when idle */}
         {phase === 'idle' && (
-          <GenerationForm onSubmit={handleSubmit} isSubmitting={false} />
+          <motion.div
+            key="form"
+            variants={phaseVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: transitionDuration }}
+          >
+            <GenerationForm onSubmit={handleSubmit} isSubmitting={false} />
+          </motion.div>
         )}
 
         {/* Loading — shown when submitting or polling */}
         {(phase === 'submitting' || phase === 'polling') && (
-          <LoadingAnimation
-            stageIndex={phase === 'submitting' ? 0 : stageIndex}
-            elapsedSeconds={elapsedSeconds}
-            showElapsed={phase === 'polling'}
-          />
+          <motion.div
+            key="loading"
+            variants={phaseVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: transitionDuration }}
+          >
+            <LoadingAnimation
+              stageIndex={phase === 'submitting' ? 0 : stageIndex}
+              elapsedSeconds={elapsedSeconds}
+              showElapsed={phase === 'polling'}
+            />
+          </motion.div>
         )}
 
         {/* Error banner */}
         {phase === 'error' && (
-          <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3">
-            <p className="text-sm text-destructive">
-              {errorMessage ?? 'Something went wrong. Please try again.'}
-            </p>
-            <div className="mt-3 flex gap-3">
-              {isRetryable ? (
+          <motion.div
+            key="error"
+            variants={phaseVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: transitionDuration }}
+          >
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3">
+              <p className="text-sm text-destructive">
+                {errorMessage ?? 'Something went wrong. Please try again.'}
+              </p>
+              <div className="mt-3 flex gap-3">
+                {isRetryable ? (
+                  <button
+                    onClick={handleRetry}
+                    className="text-sm font-medium text-destructive underline underline-offset-2 hover:opacity-80"
+                  >
+                    Try again
+                  </button>
+                ) : null}
                 <button
-                  onClick={handleRetry}
-                  className="text-sm font-medium text-destructive underline underline-offset-2 hover:opacity-80"
+                  onClick={handleBackToForm}
+                  className="text-sm font-medium text-muted-foreground underline underline-offset-2 hover:opacity-80"
                 >
-                  Try again
+                  Change settings
                 </button>
-              ) : null}
-              <button
-                onClick={handleBackToForm}
-                className="text-sm font-medium text-muted-foreground underline underline-offset-2 hover:opacity-80"
-              >
-                Change settings
-              </button>
+              </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Results — shown when done */}
         {phase === 'done' && (
-          <div className="mt-8">
+          <motion.div
+            key="results"
+            variants={phaseVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: transitionDuration }}
+            className="mt-8"
+          >
+            <button
+              onClick={handleNewGeneration}
+              className="mb-6 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
+            >
+              Create New Song
+            </button>
             <GenerationResults jobId={jobId} enhancedCaption={enhancedCaption} />
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }

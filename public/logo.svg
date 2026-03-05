@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="blur1"/>
+      <feGaussianBlur stdDeviation="24" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="tealGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feFlood flood-color="#38bdf8" flood-opacity="0.4"/>
+      <feComposite in2="blur" operator="in"/>
+    </filter>
+    <linearGradient id="amberGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
+  <!-- Teal outer glow -->
+  <path d="M152 380V132l208 248V132" fill="none" stroke="#38bdf8" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" filter="url(#tealGlow)" opacity="0.5"/>
+  <!-- Amber neon N -->
+  <path d="M152 380V132l208 248V132" fill="none" stroke="url(#amberGrad)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <!-- Bright center highlight -->
+  <path d="M152 380V132l208 248V132" fill="none" stroke="#fde68a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+</svg>

@@ -6,6 +6,23 @@ vi.mock('./WaveformPlayer', () => ({
   WaveformPlayer: ({ url }: { url: string }) => <div data-testid="waveform-player" data-url={url} />,
 }));
 
+// Mock useReducedMotion
+vi.mock('@/hooks/useReducedMotion', () => ({
+  useReducedMotion: () => false,
+}));
+
+// Mock AudioPlayerContext
+vi.mock('@/contexts/AudioPlayerContext', () => ({
+  useAudioPlayer: () => ({
+    currentTrack: null,
+    isPlaying: false,
+    play: () => {},
+    pause: () => {},
+    resume: () => {},
+    stop: () => {},
+  }),
+}));
+
 import { ExampleCard } from './ExampleCard';
 
 describe('ExampleCard', () => {
@@ -15,8 +32,6 @@ describe('ExampleCard', () => {
         title="Birthday Jazz"
         genre="Jazz, Warm"
         audioUrl="/api/examples/jazz-birthday"
-        isActive={false}
-        onPlay={() => {}}
       />,
     );
     expect(screen.getByText('Birthday Jazz')).toBeDefined();
@@ -29,8 +44,6 @@ describe('ExampleCard', () => {
         title="Love Ballad"
         genre="Pop"
         audioUrl="/api/examples/love-ballad"
-        isActive={false}
-        onPlay={() => {}}
       />,
     );
     const player = screen.getByTestId('waveform-player');

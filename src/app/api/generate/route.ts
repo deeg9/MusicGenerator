@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { generations } from '@/db/schema';
-import { submitGenerationJob, callFormatInput } from '@/lib/runpod';
+import { submitGenerationJob, enhancePrompt } from '@/lib/heartmula';
 import { classifyError, toErrorResponse } from '@/lib/errors';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,42 +100,50 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Resolve lyrics: instrumental mode forces [Instrumental] tag
   const resolvedLyrics = instrumental ? '[Instrumental]' : (rawLyrics ?? '');
 
-  // Call format_input to get LLM-enhanced caption with BPM/key/time signature
-  let enhancedCaption = prompt;
-  let bpm: number | undefined;
-  let keyScale: string | undefined;
-  let timeSignature: string | undefined;
-  let enhancedLyrics = resolvedLyrics;
+  // Enhance prompt via HeartMuLa LLM (graceful fallback on failure)
+  const enhancedCaption = await enhancePrompt(
+    genreTags ? `${prompt}, ${genreTags}` : prompt,
+    genreTags,
+  );
 
-  try {
-    const formatted = await callFormatInput({
-      prompt: genreTags ? `${prompt}, ${genreTags}` : prompt,
-      lyrics: resolvedLyrics,
-    });
-    enhancedCaption = formatted.caption;
-    bpm = typeof formatted.bpm === 'number' ? formatted.bpm : parseInt(String(formatted.bpm), 10) || undefined;
-    keyScale = formatted.keyscale || undefined;
-    timeSignature = formatted.timesignature || undefined;
-    enhancedLyrics = formatted.lyrics || resolvedLyrics;
-  } catch (rawError) {
-    // Fallback: continue with raw prompt if format_input fails (graceful degradation)
-    const classified = classifyError(rawError);
-    console.warn('[generate] format_input failed, falling back to raw prompt:', classified.technicalMessage);
-  }
+  // Duration in milliseconds for HeartMuLa
+  const durationMs = duration * 1000;
 
-  // Submit the job to ACE-Step (non-blocking — returns immediately with task_id)
-  let runpodTaskId: string;
+  // Submit 2 jobs in parallel (HeartMuLa does 1 variant per job)
+  const seed2 = Math.floor(Math.random() * 2147483647);
+
+  let jobIds: string[];
   try {
-    const submitResponse = await submitGenerationJob({
-      prompt: enhancedCaption,
-      lyrics: enhancedLyrics,
-      audioDuration: duration,
-      batchSize: 2, // Always generate 2 variants
-      bpm,
-      keyScale,
-      timeSignature,
-    });
-    runpodTaskId = submitResponse.task_id;
+    const results = await Promise.allSettled([
+      submitGenerationJob({
+        prompt: enhancedCaption,
+        lyrics: resolvedLyrics,
+        duration_ms: durationMs,
+        tags: genreTags,
+      }),
+      submitGenerationJob({
+        prompt: enhancedCaption,
+        lyrics: resolvedLyrics,
+        duration_ms: durationMs,
+        tags: genreTags,
+        seed: seed2,
+      }),
+    ]);
+
+    jobIds = results
+      .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof submitGenerationJob>>> => r.status === 'fulfilled')
+      .map((r) => r.value.job_id);
+
+    if (jobIds.length === 0) {
+      // Both failed — throw the first error
+      const firstRejected = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+      throw firstRejected?.reason ?? new Error('All HeartMuLa job submissions failed');
+    }
+
+    if (jobIds.length < 2) {
+      const rejected = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+      console.warn('[generate] One HeartMuLa job failed, proceeding with 1 variant:', rejected?.reason);
+    }
   } catch (rawError) {
     const classified = classifyError(rawError);
     const errorResponse = toErrorResponse(classified);
@@ -158,7 +166,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const [inserted] = await db
       .insert(generations)
       .values({
-        runpodJobId: runpodTaskId,
+        backendJobIds: jobIds,
         status: 'pending',
         promptText: prompt,
         lyrics: resolvedLyrics || null,
@@ -171,11 +179,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     generationId = inserted.id;
   } catch (rawError) {
-    // DB insert failed — job is running on RunPod but we lost the reference.
-    // Log and return a 500 rather than leaving caller with no jobId.
     const classified = classifyError(rawError);
     console.error('[generate] DB insert failed after job submitted:', classified.technicalMessage, {
-      runpodTaskId,
+      jobIds,
     });
     return NextResponse.json(
       {

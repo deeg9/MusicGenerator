@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { ExampleCard } from './ExampleCard';
 import { Typewriter } from './ui/typewriter';
 
@@ -33,11 +32,9 @@ const TYPEWRITER_WORDS = [
 ];
 
 export function HeroSection() {
-  const [activeExampleId, setActiveExampleId] = useState<string | null>(null);
-
   return (
     <section className="relative overflow-hidden bg-background">
-      {/* Amber radial glow blob — editorial brand warmth */}
+      {/* Amber radial glow blob */}
       <div
         className="pointer-events-none absolute inset-0 flex items-center justify-center -translate-y-8"
         aria-hidden="true"
@@ -77,9 +74,9 @@ export function HeroSection() {
         </svg>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-24 text-center">
-        {/* Headline — brand editorial scale with Bricolage Grotesque */}
-        <h1 className="relative text-6xl sm:text-7xl font-display font-bold tracking-tight text-foreground">
+      <div className="mx-auto max-w-4xl px-4 py-16 text-center">
+        {/* Headline */}
+        <h1 className="relative text-5xl sm:text-6xl font-display font-bold tracking-tight text-foreground">
           Create{' '}
           <span className="text-primary">
             <Typewriter words={TYPEWRITER_WORDS} speed={80} cursorChar="|" />
@@ -92,13 +89,16 @@ export function HeroSection() {
           needed.
         </p>
 
-        {/* CTA — amber accent = action */}
-        <a
-          href="#create"
+        {/* CTA */}
+        <button
+          onClick={() => {
+            window.dispatchEvent(new Event('navigate-create'));
+            document.getElementById('create')?.scrollIntoView({ behavior: 'smooth' });
+          }}
           className="relative inline-block mt-10 bg-accent text-accent-foreground font-semibold px-8 py-3 rounded-lg hover:bg-accent/90 transition-colors"
         >
           Start Creating
-        </a>
+        </button>
 
         {/* Example cards */}
         <div className="relative mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
@@ -108,8 +108,6 @@ export function HeroSection() {
               title={example.title}
               genre={example.genre}
               audioUrl={example.audioUrl}
-              isActive={activeExampleId === example.id}
-              onPlay={() => setActiveExampleId(example.id)}
             />
           ))}
         </div>

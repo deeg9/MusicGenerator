@@ -5,7 +5,9 @@ import { HeroSection } from '@/components/HeroSection';
 export default function Home() {
   return (
     <>
-      <HeroSection />
+      <section id="home">
+        <HeroSection />
+      </section>
       <section id="create">
         <Suspense fallback={null}>
           <GenerationPage />

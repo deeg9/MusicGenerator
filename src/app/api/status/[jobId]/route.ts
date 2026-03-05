@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { generations, outputs } from '@/db/schema';
-import { queryJobStatus, fetchAudioBuffer } from '@/lib/runpod';
-import { uploadAudioToR2, buildR2Key, buildR2Mp3Key, getAudioPresignedUrl } from '@/lib/r2';
-import { convertToMp3, detectAudioFormat } from '@/lib/audio';
+import { queryJobStatus, fetchAudioBuffer } from '@/lib/heartmula';
+import { uploadAudioToR2, buildR2Mp3Key, getAudioPresignedUrl } from '@/lib/r2';
 import { buildDownloadFilename } from '@/lib/filename';
 import { classifyError } from '@/lib/errors';
 import type { InferSelectModel } from 'drizzle-orm';
@@ -25,7 +24,7 @@ interface OutputWithUrl {
   variantIndex: number;
   r2Key: string;
   url: string | null;           // Original audio presigned URL (for download)
-  mp3Url: string | null;        // MP3 320k presigned URL (for download)
+  mp3Url: string | null;        // MP3 presigned URL (for download)
   playbackUrl: string | null;   // Presigned URL without Content-Disposition (for streaming)
   mp3FileSizeBytes: number | null;
   createdAt: Date;
@@ -96,7 +95,7 @@ export async function GET(
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Terminal states — return from DB cache, no RunPod call needed
+  // Terminal states — return from DB cache, no backend call needed
   // ─────────────────────────────────────────────────────────────────────────
 
   if (generation.status === 'completed' || generation.status === 'failed') {
@@ -110,34 +109,61 @@ export async function GET(
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Active states — make a single RunPod poll
+  // Active states — poll all HeartMuLa jobs in parallel
   // ─────────────────────────────────────────────────────────────────────────
 
-  let runpodStatus: Awaited<ReturnType<typeof queryJobStatus>>;
+  const backendJobIds = generation.backendJobIds ?? [];
+
+  let jobStatuses: Awaited<ReturnType<typeof queryJobStatus>>[];
   try {
-    runpodStatus = await queryJobStatus(generation.runpodJobId);
+    jobStatuses = await Promise.all(backendJobIds.map((id) => queryJobStatus(id)));
   } catch (rawError) {
-    // RunPod poll timed out or failed — return current DB state, do NOT mark failed
+    // Poll failed — return current DB state, do NOT mark failed
     const classified = classifyError(rawError);
-    const isTimeout = classified.category === 'timeout';
-    if (!isTimeout) {
-      console.error('[status] RunPod query failed:', classified.technicalMessage, {
+    if (classified.category !== 'timeout') {
+      console.error('[status] HeartMuLa query failed:', classified.technicalMessage, {
         jobId,
-        runpodJobId: generation.runpodJobId,
+        backendJobIds,
       });
     }
-    // Return current DB state unchanged
     return NextResponse.json(buildStatusResponse(generation, []));
   }
 
-  // ACE-Step status codes:
-  //   0 = queued or running
-  //   1 = succeeded
-  //   2 = failed
+  // ─────────────────────────────────────────────────────────────────────────
+  // Aggregate statuses
+  // ─────────────────────────────────────────────────────────────────────────
 
-  if (runpodStatus.status === 2) {
-    // Job failed on RunPod — classify and persist
-    const errorMessage = runpodStatus.error ?? `ACE-Step returned status=2 for task ${generation.runpodJobId}`;
+  const completed = jobStatuses.filter((s) => s.status === 'COMPLETED');
+  const failed = jobStatuses.filter((s) => s.status === 'FAILED');
+  const stillRunning = jobStatuses.filter((s) => s.status === 'QUEUED' || s.status === 'PROCESSING');
+
+  // If any jobs are still running, return processing
+  if (stillRunning.length > 0) {
+    if (generation.status === 'pending') {
+      try {
+        await db
+          .update(generations)
+          .set({ status: 'processing' })
+          .where(eq(generations.id, jobId));
+      } catch (dbError) {
+        console.error('[status] Failed to update generation to processing state:', dbError, { jobId });
+      }
+    }
+
+    return NextResponse.json({
+      jobId,
+      status: 'processing',
+      startedAt: generation.startedAt,
+      completedAt: null,
+      failedAt: null,
+      outputs: [],
+      error: null,
+    });
+  }
+
+  // All jobs terminal — check if all failed
+  if (completed.length === 0 && failed.length > 0) {
+    const errorMessage = failed[0].error_msg ?? 'All HeartMuLa generation jobs failed';
     const rawError = new Error(errorMessage);
     const classified = classifyError(rawError);
 
@@ -172,146 +198,84 @@ export async function GET(
     });
   }
 
-  if (runpodStatus.status === 1) {
-    // Job succeeded — download audio, convert to MP3, upload both to R2, insert output records
-    const audioUrls = runpodStatus.data?.audio_urls ?? [];
+  // ─────────────────────────────────────────────────────────────────────────
+  // At least 1 completed — download audio, upload to R2
+  // ─────────────────────────────────────────────────────────────────────────
 
-    // If ACE-Step returned audio URLs, download and upload each one
-    // Fallback: if no audio_urls (known issue: query_result may return empty data),
-    // still mark completed so the client knows to proceed
-    const insertedOutputs: OutputWithUrl[] = [];
+  const insertedOutputs: OutputWithUrl[] = [];
 
-    if (audioUrls.length > 0) {
-      for (let i = 0; i < audioUrls.length; i++) {
-        const audioPath = audioUrls[i];
-        const wavR2Key = buildR2Key(jobId, i);
-        const mp3R2Key = buildR2Mp3Key(jobId, i);
+  for (let i = 0; i < backendJobIds.length; i++) {
+    const status = jobStatuses[i];
+    const backendJobId = backendJobIds[i];
 
-        try {
-          const audioBuffer = await fetchAudioBuffer(audioPath);
-          const detectedFormat = detectAudioFormat(audioBuffer);
+    if (status.status !== 'COMPLETED') continue;
 
-          // Upload original to R2 with correct content type
-          const originalContentType = detectedFormat === 'mp3' ? 'audio/mpeg' : 'audio/wav';
-          await uploadAudioToR2(wavR2Key, audioBuffer, originalContentType);
+    const mp3R2Key = buildR2Mp3Key(jobId, i);
 
-          // Generate MP3 at 320k (re-encode if already MP3, convert if WAV)
-          let mp3FileSizeBytes: number | null = null;
-          let mp3KeyStored: string | null = null;
+    try {
+      const mp3Buffer = await fetchAudioBuffer(backendJobId);
+      const mp3FileSizeBytes = mp3Buffer.byteLength;
 
-          try {
-            const mp3Buffer = await convertToMp3(audioBuffer);
-            mp3FileSizeBytes = mp3Buffer.byteLength;
-            await uploadAudioToR2(mp3R2Key, mp3Buffer, 'audio/mpeg');
-            mp3KeyStored = mp3R2Key;
-          } catch (mp3Error) {
-            const classified = classifyError(mp3Error);
-            console.error('[status] MP3 conversion failed (original-only fallback):', classified.technicalMessage, {
-              jobId,
-              variantIndex: i,
-              detectedFormat,
-            });
-          }
+      await uploadAudioToR2(mp3R2Key, mp3Buffer, 'audio/mpeg');
 
-          const [insertedOutput] = await db
-            .insert(outputs)
-            .values({
-              generationId: jobId,
-              variantIndex: i,
-              r2Key: wavR2Key,
-              mp3R2Key: mp3KeyStored,
-              mp3FileSizeBytes,
-            })
-            .returning();
+      const [insertedOutput] = await db
+        .insert(outputs)
+        .values({
+          generationId: jobId,
+          variantIndex: i,
+          r2Key: mp3R2Key,
+          mp3R2Key: mp3R2Key,
+          mp3FileSizeBytes,
+        })
+        .returning();
 
-          // Generate presigned URLs — separate playback (no Content-Disposition) from download
-          const playbackUrl = await getAudioPresignedUrl(mp3KeyStored ?? wavR2Key, 86400);
+      // Generate presigned URLs
+      const playbackUrl = await getAudioPresignedUrl(mp3R2Key, 86400);
 
-          const wavFilename = buildDownloadFilename(generation.promptText, i, 'wav');
-          const wavPresignedUrl = await getAudioPresignedUrl(wavR2Key, 86400, wavFilename);
+      const mp3Filename = buildDownloadFilename(generation.promptText, i, 'mp3');
+      const mp3PresignedUrl = await getAudioPresignedUrl(mp3R2Key, 86400, mp3Filename);
 
-          let mp3PresignedUrl: string | null = null;
-          if (mp3KeyStored) {
-            const mp3Filename = buildDownloadFilename(generation.promptText, i, 'mp3');
-            mp3PresignedUrl = await getAudioPresignedUrl(mp3KeyStored, 86400, mp3Filename);
-          }
-
-          insertedOutputs.push({
-            id: insertedOutput.id,
-            variantIndex: insertedOutput.variantIndex,
-            r2Key: insertedOutput.r2Key,
-            url: wavPresignedUrl,
-            mp3Url: mp3PresignedUrl,
-            playbackUrl,
-            mp3FileSizeBytes: insertedOutput.mp3FileSizeBytes,
-            createdAt: insertedOutput.createdAt,
-            promptText: generation.promptText,
-          });
-        } catch (rawError) {
-          const classified = classifyError(rawError);
-          console.error('[status] Failed to download/upload audio variant:', classified.technicalMessage, {
-            jobId,
-            variantIndex: i,
-            audioPath,
-          });
-          // Continue with remaining variants — partial success is still valuable
-        }
-      }
-    } else {
-      // query_result returned empty data — known ACE-Step behavior where audio is
-      // served via GET /v1/audio?path= but audio_urls is not returned in query_result.
-      // Mark as completed so the client knows the job finished. Audio retrieval
-      // requires the audio path which is not available here — log for investigation.
-      console.warn('[status] ACE-Step returned status=1 but no audio_urls in query_result data.', {
+      insertedOutputs.push({
+        id: insertedOutput.id,
+        variantIndex: insertedOutput.variantIndex,
+        r2Key: insertedOutput.r2Key,
+        url: mp3PresignedUrl,
+        mp3Url: mp3PresignedUrl,
+        playbackUrl,
+        mp3FileSizeBytes: insertedOutput.mp3FileSizeBytes,
+        createdAt: insertedOutput.createdAt,
+        promptText: generation.promptText,
+      });
+    } catch (rawError) {
+      const classified = classifyError(rawError);
+      console.error('[status] Failed to download/upload audio variant:', classified.technicalMessage, {
         jobId,
-        runpodJobId: generation.runpodJobId,
-        responseData: runpodStatus.data,
+        variantIndex: i,
+        backendJobId,
       });
     }
-
-    // Update generation to completed
-    try {
-      await db
-        .update(generations)
-        .set({
-          status: 'completed',
-          completedAt: new Date(),
-        })
-        .where(eq(generations.id, jobId));
-    } catch (dbError) {
-      console.error('[status] Failed to update generation to completed state:', dbError, { jobId });
-    }
-
-    return NextResponse.json({
-      jobId,
-      status: 'completed',
-      startedAt: generation.startedAt,
-      completedAt: new Date(),
-      failedAt: null,
-      outputs: insertedOutputs,
-      error: null,
-    });
   }
 
-  // Status = 0: still running — update to 'processing' if currently 'pending'
-  if (generation.status === 'pending') {
-    try {
-      await db
-        .update(generations)
-        .set({ status: 'processing' })
-        .where(eq(generations.id, jobId));
-    } catch (dbError) {
-      console.error('[status] Failed to update generation to processing state:', dbError, { jobId });
-    }
+  // Update generation to completed
+  try {
+    await db
+      .update(generations)
+      .set({
+        status: 'completed',
+        completedAt: new Date(),
+      })
+      .where(eq(generations.id, jobId));
+  } catch (dbError) {
+    console.error('[status] Failed to update generation to completed state:', dbError, { jobId });
   }
 
   return NextResponse.json({
     jobId,
-    status: 'processing',
+    status: 'completed',
     startedAt: generation.startedAt,
-    completedAt: null,
+    completedAt: new Date(),
     failedAt: null,
-    outputs: [],
+    outputs: insertedOutputs,
     error: null,
   });
 }
@@ -333,24 +297,18 @@ async function buildOutputsWithUrls(
     let playbackUrl: string | null = null;
 
     if (generateUrls) {
-      // Playback URL — no Content-Disposition, prefer MP3 key if available
+      // Playback URL — no Content-Disposition, prefer MP3 key
       try {
         playbackUrl = await getAudioPresignedUrl(output.mp3R2Key ?? output.r2Key, 86400);
       } catch (err) {
         console.error('[status] Failed to generate playback presigned URL:', err, { r2Key: output.r2Key });
       }
 
-      try {
-        const wavFilename = buildDownloadFilename(promptText, output.variantIndex, 'wav');
-        url = await getAudioPresignedUrl(output.r2Key, 86400, wavFilename);
-      } catch (err) {
-        console.error('[status] Failed to generate WAV presigned URL:', err, { r2Key: output.r2Key });
-      }
-
       if (output.mp3R2Key) {
         try {
           const mp3Filename = buildDownloadFilename(promptText, output.variantIndex, 'mp3');
           mp3Url = await getAudioPresignedUrl(output.mp3R2Key, 86400, mp3Filename);
+          url = mp3Url; // Both point to MP3 now
         } catch (err) {
           console.error('[status] Failed to generate MP3 presigned URL:', err, { mp3R2Key: output.mp3R2Key });
         }

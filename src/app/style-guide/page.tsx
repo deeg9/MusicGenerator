@@ -233,7 +233,7 @@ export default function StyleGuidePage() {
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">Body default — text-base / font-normal</p>
                 <p className="font-sans text-base text-foreground max-w-prose">
-                  MusicGenerator uses HeartMuLa, an open-source music model, to produce 30-second
+                  Notera uses HeartMuLa, an open-source music model, to produce 30-second
                   tracks from a text prompt. Tracks are stored in Cloudflare R2 and streamed via
                   a presigned URL.
                 </p>

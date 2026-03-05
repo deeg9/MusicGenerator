@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useGenerationStatus } from '@/hooks/useGenerationStatus';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { VariantCard } from './VariantCard';
 import { EnhancedCaptionDisplay } from './EnhancedCaptionDisplay';
 
@@ -12,37 +13,44 @@ interface GenerationResultsProps {
 
 export function GenerationResults({ jobId, enhancedCaption }: GenerationResultsProps) {
   const { data } = useGenerationStatus(jobId);
-  const [activeVariantId, setActiveVariantId] = useState<string | null>(null);
-
-  // Reset active variant when jobId changes (new generation)
-  useEffect(() => {
-    setActiveVariantId(null);
-  }, [jobId]);
+  const reducedMotion = useReducedMotion();
 
   if (!jobId || data?.status !== 'completed') return null;
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Enhanced caption — always shown once available */}
       {enhancedCaption && <EnhancedCaptionDisplay caption={enhancedCaption} />}
 
-      {/* Completed — show variant cards */}
-      <div className="grid grid-cols-1 gap-4">
+      <motion.div
+        className="grid grid-cols-1 gap-4"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: {},
+          visible: { transition: { staggerChildren: reducedMotion ? 0 : 0.1 } },
+        }}
+      >
         {data.outputs.map((output) => (
-          <VariantCard
+          <motion.div
             key={output.id}
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              visible: { opacity: 1, y: 0 },
+            }}
+            transition={{ duration: reducedMotion ? 0 : 0.3 }}
+          >
+          <VariantCard
             variantIndex={output.variantIndex}
             playbackUrl={output.playbackUrl}
             mp3Url={output.mp3Url}
             wavUrl={output.url}
-            isActive={activeVariantId === output.id}
-            onPlay={() => setActiveVariantId(output.id)}
             mp3FileSizeBytes={output.mp3FileSizeBytes}
             duration={output.duration}
             promptText={output.promptText}
           />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }

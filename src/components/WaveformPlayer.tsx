@@ -10,6 +10,8 @@ interface WaveformPlayerProps {
   url: string;
   isActive: boolean;
   onPlay: () => void;
+  mode?: 'interactive' | 'visual-only';
+  onRequestPlay?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -19,7 +21,7 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
+export function WaveformPlayer({ url, isActive, onPlay, mode = 'interactive', onRequestPlay }: WaveformPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -27,6 +29,8 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
   const [isReady, setIsReady] = useState(false);
   const [hasError, setHasError] = useState(false);
   const { resolvedTheme } = useTheme();
+
+  const isVisualOnly = mode === 'visual-only';
 
   const { wavesurfer } = useWavesurfer({
     container: containerRef,
@@ -37,9 +41,10 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
     barGap: 1,
     barRadius: 2,
     height: 64,
-    interact: true,
+    interact: !isVisualOnly,
     normalize: true,
     fillParent: true,
+    ...(isVisualOnly ? { backend: 'WebAudio' as const, media: undefined } : {}),
   });
 
   // Wire up wavesurfer events
@@ -49,9 +54,11 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
     const onReady = () => {
       setIsReady(true);
       setDuration(wavesurfer.getDuration());
+      // Mute in visual-only mode to avoid double audio
+      if (isVisualOnly) wavesurfer.setVolume(0);
     };
 
-    const onPlay = () => setIsPlaying(true);
+    const onPlayEvt = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
     const onTimeUpdate = () => setCurrentTime(wavesurfer.getCurrentTime());
     const onError = () => {
@@ -64,7 +71,7 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
     };
 
     wavesurfer.on('ready', onReady);
-    wavesurfer.on('play', onPlay);
+    wavesurfer.on('play', onPlayEvt);
     wavesurfer.on('pause', onPause);
     wavesurfer.on('timeupdate', onTimeUpdate);
     wavesurfer.on('error', onError);
@@ -72,17 +79,15 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
 
     return () => {
       wavesurfer.un('ready', onReady);
-      wavesurfer.un('play', onPlay);
+      wavesurfer.un('play', onPlayEvt);
       wavesurfer.un('pause', onPause);
       wavesurfer.un('timeupdate', onTimeUpdate);
       wavesurfer.un('error', onError);
       wavesurfer.un('finish', onFinish);
     };
-  }, [wavesurfer]);
+  }, [wavesurfer, isVisualOnly]);
 
-  // Theme sync: update waveform colors on mount and when resolvedTheme changes.
-  // Uses setOptions() imperatively to avoid destroy/recreate cycle (which would
-  // interrupt playback). getCssColorAsHex reads the live CSS custom property values.
+  // Theme sync
   useEffect(() => {
     if (!wavesurfer || !containerRef.current) return;
     const el = containerRef.current;
@@ -92,20 +97,24 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
     });
   }, [wavesurfer, resolvedTheme]);
 
-  // Auto-pause when another variant becomes active
+  // Auto-pause when another variant becomes active (interactive mode only)
   useEffect(() => {
-    if (!isActive && isPlaying && wavesurfer) {
+    if (!isActive && isPlaying && wavesurfer && !isVisualOnly) {
       wavesurfer.pause();
     }
-  }, [isActive, isPlaying, wavesurfer]);
+  }, [isActive, isPlaying, wavesurfer, isVisualOnly]);
 
   const handlePlayPause = useCallback(() => {
+    if (isVisualOnly) {
+      onRequestPlay?.();
+      return;
+    }
     if (!wavesurfer || !isReady || hasError) return;
     if (!isPlaying) {
-      onPlay(); // Notify parent so other variants pause
+      onPlay();
     }
     wavesurfer.playPause();
-  }, [wavesurfer, isReady, hasError, isPlaying, onPlay]);
+  }, [wavesurfer, isReady, hasError, isPlaying, onPlay, isVisualOnly, onRequestPlay]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -117,7 +126,7 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
           aria-label={isPlaying ? 'Pause' : 'Play'}
           className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isPlaying ? (
+          {isPlaying && !isVisualOnly ? (
             <Pause className="h-4 w-4" />
           ) : (
             <Play className="h-4 w-4 translate-x-0.5" />
