@@ -1,168 +1,142 @@
 # Stack Research
 
-**Domain:** AI music generation SaaS (text-to-music, credits, payments)
-**Researched:** 2026-03-03
-**Confidence:** MEDIUM-HIGH (core stack HIGH, ACE-Step API details MEDIUM — derived from DeepWiki/API.md, not live testing)
+**Domain:** Design tokens system, brand kit, component showcase, new UI components (Next.js + Tailwind v4)
+**Researched:** 2026-03-05
+**Confidence:** HIGH (Tailwind v4 token system verified against official docs; component models verified against official sites; next-themes confirmed compatible)
 
 ---
 
-## Recommended Stack
+## Context: What Already Exists (Do Not Re-add)
+
+The v1.0 stack is fully operational. This research covers ONLY new additions needed for the v1.1 brand redesign milestone.
+
+| Already In Place | Version | Notes |
+|------------------|---------|-------|
+| Next.js | 16.1.6 | App Router, no changes needed |
+| React | 19.2.3 | No changes needed |
+| Tailwind CSS | ^4 | CSS-first config already in globals.css |
+| Framer Motion | ^12.35.0 | Already installed — fancycomponents typewriter uses this |
+| lucide-react | ^0.577.0 | Already installed — spectrum-ui footer uses this |
+| TypeScript | ^5 | No changes needed |
+
+---
+
+## Recommended Stack — New Additions Only
 
 ### Core Technologies
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Next.js | 15.5.x (stable) | Full-stack React framework | App Router gives you React Server Components, Server Actions, and API Routes in one repo. SSR benefits SEO for landing page. Next.js 16 exists but is very new (Oct 2025) — stay on 15.5.x for stability. |
-| React | 19.2 | UI component model | Ships with Next.js 15. Server Components reduce client JS bundle. Stable as of Oct 2025. |
-| TypeScript | 5.x (bundled) | Type safety across stack | Catch payload shape mismatches with ACE-Step API at compile time, not runtime. |
-| Tailwind CSS | 4.x | Utility-first styling | Bundled in Next.js 16 scaffolding and works well with 15.x. v4 is faster and CSS-first (no tailwind.config.js required). Compatible with Next.js 15. |
-| Supabase | hosted (free/pro) | PostgreSQL database + Auth (backup) | Managed Postgres with generous free tier (500 MB DB, 50K MAU). Provides both database and optional auth. Prefer Clerk for auth but Supabase for the database layer. |
-| Clerk | @clerk/nextjs ^6.x | Authentication | Best-in-class Next.js App Router support, pre-built components, handles sessions, middleware, and server-side auth helpers. Free up to 10K MAU — more than enough for prototype phase. |
-| Drizzle ORM | drizzle-orm ^0.45.x | Database access layer | Lightweight (~7 KB), TypeScript-first, zero binary dependencies (no Prisma engine). Pairs cleanly with Supabase Postgres via the `postgres` driver. SQL-like API makes credit deduction queries readable and auditable. |
-| Stripe | stripe ^20.x | Payment processing | Industry standard for SaaS subscriptions + one-time purchases. Handles SCA, tax, retries, and invoices. `stripe` (server SDK) + `@stripe/stripe-js` (client). |
+| next-themes | ^0.4.6 | Light/dark mode toggle with no flash | The project currently uses `prefers-color-scheme` media query only — no user-toggled theme switching. next-themes wraps the app with a ThemeProvider, writes a class or data attribute to `<html>`, and uses a script injection technique to prevent flash-of-unstyled-content (FOUC) on hydration. Works with Next.js App Router via a "use client" wrapper. Required for the `/style-guide` page to demonstrate both modes. |
+| clsx | ^2.x | Conditional class name joining | The spectrum-ui footer and any custom components need conditional class logic. clsx handles arrays, objects, and conditionals cleanly. Already expected by shadcn-style component patterns. |
+| tailwind-merge | ^3.x | Tailwind class conflict resolution | When passing className overrides to components (e.g., `<Button className="bg-red-500">`), tailwind-merge prevents duplicate/conflicting Tailwind utilities from both sides. Required for the `cn()` utility function that shadcn-style components use. |
 
-### Supporting Libraries
+### Component Sources (Copy-Paste, Not npm Packages)
+
+These are NOT npm packages. They are copy-paste components. Their dependencies (Framer Motion, lucide-react) are already installed.
+
+| Component | Source | Model | Dependencies Already Present |
+|-----------|--------|-------|------------------------------|
+| Typewriter | fancycomponents.dev — danielpetho | CLI or manual copy (`pnpm dlx shadcn add @fancy/typewriter`) | framer-motion ^12 (installed) |
+| Stacked Circular Footer | ui.spectrumhq.in/docs/footer | Manual copy into `src/components/` | lucide-react (installed), shadcn-style Button/Input/Label |
+
+**Key insight on the footer:** The spectrum-ui footer imports `@/components/ui/button`, `@/components/ui/input`, and `@/components/ui/label`. These are shadcn-style primitives. Since this project does NOT have shadcn installed, these need to be either: (a) manually copied from ui.shadcn.com as standalone files, or (b) written from scratch as simple wrappers. The primitives themselves are trivial — Button is ~50 lines, Input and Label are ~20 lines each. No Radix UI dependency is required for these three basic components.
+
+### Supporting Utilities
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| wavesurfer.js | ^7.11.x | Audio waveform visualization + playback | The player UI for song preview. v7 ships a React wrapper (`@wavesurfer/react`). Renders into Shadow DOM — style via `::part()`. Use instead of raw `<audio>` for visual waveform. |
-| @wavesurfer/react | ^1.0.x | React component wrapper for wavesurfer.js | Use this instead of manually instantiating wavesurfer. Turns wavesurfer options into React props. Memo the plugins array (required, or renders will error). |
-| Zustand | ^5.x | Lightweight client state | Track generation job state (polling status, task_id, audio URL) on the client. Much lighter than Redux for this simple use case. |
-| @stripe/stripe-js | ^5.x | Stripe client-side SDK | Required to redirect to Stripe Checkout from browser. Load via `loadStripe()` — never put secret key on client. |
-| swr or react-query | swr ^3.x | Polling / data fetching | Poll the ACE-Step `/query_result` endpoint on an interval until status = 1 (success). SWR's `refreshInterval` option makes this trivial. Lighter than react-query for this narrow use case. |
-| zod | ^3.x | Schema validation | Validate ACE-Step request payloads and Stripe webhook bodies before processing. Prevents bad data from reaching the GPU. |
-| @upstash/ratelimit (optional) | ^2.x | Rate limiting credits | If you want server-side rate limiting on generation route without a Redis instance, Upstash provides serverless Redis. Defer unless abuse becomes a real problem at prototype scale. |
-
-### Development Tools
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| drizzle-kit | Database migrations | `npx drizzle-kit generate` + `npx drizzle-kit migrate`. Use push for local dev, migrations for production. |
-| Stripe CLI | Local webhook testing | `stripe listen --forward-to localhost:3000/api/webhooks/stripe` — required to test subscription events locally without ngrok. |
-| ngrok (optional) | Expose local server for ACE-Step testing | Only needed if testing ACE-Step running on local GPU against hosted Next.js. Defer to RunPod deployment setup. |
+| clsx | ^2.1.x | Class name conditionals | Use in every component that accepts a `className` prop or has conditional state classes |
+| tailwind-merge | ^3.x | Merge Tailwind utilities without conflicts | Use in the `cn()` utility function: `twMerge(clsx(inputs))` — this pattern is standard across all shadcn-style components |
 
 ---
 
-## ACE-Step REST API Integration
+## Design Token Architecture
 
-This is the critical external integration point. Document it explicitly to avoid guessing during implementation.
+The existing `globals.css` already implements the correct Tailwind v4 pattern: CSS custom properties in `:root` (and a dark media query override), mapped into Tailwind via `@theme inline`. This is the right approach and requires no new tooling.
 
-### API Base URL
-```
-http://<RUNPOD_HOST>:8001
-```
-Set via environment variable: `ACESTEP_API_URL` and `ACESTEP_API_KEY`.
+**What the brand redesign changes — not the mechanism, only the values:**
 
-### Auth Header
-```
-Authorization: Bearer <ACESTEP_API_KEY>
-```
+```css
+/* Current structure (correct — keep this) */
+:root {
+  --background: hsl(...);
+  --primary: hsl(...);
+  /* etc. */
+}
 
-### Text-to-Music Flow
+@media (prefers-color-scheme: dark) {
+  :root { /* dark overrides */ }
+}
 
-**Step 1 — Submit job:**
-```http
-POST /release_task
-Content-Type: application/json
-Authorization: Bearer <key>
-
-{
-  "prompt": "upbeat jazz birthday song, trumpet, piano",
-  "lyrics": "[verse]\nHappy birthday...",
-  "audio_duration": 30,
-  "inference_steps": 8,
-  "model": "turbo",
-  "guidance_scale": 7.5,
-  "seed": -1
+@theme inline {
+  --color-background: var(--background);
+  /* maps CSS vars → Tailwind utilities */
 }
 ```
 
-**Step 2 — Receive task_id:**
-```json
-{
-  "data": { "task_id": "abc-123" },
-  "code": 200,
-  "error": null
+**With next-themes, the dark media query changes to a class selector:**
+
+```css
+/* Replace media query with .dark class for next-themes compatibility */
+:root { /* light values */ }
+
+.dark {
+  --background: hsl(...);
+  /* dark overrides */
 }
+
+/* In globals.css, tell Tailwind v4 how to detect dark mode */
+@custom-variant dark (&:where(.dark, .dark *));
 ```
 
-**Step 3 — Poll until complete (status = 1):**
-```http
-POST /query_result
-Content-Type: application/json
+This is the only structural change to `globals.css` needed. The `@theme inline` block stays exactly as-is. All existing `bg-background`, `text-foreground` etc. utility classes continue working unchanged.
 
-{ "task_id_list": ["abc-123"] }
-```
+**Token categories to update with new brand values (no new tooling):**
 
-Response status values:
-- `0` = queued / processing
-- `1` = succeeded (audio_url present)
-- `2` = failed
-
-**Step 4 — Download audio:**
-```
-GET /v1/audio?path=<audio_url_from_result>
-```
-
-### Key Constraints
-- ACE-Step API requires `workers=1` — only one uvicorn worker process. Multiple workers corrupt the in-memory job queue.
-- Generation on turbo variant: ~8-15 seconds on RTX 4090. Budget 30 seconds polling timeout on client.
-- RunPod cold start adds ~20-60 seconds on first request if using serverless (not persistent pod).
-
----
-
-## Deployment Architecture
-
-### Next.js App — Vercel
-Deploy Next.js to Vercel. Free tier covers prototype volume. API Routes and Server Actions run as edge/serverless functions.
-
-### ACE-Step API — RunPod
-Two options depending on cost tolerance:
-
-**Option A: RunPod Persistent Pod (recommended for prototype)**
-- RTX 4090 at ~$0.59/hr on-demand
-- Start/stop manually between dev sessions
-- No cold start penalty — API is always warm when pod is running
-- Simple Docker container: `acestep-api` process bound to port 8001
-- Expose via RunPod's public URL feature
-
-**Option B: RunPod Serverless (recommended for production)**
-- Pay-per-second billing, scales to zero when idle
-- Cold starts of 20-60s on first request (significant UX issue for music generation)
-- Better for bursty unpredictable traffic
-- Requires worker image with model weights pre-baked
-
-**Prototype decision: Use Persistent Pod.** Stop it when not in use. Cold start UX is unacceptable for demo.
+| Category | Current State | What Changes |
+|----------|--------------|--------------|
+| Colors | Generic blue/yellow placeholders | Warm brand palette (baby blue, sunny yellow, soft whites, coral) |
+| Typography | DM Sans + Libre Baskerville (already in layout.tsx fonts) | Font weights, sizes — possibly add display variant |
+| Spacing | Not yet tokenized | Add `--spacing-*` tokens if needed for component-specific padding |
+| Radii | `--radius-sm/md/lg/xl` already exist | Values may need adjustment for warm/rounded aesthetic |
+| Shadows | Not yet in tokens | Add `--shadow-card`, `--shadow-button` for the warm aesthetic |
+| Animations | `eq-bar` and `wave` exist | Add typewriter cursor animation token if needed |
 
 ---
 
 ## Installation
 
 ```bash
-# Core framework
-npx create-next-app@latest musicgen --typescript --tailwind --app --src-dir
+# New npm dependencies (3 packages)
+npm install next-themes clsx tailwind-merge
 
-# Auth
-npm install @clerk/nextjs
+# No new dev dependencies needed
+# fancycomponents typewriter and spectrum-ui footer are copy-paste — no npm install
+```
 
-# Database ORM
-npm install drizzle-orm postgres
-npm install -D drizzle-kit
+---
 
-# Payments
-npm install stripe @stripe/stripe-js
+## File Structure for New Brand Additions
 
-# Audio player
-npm install wavesurfer.js @wavesurfer/react
-
-# Client state + data fetching
-npm install zustand swr
-
-# Validation
-npm install zod
-
-# Dev tools
-npm install -D stripe  # Stripe CLI is installed separately via brew/apt
+```
+src/
+  app/
+    globals.css              # Update: replace media query with .dark, add @custom-variant
+    layout.tsx               # Update: wrap with ThemeProvider from next-themes
+    style-guide/
+      page.tsx               # New: dev page showing all tokens and components
+  components/
+    ui/
+      button.tsx             # New: minimal shadcn-style Button (for footer compatibility)
+      input.tsx              # New: minimal shadcn-style Input (for footer compatibility)
+      label.tsx              # New: minimal shadcn-style Label (for footer compatibility)
+    brand/
+      typewriter.tsx         # New: fancycomponents typewriter (copy from fancycomponents.dev)
+      footer.tsx             # New: spectrum-ui stacked circular footer (adapted)
+    theme-provider.tsx       # New: next-themes ThemeProvider wrapper ("use client")
+  lib/
+    utils.ts                 # New: cn() utility function (clsx + tailwind-merge)
 ```
 
 ---
@@ -171,14 +145,12 @@ npm install -D stripe  # Stripe CLI is installed separately via brew/apt
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Clerk | NextAuth.js (Auth.js) | When you need full data ownership, already have a database auth setup, or have >10K MAU on free tier and want to avoid Clerk costs scaling |
-| Clerk | Supabase Auth | When you're using Supabase for everything and want one vendor — acceptable, but Clerk's Next.js DX is significantly better |
-| Supabase Postgres | Neon | Neon is marginally cheaper for true serverless but had a 5.5-hour outage in May 2025 and was acquired by Databricks — avoid for prototypes where reliability matters more than cost |
-| Drizzle ORM | Prisma | When you want automated schema migration tooling and don't care about bundle size. Prisma's generated client is ~300 KB vs Drizzle's ~7 KB — matters on Vercel cold starts |
-| SWR (polling) | WebSocket / SSE | When you need real-time push updates for many concurrent jobs. For v1 with 5-10 users, polling every 2 seconds is fine |
-| wavesurfer.js | Howler.js | When you only need audio playback without waveform visualization. Howler is 7 KB vs wavesurfer's ~50 KB. Use Howler if you drop the waveform UI |
-| Vercel | Railway / Fly.io | When you need persistent server state (e.g., in-process job queue). Next.js on Vercel is stateless by design — fine here since ACE-Step handles its own queue |
-| RunPod Persistent Pod | Modal / Replicate | Modal has cleaner Python SDK and better cold start handling. Replicate bills per second with no infra management. Switch to Replicate/Modal if RunPod operational overhead becomes a burden |
+| next-themes | Manual cookie-based theme toggle | When you need SSR-rendered theme without any client-side flash AND want zero dependencies. Significantly more implementation work — not worth it here. |
+| next-themes | `prefers-color-scheme` only (current approach) | When you never want a user toggle. The PROJECT.md specifies light + dark mode support with user control, so media-query-only is insufficient. |
+| CSS custom properties in globals.css (current approach) | Style Dictionary / Token Studio | When you have a dedicated design team managing tokens in Figma and need a build pipeline from design tool → code. Overkill for a solo/small team project — the CSS approach is the correct Tailwind v4 native pattern. |
+| clsx + tailwind-merge (`cn()`) | `classnames` package | classnames is older (lacks TypeScript-first DX), doesn't resolve Tailwind conflicts. tailwind-merge is the correct choice for Tailwind projects. |
+| Copy-paste from fancycomponents.dev | `fancy-components` npm package (v0.0.23) | The npm package is 3 years old and unmaintained. The fancycomponents.dev site (danielpetho's current work) uses a shadcn CLI pattern — copy the source code, own it in your repo. |
+| Minimal hand-rolled shadcn primitives (Button/Input/Label) | Full shadcn/ui init | Full shadcn init would add `components.json`, Radix UI dependencies, and rebuild the entire component system. The spectrum-ui footer only needs 3 trivial components — writing them directly is simpler and keeps the codebase lean. |
 
 ---
 
@@ -186,40 +158,11 @@ npm install -D stripe  # Stripe CLI is installed separately via brew/apt
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `react-player` | Adds YouTube/Vimeo support you don't need, large bundle, no waveform visualization | wavesurfer.js or Howler.js |
-| `next-auth` (v4) | Legacy API, being replaced by Auth.js v5 which is still beta. Confusing versioning and naming | Clerk for new projects |
-| Prisma | Binary engine adds ~300 KB to serverless function cold start and requires separate migration binary | Drizzle ORM |
-| Stripe Metered Billing API | Complex setup for variable usage billing — unnecessary overhead | Pre-paid credit system stored in your DB, deducted per generation |
-| Redux / Redux Toolkit | Far too heavy for managing generation job state across 2-3 components | Zustand |
-| `pg` (node-postgres) directly | Verbose, no type safety on queries, more boilerplate | Drizzle ORM with `postgres` driver |
-| RunPod Serverless for prototype | Cold starts ruin the music generation UX (20-60s before generation even starts) | RunPod Persistent Pod during prototype |
-| Edge Runtime for webhook handler | Stripe webhook signature verification requires `crypto` — not available on all edge runtimes. Use Node.js runtime for `/api/webhooks/stripe` | Next.js API Route with `runtime = 'nodejs'` |
-
----
-
-## Stack Patterns by Variant
-
-**Credit system — pre-paid credits (recommended):**
-- Store `credits_remaining` on the user row in Postgres
-- Deduct atomically in a DB transaction when generation is submitted (not when it completes — prevents double-spend on retry)
-- On failed generation, refund the credit in the same transaction
-- Use Stripe one-time payment (Checkout, mode: "payment") to top up credits, not subscriptions
-- Stripe webhook `checkout.session.completed` → increment user credits in DB
-
-**Credit system — subscriptions (alternative, more complex):**
-- User has a subscription tier (free/pro/creator) with monthly credit refill
-- Requires Stripe webhook handling for `customer.subscription.updated`, `invoice.paid`, `customer.subscription.deleted`
-- More profitable long-term but significantly more Stripe/DB complexity for v1
-- **Defer to v2** unless freemium credit refill is confirmed as core v1 requirement
-
-**If ACE-Step API is behind a VPN/private network:**
-- Add `ACESTEP_API_URL` as a server-side env var only (never expose to client)
-- All generation calls go through a Next.js API Route or Server Action — client never calls ACE-Step directly
-
-**If generation queue grows beyond single RunPod pod:**
-- Switch ACE-Step from persistent pod to serverless workers
-- Add a Redis-backed queue (Upstash) in front to buffer requests
-- Not needed at prototype scale — design for it, don't build it yet
+| `fancy-components` npm package (npm.js) | Last published 3 years ago (v0.0.23), abandoned. Different from fancycomponents.dev. | Copy from fancycomponents.dev via `pnpm dlx shadcn add @fancy/typewriter` or manual copy |
+| Full `shadcn init` / `components.json` | This project doesn't need the full shadcn system — adds Radix UI, a components.json config, and rebuilds things already working. The only shadcn-style things needed are 3 tiny primitives for the footer. | Hand-roll Button, Input, Label as minimal wrappers using `cn()` |
+| `@apply` for design token classes | Tailwind v4 docs explicitly recommend against `@apply`. It makes CSS harder to debug and doesn't get IDE support. | Use `var(--token-name)` in custom CSS, or Tailwind utility classes directly in JSX |
+| Storybook | Full Storybook setup is ~5 MB of dev dependencies and requires separate server. The `/style-guide` page is a Next.js page — faster to build and zero overhead. | `/style-guide` page in the app itself |
+| CSS Modules for design tokens | Tokens defined in CSS Modules are scoped and can't be reused globally or accessed via `var()` in Tailwind. | CSS custom properties in `globals.css` (current approach — correct) |
 
 ---
 
@@ -227,56 +170,79 @@ npm install -D stripe  # Stripe CLI is installed separately via brew/apt
 
 | Package | Compatible With | Notes |
 |---------|-----------------|-------|
-| Next.js 15.5.x | React 19.2, Tailwind CSS 4.x | Next.js 15 requires React 19 peer dependency |
-| @clerk/nextjs 6.x | Next.js 15 App Router | Clerk v6 dropped Pages Router support — App Router only |
-| drizzle-orm 0.45.x | postgres driver ^3.x | Use `postgres` (not `pg`) for best TypeScript inference with Drizzle |
-| wavesurfer.js 7.x | @wavesurfer/react 1.0.x | v7 breaks shadow DOM styling from v6 — use `::part()` selector for custom styles |
-| stripe 20.x | Node.js 18+ | stripe v20 requires Node 18 minimum — Vercel uses Node 20 by default |
-| Tailwind CSS 4.x | Next.js 15.x | v4 uses CSS-first config (`@import "tailwindcss"` in globals.css, no tailwind.config.js required) |
+| next-themes ^0.4.6 | Next.js 16, App Router, React 19 | Wrap in a "use client" ThemeProvider component — server components cannot use context. FOUC prevention script works in App Router via `suppressHydrationWarning` on `<html>`. |
+| tailwind-merge ^3.x | Tailwind CSS v4 | tailwind-merge v3 adds Tailwind v4 support. Do NOT use tailwind-merge v2 with Tailwind v4 — it doesn't understand v4's CSS variable-based color system and will incorrectly merge/drop classes. |
+| clsx ^2.x | React 19, TypeScript 5 | No compatibility concerns. Pure utility. |
+| fancycomponents typewriter | framer-motion ^12.35.0 (installed) | Framer Motion is already v12.35.0 in this project — no version conflict. Component uses standard motion APIs. |
+| spectrum-ui footer | lucide-react ^0.577.0 (installed) | lucide-react is already installed. Footer imports Facebook, Instagram, Linkedin, Twitter icons — all present in v0.577.0. |
 
 ---
 
-## Environment Variables
+## Integration Pattern: next-themes with Tailwind v4
 
-```bash
-# ACE-Step GPU API
-ACESTEP_API_URL=https://<runpod-pod-id>-8001.proxy.runpod.net
-ACESTEP_API_KEY=sk-your-secret-key
+The current `globals.css` uses `@media (prefers-color-scheme: dark)` for dark mode. next-themes needs a class-based toggle instead. The migration is three steps:
 
-# Clerk Auth
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+**Step 1 — globals.css:** Replace the media query with a `.dark` class selector, add the Tailwind v4 custom variant.
 
-# Database (Supabase connection pooler URL)
-DATABASE_URL=postgresql://postgres:[password]@[pooler-host]:6543/postgres
+```css
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
-# Stripe
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+:root {
+  /* light tokens */
+}
+
+.dark {
+  /* dark tokens — same variables, different values */
+}
+
+@theme inline {
+  /* unchanged — this block stays exactly as-is */
+}
 ```
+
+**Step 2 — ThemeProvider wrapper:**
+
+```tsx
+// src/components/theme-provider.tsx
+"use client";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+export function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+}
+```
+
+**Step 3 — layout.tsx:**
+
+```tsx
+// Wrap children in ThemeProvider
+<html lang="en" suppressHydrationWarning>
+  <body>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      {children}
+    </ThemeProvider>
+  </body>
+</html>
+```
+
+`suppressHydrationWarning` on `<html>` is required — next-themes modifies the class attribute server-side vs client-side, which causes a React hydration warning without it.
 
 ---
 
 ## Sources
 
-- DeepWiki ACE-Step 1.5 (indexed 2026-02-03) — API architecture, endpoint overview, job model: https://deepwiki.com/ace-step/ACE-Step-1.5/7-configuration-and-deployment
-- ACE-Step GitHub API.md (raw, current) — endpoint reference, payload fields, response schema, polling flow: https://github.com/ace-step/ACE-Step-1.5
-- Next.js releases (Releasebot, 2026-02-04) — confirmed v15.5.12 as latest stable: https://releasebot.io/updates/vercel/next-js
-- React blog — v19.2 released Oct 2025, stable for production: https://react.dev/blog/2025/10/01/react-19-2
-- Tailwind CSS v4 release notes (Jan 2025) — CSS-first config, Next.js 15 compatible: https://tailwindcss.com/blog/tailwindcss-v4
-- Clerk pricing (verified current) — free up to 10K MAU, @clerk/nextjs v6.39.0: https://clerk.com/pricing
-- Supabase pricing (2026 sources) — 500 MB DB, 50K MAU free: https://supabase.com/pricing
-- Drizzle vs Prisma comparison (2026) — bundle size, serverless cold starts, Drizzle recommended for Next.js: https://orm.drizzle.team/
-- wavesurfer.js npm — v7.11.0 current, @wavesurfer/react 1.0.12: https://wavesurfer.xyz/
-- stripe npm — v20.4.0 current (published ~2026-02-25): https://www.npmjs.com/package/stripe
-- RunPod pricing — RTX 4090 at $0.59/hr on-demand, serverless pay-per-second: https://www.runpod.io/pricing
-- Stripe + Next.js 15 integration guide (Pedro Alonso, 2025): https://www.pedroalonso.net/blog/stripe-nextjs-complete-guide-2025/
-- Drizzle vs Prisma 2026 deep dive (Medium): https://medium.com/@codabu/drizzle-vs-prisma-choosing-the-right-typescript-orm-in-2026-deep-dive-63abb6aa882b
+- Tailwind CSS v4 official docs — `@theme`, `@custom-variant`, dark mode: https://tailwindcss.com/docs/dark-mode (HIGH confidence)
+- Tailwind CSS v4 theme variables — CSS-first token system: https://tailwindcss.com/docs/theme (HIGH confidence)
+- fancycomponents.dev installation guide — CLI method, Motion dependency confirmed: https://www.fancycomponents.dev/docs/installation (HIGH confidence, visited 2026-03-05)
+- fancycomponents.dev typewriter docs — props, usage, copy-paste model: https://www.fancycomponents.dev/docs/components/text/typewriter (HIGH confidence, visited 2026-03-05)
+- spectrum-ui footer docs — source code, lucide-react + shadcn primitives dependencies: https://ui.spectrumhq.in/docs/footer (HIGH confidence, visited 2026-03-05)
+- next-themes npm — v0.4.6 current, App Router compatible: https://www.npmjs.com/package/next-themes (HIGH confidence)
+- next-themes GitHub — suppressHydrationWarning pattern, data attribute vs class: https://github.com/pacocoursey/next-themes (HIGH confidence)
+- tailwind-merge npm — v3 adds Tailwind v4 support: https://www.npmjs.com/package/tailwind-merge (MEDIUM confidence — v3/v4 compatibility confirmed via community sources, not official changelog)
+- shadcn manual installation — cn() utility pattern, clsx + tailwind-merge: https://ui.shadcn.com/docs/installation/manual (HIGH confidence)
+- Tailwind CSS v4 dark mode with next-themes — @custom-variant pattern: https://iifx.dev/en/articles/456423217/solved-enabling-class-based-dark-mode-with-next-15-next-themes-and-tailwind-4 (MEDIUM confidence — community verified)
 
 ---
 
-*Stack research for: AI music generation SaaS (ACE-Step 1.5 + Next.js)*
-*Researched: 2026-03-03*
+*Stack research for: Brand kit, design tokens, new UI components (v1.1 milestone)*
+*Researched: 2026-03-05*

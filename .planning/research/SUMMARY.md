@@ -1,211 +1,203 @@
 # Project Research Summary
 
-**Project:** MusicGenerator
-**Domain:** AI Music Generation SaaS (text-to-music, credits, payments)
-**Researched:** 2026-03-03
-**Confidence:** MEDIUM-HIGH
+**Project:** MusicGenerator — v1.1 Brand Redesign
+**Domain:** Design system, brand kit, and light/dark theming for an AI music generation web app
+**Researched:** 2026-03-05
+**Confidence:** HIGH
 
 ## Executive Summary
 
-This is a GPU-backed generative AI SaaS product — a class of product with well-understood patterns from established competitors (Suno, Udio) and a specific integration challenge: wrapping ACE-Step 1.5's async REST API behind a credit-gated Next.js application. The recommended approach is a narrow, focused v1: text-to-music generation with custom lyrics, a credit-based freemium model, and a polling-based UI that handles the 10-60 second generation latency gracefully. The architecture is a BFF (Backend-for-Frontend) pattern where Next.js API routes are the sole intermediary between the browser and all backend services — RunPod GPU inference, Supabase Postgres, and Stripe. This keeps credentials server-side and enforces credit rules at the API layer.
+This milestone (v1.1) is a pure visual redesign of a fully functional AI music generation app onto a warm, inviting brand identity. The underlying infrastructure (Next.js 16, Tailwind v4, Framer Motion, wavesurfer.js, RunPod/ACE-Step backend) is already working. The research confirms that the recommended approach is a strict layer-first build order: token foundation before any component work, theme infrastructure before any dark mode work, and a living `/style-guide` page before the component redesign pass. Every component in the existing app needs to be audited for hardcoded Tailwind color classes and updated to semantic token utilities — this is a prerequisite for the redesign to hold.
 
-The highest risk in this stack is not the Next.js or Stripe integration — those are well-documented — but the ACE-Step 1.5 API layer running on RunPod. Two confirmed bugs (memory leak accumulating RAM across generations, audio distortion artifacts on rock/electronic genres) will affect production quality if not addressed during infrastructure setup. The RunPod deployment strategy (Persistent Pod for prototype, not Serverless) and the async polling architecture (never poll inside a Vercel function) are non-negotiable patterns established by the research. Get these right from day one.
+The core brand direction is validated: a warm cream + amber/golden + sky-blue palette positions the product distinctly against cold-dark competitors like Suno. Bricolage Grotesque (variable, Google Fonts) as the display typeface and Figtree as body copy are the recommended fonts — both free, both warm in character, both ready for `next/font/google` self-hosting. The architecture is a well-established three-tier token system (primitives → semantic → Tailwind bridge) that Tailwind v4 and shadcn/ui v4 fully support via `@theme inline` and `@custom-variant dark`.
 
-The feature scope for v1 is clear: clone the Suno user flow with dual-variant generation, waveform playback, MP3/WAV download, and a simple credit system with Stripe checkout. Defer song library, social features, stem extraction, and remix tools to v2+. The credit system must implement an atomic reservation pattern — deduct on submission and refund on failure — from the first commit, not as a later fix.
-
----
+The primary risks are well-understood and preventable: the Tailwind v4 border default change (`currentColor` instead of `gray-200`) silently breaks all card and input borders if not addressed first; the CSS variable format mismatch between shadcn v3 patterns and v4 `@theme inline` causes transparent backgrounds if not resolved upfront; and wavesurfer.js colors don't update on theme switch because the Shadow DOM doesn't inherit CSS variables — it requires a JavaScript re-init on `resolvedTheme` change. All three must be resolved in the Token Foundation phase before any visual component work begins.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack is a modern TypeScript-first Next.js monorepo. Next.js 15.5.x (stable, App Router) with React 19.2 provides SSR for the landing page and Server Actions for form handling. Clerk handles authentication (better Next.js App Router DX than NextAuth or Supabase Auth). Supabase provides the Postgres database accessed via Drizzle ORM — chosen for its 7KB bundle vs. Prisma's 300KB, which matters on Vercel serverless cold starts. Stripe handles payments via one-time credit purchase (Checkout, `mode: "payment"`) rather than complex subscription metering. wavesurfer.js with `@wavesurfer/react` renders the audio waveform player. SWR handles client-side polling of generation status.
-
-The ACE-Step API is a REST interface running on RunPod at `http://<pod>:8001`. The critical constraint: `workers=1` only — the in-memory job queue corrupts with multiple uvicorn workers. Generation flow is submit (`POST /release_task` → `task_id`) then poll (`POST /query_result` → status 0/1/2). Use RunPod Persistent Pod for prototype (RTX 4090, ~$0.59/hr, manually started) not RunPod Serverless (20-60s cold starts ruin UX).
+The v1.0 stack requires no version changes. Three new npm packages are needed: `next-themes` (^0.4.6) for user-controlled light/dark/system toggle without FOUC, `clsx` (^2.x) for conditional class logic, and `tailwind-merge` (^3.x — required for Tailwind v4 compatibility) for the `cn()` utility. Two UI components (fancycomponents.dev Typewriter and spectrum-ui Stacked Circular Footer) are copy-paste integrations, not npm packages — their dependencies (Framer Motion, lucide-react) are already installed. The `tailwind-merge` v2 → v3 distinction is critical: v2 does not understand Tailwind v4's CSS variable color system and will silently drop or incorrectly merge classes.
 
 **Core technologies:**
-- Next.js 15.5.x: Full-stack framework — SSR landing page, BFF API routes, App Router
-- Clerk @clerk/nextjs ^6.x: Authentication — best-in-class Next.js App Router support, free to 10K MAU
-- Supabase (hosted): Postgres database + Storage for audio files
-- Drizzle ORM ^0.45.x: Database access — TypeScript-first, 7KB bundle, SQL-like credit deduction queries
-- Stripe ^20.x: Payments — one-time credit packs via Checkout, webhook-driven credit grants
-- wavesurfer.js ^7.11.x + @wavesurfer/react: Audio waveform player component
-- Zustand ^5.x: Client state — generation job state (task_id, status, audio URL)
-- SWR ^3.x: Polling — `refreshInterval` for polling `/api/status/:jobId` every 2.5 seconds
-
-See `.planning/research/STACK.md` for full version compatibility table, alternatives considered, and environment variable reference.
+- `next-themes ^0.4.6`: User-toggled dark mode with no hydration flash — the only substantive new dependency
+- `clsx ^2.x`: Conditional class logic in components — standard shadcn/ui pattern
+- `tailwind-merge ^3.x`: Tailwind v4 class conflict resolution — must be v3, not v2
+- `Bricolage Grotesque` (Google Fonts, variable): Display/heading typeface — warm personality, free, variable weight
+- `Figtree` (Google Fonts): Body/UI copy — minimalist but warm, pairs naturally with Bricolage Grotesque
+- Fancycomponents Typewriter (copy-paste): Hero animated text — uses existing Framer Motion install
+- Spectrum-UI Stacked Circular Footer (copy-paste): Distinctive footer — uses existing lucide-react install
 
 ### Expected Features
 
-The Suno/Udio competitor analysis defines the standard user flow: landing page → sign up → generate (text prompt + optional lyrics) → loading state (10-60s) → 2 song variants with waveform player → download. Every feature in v1 should support this flow. Nothing else.
+**Must have (table stakes) — v1.1:**
+- Design token CSS vars (light + dark) — all semantic tokens defined before any component work
+- Typography setup — Bricolage Grotesque + Figtree via `next/font/google` in layout.tsx
+- Warm light-mode-first palette — cream/amber/sky-blue, OKLCH values
+- Warm dark mode — dark brown near-black, not cold slate-950 or pure black
+- Dark mode toggle — `next-themes` with system-preference default and user override
+- Primary CTA button redesign — amber background, 10px radius, hover/focus states
+- Card component redesign — 16px radius, warm shadow, hover lift
+- Generation form redesign — inputs, tag chips, submit button
+- Hero section redesign — Bricolage Grotesque headline, typewriter in brand color
+- Waveform player color theming — amber for progress bar (JS re-init on theme change)
+- Loading skeleton — shimmer animation in warm muted tones
+- `/style-guide` dev page — color swatches, type scale, all button/form/card variants, contrast audit
 
-**Must have (table stakes):**
-- Text prompt input (free-form description) — users expect Suno-style "type a vibe and get music"
-- Custom lyrics input with `[Verse]`/`[Chorus]` structure tags — core "personalized birthday song" differentiator
-- Genre/style tags in prompt — dramatically improves output quality; free-form chips, not dropdown
-- In-browser audio playback with waveform visualization — wavesurfer.js; plain `<audio>` feels low-quality
-- MP3 download for all users — core value delivery; without this the app has no lasting use
-- User auth (email + Google) — required for credits and commercial licensing
-- Credit balance display in header — users abandon when they don't know their remaining credits
-- Async generation loading state — 30-60s generation requires animated placeholder, not a spinner
-- Error state with credit non-charge confirmation — users must know credits weren't lost on failure
-- Free tier (no credit card required) — 10 credits/day, daily cron reset; without this Suno wins by default
-- Stripe checkout for paid credit purchase
+**Should have — v1.1.x (after validation):**
+- Micro-interaction polish — card hover lifts (Framer Motion `whileHover`), button bounce
+- Stacked circular footer — spectrum-ui component with brand tokens applied
+- Scribble SVG accent underlines — hero section key phrases
+- Spot illustrations — 1-2 custom SVGs for empty states
 
-**Should have (competitive):**
-- Dual variant generation (batch_size=2) — 2 cards per generation, user picks the winner; Suno does this
-- Instrumental toggle (empty lyrics or `[instrumental]` tag) — catches background music use case
-- Duration presets (Short ~1min / Standard ~2min / Full ~4min) — ACE-Step supports 10-600s; low effort
-- WAV download for paid tiers — meaningful tier differentiation, negligible technical effort
-- Commercial license for paid tiers (ToS only, no technical complexity)
-- Upgrade CTA when credits reach 0 or low threshold
-
-**Defer (v2+):**
-- Song library with persistent audio storage (requires S3/R2, CDN, doubles scope)
-- Remixing / repaint tools (ACE-Step base model only, requires audio segmentation UI)
-- Stem export (base model only, slower, niche use case)
-- Social features / explore feed (content moderation, legal exposure)
-- Native mobile apps (responsive web works on mobile; native is v2+)
-- LoRA style personalization (training pipeline, per-user model storage)
-- Admin dashboard (Stripe dashboard + direct DB access is sufficient at prototype scale)
-
-See `.planning/research/FEATURES.md` for the full feature prioritization matrix, credit system design, and competitor comparison table.
+**Defer — v2+:**
+- Custom icon set — high effort, Lucide is sufficient for v1
+- Figma design file / design-to-code sync — not worth the overhead until team scales
+- Brand animation system (Lottie) — significant effort, low current ROI
 
 ### Architecture Approach
 
-The architecture is a three-tier BFF pattern: React UI talks only to Next.js API routes, which talk to RunPod (GPU inference), Supabase (database + storage), and Stripe (payments). The browser never touches RunPod credentials, ACE-Step endpoints, or Supabase service keys. All credit enforcement and auth validation happens in the BFF layer.
+The design system follows a three-tier CSS architecture: `src/styles/tokens/primitives.css` holds raw brand palette values (OKLCH color scales, type scale, spacing), `src/styles/tokens/semantic.css` maps those primitives to purpose-driven tokens (`:root` for light, `.dark` for dark override), and `src/app/globals.css` bridges semantic tokens to Tailwind utility classes via `@theme inline`. This separation means brand palette changes touch only primitives, semantic meaning changes touch only semantic.css, and the Tailwind bridge remains stable. The `@custom-variant dark (&:where(.dark, .dark *))` directive in globals.css wires Tailwind's `dark:` prefix to next-themes' class-based switching on `<html>`.
 
 **Major components:**
-1. Next.js App (Vercel) — UI (React Server Components + Client Components), BFF API routes (`/api/generate`, `/api/status/:jobId`, `/api/download/:jobId`, `/api/stripe/webhook`)
-2. RunPod Persistent Pod — Docker container running ACE-Step 1.5 REST API on port 8001; Python handler wraps ACE-Step and returns audio as base64 or uploads to Supabase Storage
-3. Supabase Postgres (via Drizzle ORM) — `users` (credits, stripe_customer_id), `generations` (job tracking, storage_path), `credit_transactions` (append-only audit ledger)
-4. Supabase Storage — private bucket `audio-files`; audio stored by path; signed URLs generated per-request, never stored in DB
-5. Stripe — Checkout sessions for credit purchase; webhook at `/api/stripe/webhook` grants credits on `checkout.session.completed`
-6. Clerk — Middleware-based session auth; `getUser()` in API routes for validation
-
-**Key architectural patterns:**
-- **Client-side polling, never server-side:** Submit job → return `jobId` → frontend polls `/api/status/:jobId` every 2.5s. Never poll RunPod inside a Vercel function (hits 10s/60s timeout).
-- **Atomic credit deduction:** Single `UPDATE users SET credits = credits - 1 WHERE id = x AND credits >= 1`. Two-phase reservation: hold on submit, confirm on success, cancel on failure.
-- **Path-only storage:** Store `storage_path` in DB, never signed URLs. Generate fresh signed URLs per request.
-- **ACE-Step workers=1:** Single uvicorn worker; concurrent requests corrupt the in-memory job queue.
-
-See `.planning/research/ARCHITECTURE.md` for the full component diagram, database schema, build order dependency graph, and code patterns for each major flow.
+1. `src/styles/tokens/primitives.css` — raw OKLCH color scales, type scale, custom spacing values; never referenced directly in components
+2. `src/styles/tokens/semantic.css` — `:root` (light) + `.dark` (dark) semantic token blocks; the single source of truth for all component styling
+3. `src/app/globals.css` — `@import` chain + `@custom-variant dark` + `@theme inline` bridge; generates all Tailwind token utilities
+4. `src/lib/providers.tsx` — next-themes `ThemeProvider` wrapper (client component); wraps layout.tsx children
+5. `src/components/ui/theme-toggle.tsx` — toggle button using `useTheme()`; placed in navigation
+6. `src/app/style-guide/page.tsx` — living design reference; validates all tokens and components in both modes; gated from production
+7. Existing feature components — audited for hardcoded colors, then updated to consume semantic token utility classes
 
 ### Critical Pitfalls
 
-The research identified 10 pitfalls across infrastructure, payments, audio, and security. These 5 are the highest priority — they either cause data corruption, user-facing money loss, or silent production failures.
+1. **CSS variable format mismatch (transparent components)** — Any existing shadcn v3-style `--background: 0 0% 100%` (bare HSL channels) mixed with Tailwind v4's `@theme inline` (which expects full `hsl(0 0% 100%)` values) causes transparent or invisible component backgrounds. Convert all `:root` variables to full-value format before adding `@theme inline`. Detected via transparent card/button backgrounds in DevTools. Fix in Token Foundation phase.
 
-1. **ACE-Step memory leak kills workers after 2-3 generations** — Configure RunPod to restart workers after 1-2 jobs. Set max job retries low. Monitor RAM metrics per job. This is GitHub issue #142, confirmed open as of Feb 2026. Address in Infrastructure Setup phase before any user traffic.
+2. **Tailwind v4 border default breaks all borders** — Tailwind v4 changed `border` default from `gray-200` to `currentColor`. Every bare `border` class renders a dark/black outline matching text color. Audit for bare `border` classes before any globals.css changes; add `border border-border` everywhere or set `*, *::before, *::after { border-color: var(--border) }` globally. Fix in Token Foundation phase.
 
-2. **Credits deducted before generation confirms success** — Never do subtract-on-submit without a reservation. Implement a two-phase credit pattern: hold credits at submission, confirm on successful audio delivery, cancel/refund on failure. Set this up in the Credit System phase before any real money is involved.
+3. **Dark mode FOUC on hard refresh** — Without `suppressHydrationWarning` on `<html>` and correct next-themes config (`attribute="class"`, `enableSystem`, `disableTransitionOnChange`), dark-mode users see a full-brightness white flash on every page load. Configure ThemeProvider in Token Foundation phase before any color work.
 
-3. **Stripe webhook race condition: user sees Free tier after paying** — The Stripe Checkout redirect fires before the webhook arrives. Implement a `/api/billing/sync-checkout` endpoint that the success page calls first, querying Stripe directly for the session and updating the DB synchronously. Add webhook idempotency (store processed event IDs) in the same phase.
+4. **wavesurfer.js waveform colors don't update on theme switch** — The Shadow DOM doesn't inherit outer CSS variables. `waveColor: "var(--primary)"` has no effect. Read computed CSS variable values in JavaScript using `getComputedStyle`, and re-initialize wavesurfer when `resolvedTheme` changes by including it in the `useEffect` dependency array.
 
-4. **Vercel function timeout kills the generation polling loop** — Never poll RunPod inside a Next.js API route. Submit returns `jobId` immediately; the frontend handles polling. This is the most common architecture mistake and fails silently in production (works fine locally). Establish the async pattern from the first generation endpoint.
+5. **Hardcoded color classes survive token refactor** — Existing components use `bg-zinc-900`, `text-slate-400`, etc. These override the token system silently. Run grep audit for palette-specific classes before starting component restyling; replace all with semantic token equivalents (`bg-background`, `text-foreground`, etc.).
 
-5. **Signed URL expiry breaks downloads hours later** — Never store signed URLs in the DB. Store only `storage_path`. Generate fresh signed URLs at serve time. One-line fix if done from the start; painful migration if discovered later.
-
-See `.planning/research/PITFALLS.md` for the full pitfall list including audio distortion artifacts, WAV file size issues, free tier abuse patterns, and a "looks done but isn't" QA checklist.
-
----
+6. **Yellow/amber accent fails WCAG AA on light backgrounds** — Bright amber at high lightness (~65% OKLCH L) has ~1.1:1 contrast against white/cream — effectively invisible as text. Never use accent color as foreground text on light backgrounds. Use only as background fill with dark foreground text. Verify all token pairs at accessiblepalette.com before finalizing tokens.
 
 ## Implications for Roadmap
 
-Based on research, the architecture's build order dependency graph and pitfall-to-phase mapping combine to suggest this phase structure:
+Based on research, the wave structure from ARCHITECTURE.md maps cleanly to phases. The hard dependency chain is: tokens → theme infrastructure → style guide stub → component audit → component redesign → animation polish → footer completion. Nothing in the visual redesign can proceed correctly without the token foundation in place.
 
-### Phase 1: Infrastructure Foundation
-**Rationale:** Everything depends on auth, database, and the RunPod/ACE-Step integration. These have no UI dependencies but block all subsequent phases. The ACE-Step memory leak and Persistent Pod configuration must be resolved here before any application code is written against it.
-**Delivers:** Working Supabase project (schema + migrations), Clerk auth with middleware, RunPod Persistent Pod with ACE-Step running and tested, end-to-end generation verified via direct API call (no UI).
-**Addresses:** Text-to-music generation (ACE-Step `text2music` task), basic user auth
-**Avoids:** ACE-Step memory leak (configure worker restart policy here), RunPod TTL misconfiguration, ACE-Step `workers=1` constraint
+### Phase 1: Token Foundation + Theme Infrastructure
 
-### Phase 2: Generation API and Core UI
-**Rationale:** With infrastructure validated, the generation flow (BFF API routes + client polling) is the product core. This phase implements the async polling pattern correctly from day one — if done wrong here, it fails in production. Audio player comes with generation output.
-**Delivers:** `/api/generate` (auth guard + credit stub + RunPod dispatch), `/api/status/:jobId` (polling relay), generation UI with waveform player, MP3 download, async loading state with timer display
-**Addresses:** Text prompt input, custom lyrics, duration presets, instrumental toggle, dual variant output, waveform playback, MP3 download, loading state, error state with retry
-**Avoids:** Server-side polling timeout (Vercel 10s/60s limit), audio stored as BYTEA in Postgres, signed URLs stored in DB, WAV served without MP3 conversion
-**Stack:** `wavesurfer.js`, `@wavesurfer/react`, `zustand`, `swr` (polling), Drizzle ORM
+**Rationale:** Every subsequent phase depends on semantic tokens existing and the dark mode mechanism being correct. Building components before tokens means hardcoding values that must be refactored. Setting up dark mode after components are built means retrofitting instead of testing as you go. This is the non-optional first phase — all three critical infrastructure pitfalls (CSS variable format, border defaults, dark mode FOUC) are addressed here.
 
-### Phase 3: Credit System
-**Rationale:** Generation works without credits (stubbed in Phase 2). Credit system is isolated enough to add without breaking the generation flow, but must be implemented before payments. The atomic reservation pattern is the core correctness requirement — get it right here before Stripe is wired in.
-**Delivers:** Atomic credit deduction with two-phase reservation/confirmation/cancellation, credit balance in header (live updates), daily free credit cron reset, credit refund on generation failure, "Upgrade" CTA when credits are low or zero
-**Addresses:** Free tier (10 credits/day), credit balance display, error state with credit-not-charged confirmation, upgrade prompt
-**Avoids:** Check-then-deduct race condition, credits lost on generation failure, free tier trusted from client (must be server-enforced)
+**Delivers:** All semantic CSS tokens defined in a split primitives/semantic file structure (light + dark), Tailwind v4 `@theme inline` bridge operational, `@custom-variant dark` wired up, next-themes configured with `suppressHydrationWarning`, theme toggle functional, `/style-guide` page stub with color swatches and contrast audit visible.
 
-### Phase 4: Payments and Subscriptions
-**Rationale:** Payments build on the credit system established in Phase 3. Stripe Checkout + webhooks are well-understood but require careful idempotency and race condition handling. This is a discrete phase because Stripe integration introduces its own complexity that should not be mixed with generation or credit logic.
-**Delivers:** Stripe Checkout for credit pack purchase, `/api/stripe/webhook` with idempotency (stored event IDs), `/api/billing/sync-checkout` endpoint for race condition prevention, WAV download gate for paid tier, commercial license acknowledgment for paid tier
-**Addresses:** Paid Pro tier (~$8-10/mo or credit pack), WAV download for paid users, commercial license, Stripe customer portal link
-**Avoids:** Stripe webhook race condition (sync endpoint), duplicate credit grants (idempotent webhook handler), Stripe secret key on client side
+**Addresses from FEATURES.md:** Design token CSS vars, typography setup (Bricolage Grotesque + Figtree loaded via next/font), dark mode toggle, warm light-mode palette, warm dark mode.
 
-### Phase 5: Polish and Launch Hardening
-**Rationale:** Before any real users, security hygiene and UX polish must be in place. This phase closes the remaining pitfalls and improves the experience for cold demos.
-**Delivers:** Disposable email domain blocking at signup, rate limiting on generation endpoint (per-user concurrent job limit), audio post-processing normalization (FFmpeg loudnorm to prevent distortion on rock/electronic genres), named loading stage progression ("Initializing" → "Generating" → "Finalizing"), landing page with example generations, genre/style tag UI chips
-**Addresses:** Free tier abuse, audio distortion on specific genres, audio file size (WAV to MP3 conversion), UX polish on generation flow
-**Avoids:** Disposable email abuse, clipping/distortion artifacts, mobile data burn from raw WAV delivery
+**Avoids from PITFALLS.md:** CSS variable format mismatch (Pitfall 1), Tailwind v4 border default change (Pitfall 2), dark mode FOUC (Pitfall 3), yellow/amber contrast failures (Pitfall 4).
+
+**Needs phase research:** No — patterns are fully documented at HIGH confidence. The ARCHITECTURE.md build order is the implementation plan.
+
+### Phase 2: Component Audit + Core Component Redesign
+
+**Rationale:** With tokens and theme infrastructure established, run the hardcoded color grep audit first, then systematically restyle each component using semantic token utilities. Audit before restyle prevents discovering hardcoded overrides after the redesign appears "done." Waveform theming integration belongs here because it requires tokens (to read resolved values) and theme switching (to test `resolvedTheme` re-init).
+
+**Delivers:** All existing components using semantic token classes (no hardcoded palette classes remaining), GenerationForm redesigned (amber CTA, warm inputs, pill chips), VariantCard redesigned (16px radius, hover lift, amber waveform), Hero section redesigned (Bricolage Grotesque headline, typewriter placeholder in brand color), waveform color JS re-init on theme switch confirmed working, loading skeleton shimmer in warm muted tones.
+
+**Addresses from FEATURES.md:** All P1 component features — buttons, cards, form, hero, waveform, loading states.
+
+**Avoids from PITFALLS.md:** Hardcoded colors surviving redesign (Pitfall 8), wavesurfer wrong colors on theme switch (Pitfall 7).
+
+**Needs phase research:** No — component patterns are standard; wavesurfer re-init pattern is code-ready in PITFALLS.md.
+
+### Phase 3: Animation + Micro-interactions
+
+**Rationale:** Animations are additive polish on top of a correctly styled base. Adding Framer Motion animations before components are correctly tokenized wastes iteration cycles. The critical constraint from PITFALLS.md is that Framer Motion components must be isolated in leaf `"use client"` components — never added to Server Component parent files. This phase also addresses CLS risks (typewriter container `min-h`, `AnimatePresence` + stable keys for generation flow transitions).
+
+**Delivers:** Fancycomponents Typewriter integrated in hero with correct brand font and color, `min-h` container preventing CLS, card hover lift (`whileHover: { y: -2 }`), generation form → results `AnimatePresence` transition with stable keys, `LazyMotion` wrapping to reduce Framer bundle from 34KB to ~4.6KB, `prefers-reduced-motion` fallbacks on all animations.
+
+**Addresses from FEATURES.md:** Micro-interaction polish, typewriter in hero, playful motion differentiator.
+
+**Avoids from PITFALLS.md:** Framer Motion `"use client"` boundary pollution (Pitfall 5), typewriter CLS (Pitfall 10), layout animation CLS on generation page (Pitfall 6), full Framer Motion bundle import (Performance Traps).
+
+**Needs phase research:** No — patterns fully documented in PITFALLS.md with implementation-ready code examples.
+
+### Phase 4: Footer + Style Guide Completion
+
+**Rationale:** The spectrum-ui Stacked Circular Footer is low-risk but has a confirmed mobile overflow pitfall that requires real-device testing at 375px. Addressing it in its own phase ensures the rest of the app is stable before adding the footer's overflow concerns. The `/style-guide` page also needs its final completion pass to include all redesigned components — this is the verification step confirming the entire design system is coherent and production-ready.
+
+**Delivers:** Spectrum-ui footer adapted with brand tokens, `overflow-hidden` wrapper preventing horizontal scroll on mobile, tested at 375px on a real device. `/style-guide` page complete with all token sections, all component variants, all animated demos, contrast ratios shown, gated from production via `NODE_ENV` check.
+
+**Addresses from FEATURES.md:** Stacked circular footer (P2), `/style-guide` page completion, production gating.
+
+**Avoids from PITFALLS.md:** Footer mobile horizontal scroll (Pitfall 9), `/style-guide` exposed in production (UX Pitfalls).
+
+**Needs phase research:** No — standard patterns. Mobile overflow fix is documented.
 
 ### Phase Ordering Rationale
 
-- Infrastructure before API before UI: The build order dependency graph from ARCHITECTURE.md makes this non-negotiable. Supabase schema must exist before Drizzle queries. RunPod must work before `/api/generate` can dispatch. Auth must exist before credits.
-- Credits before Payments: The atomic reservation pattern in Phase 3 is the foundation that Stripe webhooks in Phase 4 build on. Mixing these phases risks implementing Stripe before the credit model is correct.
-- Generation API before Credit System: Generation can be tested with a stub credit deduction (always succeeds) to validate the async polling pattern independently. Combining all three in one phase would make it impossible to isolate failures.
-- Polish last but not optional: The ACE-Step audio distortion bug and free tier abuse patterns are documented production issues. Phase 5 is not "nice to have" — it's required before any public demo with real GPU costs.
+- **Tokens first is non-negotiable:** ARCHITECTURE.md is explicit — "Wave 0 must ship before any component work." FEATURES.md confirms "tokens must be defined before any component work." PITFALLS.md documents exactly how wrong this goes (transparent backgrounds, wrong border colors, permanent FOUC).
+- **Theme infrastructure in Phase 1, not its own phase:** The ThemeProvider wrapper and `suppressHydrationWarning` setup is a ~30-line change. Deferring it means every screenshot, every review, every test potentially shows the wrong theme or a flash.
+- **Style guide stub in Phase 1, completion in Phase 4:** Building the stub early gives a visual reference frame during component redesign. Completing it last verifies the whole system is coherent.
+- **Audit before restyle in Phase 2:** Running the grep audit for hardcoded colors before any component work reveals the full scope. Discovering them after "done" is expensive rework.
+- **Animation last (Phase 3):** Animations are purely additive. They layer on correctly styled components. Doing them earlier means animating incorrectly styled components.
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 1 (Infrastructure):** ACE-Step REST API specifics are MEDIUM confidence (derived from DeepWiki, not live testing). The RunPod handler integration pattern needs validation against actual ACE-Step 1.5 behavior. Specifically: confirm the `workers=1` constraint, verify the `/release_task` → `/query_result` polling flow end-to-end, and test the memory leak behavior to calibrate worker restart policy.
-- **Phase 4 (Payments):** Credit top-up as one-time purchase (Stripe `mode: "payment"`) vs. subscription (`mode: "subscription"`) has architectural implications for the credit model. Confirm the approach before implementing the webhook handler — switching from one-time to subscription midway through requires schema changes.
+Phases with standard patterns (skip `/gsd:research-phase`):
+- **Phase 1 (Token Foundation):** Fully documented by official Tailwind v4 and shadcn/ui v4 docs. ARCHITECTURE.md contains implementation-ready code examples. No unknowns.
+- **Phase 2 (Component Redesign):** Standard token application patterns. wavesurfer re-init code pattern is ready in PITFALLS.md.
+- **Phase 3 (Animations):** Framer Motion patterns documented at official-docs level. Specific `LazyMotion`, `AnimatePresence`, and `"use client"` boundary patterns are code-ready in PITFALLS.md.
+- **Phase 4 (Footer + Style Guide):** Copy-paste component. Mobile overflow fix is documented. Production gating is a standard `NODE_ENV` check.
 
-Phases with standard patterns (skip research-phase):
-- **Phase 2 (Generation API):** Client-side polling, BFF pattern, SWR `refreshInterval`, wavesurfer.js integration — all well-documented with examples in STACK.md and ARCHITECTURE.md.
-- **Phase 3 (Credit System):** Atomic Postgres UPDATE pattern is fully specified in ARCHITECTURE.md with working code. No ambiguity.
-- **Phase 5 (Polish):** FFmpeg loudnorm, disposable email blocklist, rate limiting — all standard patterns with drop-in libraries.
-
----
+No phases in this milestone require `/gsd:research-phase` — all patterns are covered at HIGH confidence with implementation-ready examples.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Next.js, Clerk, Supabase, Drizzle, Stripe all verified against current docs and npm versions. ACE-Step API details are MEDIUM (DeepWiki-sourced, not live tested). |
-| Features | HIGH | Competitor analysis from live Suno and Udio products. ACE-Step capability mapping is MEDIUM — instrumental toggle (`[instrumental]` tag) needs testing to confirm behavior. |
-| Architecture | HIGH | BFF pattern, polling architecture, and Postgres atomic credit deduction are established patterns with working code examples. ACE-Step/RunPod handler architecture is MEDIUM (derived from docs, not a deployed example). |
-| Pitfalls | HIGH | ACE-Step memory leak and distortion bugs are from live GitHub issues. Stripe race condition and idempotency patterns are from multiple production post-mortems. RunPod TTL and Vercel timeout patterns are from official docs. |
+| Stack | HIGH | Official npm and framework docs verified for all 3 new packages; version compatibility confirmed; tailwind-merge v3/v4 is MEDIUM (community-confirmed, not official changelog) |
+| Features | MEDIUM-HIGH | Color values (OKLCH) are derived from research patterns, need browser contrast verification before finalizing; all other feature decisions are HIGH |
+| Architecture | HIGH | Three-tier token pattern from official Tailwind v4 + shadcn/ui v4 docs; next-themes from GitHub source; `@theme inline` behavior from GitHub official discussion |
+| Pitfalls | HIGH | shadcn/ui GitHub issues cited by number; Tailwind v4 release notes; WCAG official source; wavesurfer Shadow DOM behavior confirmed in wavesurfer GitHub discussion |
 
-**Overall confidence:** MEDIUM-HIGH
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **ACE-Step API field names:** The API field for style prompt is variously called `caption` or `prompt` across sources. Validate against a live ACE-Step 1.5 instance in Phase 1 before building the generation API.
-- **Instrumental toggle mechanism:** Empty `lyrics` field vs. `[instrumental]` tag — behavior not confirmed from docs. Test both in Phase 1.
-- **RunPod Serverless vs. Persistent Pod in production:** The research recommends Persistent Pod for prototype and Serverless for production. The exact migration path (Docker image, FlashBoot configuration, cold start mitigation) needs a dedicated spike before scaling beyond 10 users.
-- **Credit model: one-time purchase vs. subscription:** Research documents both patterns. One-time purchase packs are recommended for v1, but if the product hypothesis is monthly recurring revenue, subscription billing should be evaluated before Phase 4. This is a business decision that affects schema design.
-- **Audio storage strategy at scale:** Supabase Storage is recommended for v1. At production scale (1000+ users), Cloudflare R2 + CDN is the migration target. This doesn't affect Phase 1-3 architecture but should be documented as a known future migration.
-
----
+- **Exact OKLCH color values need contrast verification:** FEATURES.md notes MEDIUM confidence on the specific color values. All token pairs (especially `--muted-foreground` on `--background` and `--accent` as text) must be verified through [accessiblepalette.com](https://accessiblepalette.com) before the Phase 1 token file is finalized. Build the contrast audit into the `/style-guide` page as a first-class feature, not an afterthought.
+- **tailwind-merge v3/v4 compatibility edge cases:** Confirmed via community sources rather than an official changelog entry. If unexpected class conflicts appear during Phase 2 component work, check the tailwind-merge GitHub issues for v4-specific reports before debugging the token system.
+- **Bricolage Grotesque + Figtree on target mobile devices:** Font pairing is research-validated but should be visually QA'd on iOS Safari and Android Chrome, where variable font rendering can differ from desktop Chrome. Flag for QA during Phase 2 hero section work.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- ACE-Step 1.5 GitHub — API endpoints, capability matrix, confirmed bugs (#142 memory leak, #298 distortion): https://github.com/ace-step/ACE-Step-1.5
-- Vercel Function Duration Limits — 10s Hobby / 60s Pro confirmed: https://vercel.com/docs/functions/limitations
-- RunPod Serverless Endpoint Configuration — TTL, execution timeout, worker lifecycle: https://docs.runpod.io/serverless/references/endpoint-configurations
-- Stripe Webhook Best Practices — signature verification, idempotency, event handling: https://stripe.com/docs/webhooks/best-practices
-- Suno live product (suno.com) — competitor feature analysis, credit model, user flow
-- Udio live product — competitor feature analysis, pricing tiers
+- Tailwind CSS v4 official docs (`@theme`, `@custom-variant`, dark mode) — https://tailwindcss.com/docs/dark-mode
+- Tailwind CSS v4 theme variables — https://tailwindcss.com/docs/theme
+- shadcn/ui Tailwind v4 integration — https://ui.shadcn.com/docs/tailwind-v4
+- shadcn/ui theming with CSS variables — https://ui.shadcn.com/docs/theming
+- next-themes GitHub (pacocoursey/next-themes) — suppressHydrationWarning, App Router, FOUC prevention — https://github.com/pacocoursey/next-themes
+- fancycomponents.dev installation + typewriter docs — https://www.fancycomponents.dev/docs/components/text/typewriter
+- spectrum-ui footer docs — https://ui.spectrumhq.in/docs/footer
+- WCAG 2.1 contrast minimum (1.4.3) — https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html
+- shadcn/ui GitHub Issue #4845 — CSS variable format mismatch (transparent backgrounds)
+- Tailwind CSS v4.0 release notes — border default change to `currentColor` — https://tailwindcss.com/blog/tailwindcss-v4
+- Motion (Framer Motion) performance guide — https://motion.dev/docs/performance
+- Martin Fowler — Design Token-Based UI Architecture (three-tier pattern)
+- Tailwind v4 `@theme inline` GitHub discussion — https://github.com/tailwindlabs/tailwindcss/discussions/15600
 
 ### Secondary (MEDIUM confidence)
-- DeepWiki ACE-Step 1.5 (indexed 2026-02-03) — API architecture, endpoint overview: https://deepwiki.com/ace-step/ACE-Step-1.5
-- Stripe Webhook Race Condition (Pedro Alonso) — sync-checkout pattern: https://www.pedroalonso.net/blog/stripe-webhooks-solving-race-conditions/
-- Drizzle vs Prisma 2026 deep dive — bundle size, cold start impact: https://medium.com/@codabu/drizzle-vs-prisma-choosing-the-right-typescript-orm-in-2026-deep-dive-63abb6aa882b
-- Voice Cloning App with Next.js + RunPod (Geronimo) — RunPod handler architecture reference: https://medium.com/@geronimo7/building-a-voice-cloning-app-9a146f3357db
+- tailwind-merge npm — v3 adds Tailwind v4 support (community-confirmed) — https://www.npmjs.com/package/tailwind-merge
+- Tailwind v4 dark mode with next-themes `@custom-variant` pattern — https://iifx.dev/en/articles/456423217
+- Dark mode in Next.js 15 + Tailwind v4 (community) — https://www.sujalvanjare.com/blog/dark-mode-nextjs15-tailwind-v4
+- Blue + amber pairing for youthful brands — Venngage color research (confirmed range #8ecae6 / #ffb703)
+- 2025 design trends (playful warmth, imperfect elements) — Framer blog, Lummi blog
+- shadcn/ui GitHub Issue #5552 — ThemeProvider hydration error in Next.js 15
+- WebAIM Million 2024 — color contrast #1 accessibility violation (83.6% of sites) — https://webaim.org/articles/contrast/
 
 ### Tertiary (LOW confidence / needs validation)
-- ACE-Step instrumental toggle via `[instrumental]` tag — mentioned in docs but behavior unconfirmed via testing
-- RunPod FlashBoot cold start performance — marketing claims, not independently verified: https://www.runpod.io/blog/introducing-flashboot-serverless-cold-start
+- Exact OKLCH color values in FEATURES.md — derived from warm brand research patterns, need browser contrast verification before shipping to production
 
 ---
-
-*Research completed: 2026-03-03*
+*Research completed: 2026-03-05*
 *Ready for roadmap: yes*
