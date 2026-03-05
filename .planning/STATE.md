@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Brand & Visual Redesign
 status: planning
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-03-05T19:18:08.248Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-05T19:18:25.907Z"
 last_activity: 2026-03-05 — v1.1 roadmap finalized, v1.0 complete (Phases 1-4)
 progress:
   total_phases: 8
@@ -59,6 +59,8 @@ Recent decisions affecting current work:
 - [Pre-v1.1]: wavesurfer waveform colors need JS re-init on resolvedTheme change (Shadow DOM doesn't inherit CSS vars)
 - [Phase 05]: Amber locked to backgrounds/CTAs only, never foreground text (WCAG AA)
 - [Phase 05]: Class-based dark mode via :root.dark, replaced @media prefers-color-scheme
+- [Phase 05-02]: No icon animation on theme swap — instant swap per user decision
+- [Phase 05-02]: enableSystem=false: user controls theme explicitly, no OS override; defaultTheme=light
 
 ### Pending Todos
 
@@ -71,6 +73,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T19:18:08.247Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-03-05T19:18:25.905Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
