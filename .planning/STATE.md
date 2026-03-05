@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Brand & Visual Redesign
-status: completed
-stopped_at: Phase 6 context gathered
-last_updated: "2026-03-05T19:58:39.079Z"
-last_activity: 2026-03-05 — Phase 5 complete (Token Foundation + Theme Infrastructure)
+status: in_progress
+stopped_at: Completed 06-02-PLAN.md (HeroSection brand redesign)
+last_updated: "2026-03-05T20:18:00.000Z"
+last_activity: 2026-03-05 — Phase 6 Plan 02 complete (HeroSection Brand Redesign)
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 15
-  completed_plans: 15
-  percent: 100
+  completed_plans: 16
+  percent: 67
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 
 ## Current Position
 
-Phase: 5 of 8 (Token Foundation + Theme Infrastructure) — COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase complete, ready for Phase 6
-Last activity: 2026-03-05 — Phase 5 complete (Token Foundation + Theme Infrastructure)
+Phase: 6 of 8 (Component Audit + Core Redesign) — IN PROGRESS
+Plan: 2 of 4 in current phase
+Status: Executing Phase 6, Plan 02 complete
+Last activity: 2026-03-05 — Phase 6 Plan 02 complete (HeroSection Brand Redesign)
 
-Progress: [██████████] 100%
+Progress: [█████░░░░░] 67%
 
 ## Performance Metrics
 
@@ -62,6 +62,9 @@ Recent decisions affecting current work:
 - [Phase 05-02]: No icon animation on theme swap — instant swap per user decision
 - [Phase 05-02]: enableSystem=false: user controls theme explicitly, no OS override; defaultTheme=light
 - [Phase 05-03]: No side-by-side light/dark on style guide — page respects active theme via toggle per user decision
+- [Phase 06-02]: CTA uses bg-accent (amber) not bg-primary (sky-blue) — amber = action, sky = info
+- [Phase 06-02]: font-display (Bricolage Grotesque) applied via class on h1 for editorial brand typography
+- [Phase 06-02]: Amber radial glow blob (bg-accent/20 blur-3xl) used for warmth, not full-bleed background color
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T19:58:39.077Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-component-audit-core-redesign/06-CONTEXT.md
+Last session: 2026-03-05T20:18:00.000Z
+Stopped at: Completed 06-02-PLAN.md (HeroSection Brand Redesign)
+Resume file: .planning/phases/06-component-audit-core-redesign/06-03-PLAN.md
