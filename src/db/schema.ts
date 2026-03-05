@@ -56,6 +56,8 @@ export const outputs = pgTable(
       .references(() => generations.id, { onDelete: 'cascade' }),
     variantIndex: integer('variant_index').notNull(), // 0 or 1
     r2Key: text('r2_key').notNull(), // e.g. "generations/abc123/output_0.wav"
+    mp3R2Key: text('mp3_r2_key'), // e.g. "generations/abc123/output_0.mp3" (nullable — conversion may fail)
+    mp3FileSizeBytes: integer('mp3_file_size_bytes'), // for displaying file size in UI (nullable)
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index('outputs_generation_idx').on(table.generationId)],
