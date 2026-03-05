@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Brand & Visual Redesign
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-05T20:19:38.301Z"
-last_activity: 2026-03-05 — Phase 6 Plan 02 complete (HeroSection Brand Redesign)
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-03-05T20:24:03.841Z"
+last_activity: 2026-03-05 — Phase 6 Plan 03 complete (WaveformPlayer Theme Sync + VariantCard Token Rewrite)
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 18
-  completed_plans: 17
-  percent: 67
+  completed_plans: 18
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 
 ## Current Position
 
-Phase: 6 of 8 (Component Audit + Core Redesign) — IN PROGRESS
-Plan: 2 of 4 in current phase
-Status: Executing Phase 6, Plan 02 complete
-Last activity: 2026-03-05 — Phase 6 Plan 02 complete (HeroSection Brand Redesign)
+Phase: 6 of 8 (Component Audit + Core Redesign) — COMPLETE
+Plan: 3 of 3 in current phase
+Status: Phase 6 complete — ready for Phase 7
+Last activity: 2026-03-05 — Phase 6 Plan 03 complete (WaveformPlayer Theme Sync + VariantCard Token Rewrite)
 
-Progress: [█████░░░░░] 67%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -67,6 +67,8 @@ Recent decisions affecting current work:
 - [Phase 06-02]: Amber radial glow blob (bg-accent/20 blur-3xl) used for warmth, not full-bleed background color
 - [Phase 06-component-audit-core-redesign]: TDD getCssColorAsHex tests use real jsdom DOM elements — jsdom getComputedStyle requires Element type, plain object mocks fail
 - [Phase 06-component-audit-core-redesign]: Amber locked to CTA backgrounds (bg-accent) — submit button and EQ bars use amber per brand decision from Phase 5
+- [Phase 06-component-audit-core-redesign]: setOptions() imperative wavesurfer theme sync avoids destroy/recreate cycle on resolvedTheme change
+- [Phase 06-component-audit-core-redesign]: Amber bg-accent for Download MP3 CTA, sky-blue ring-primary/50 for active VariantCard playing state
 
 ### Pending Todos
 
@@ -79,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T20:19:30.737Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-05T20:24:03.840Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None
