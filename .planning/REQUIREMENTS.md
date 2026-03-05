@@ -19,8 +19,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Playback
 
 - [ ] **PLAY-01**: User can play/pause/seek generated songs in-browser with waveform visualization
-- [ ] **PLAY-02**: User can download songs as MP3
-- [ ] **PLAY-03**: User can download songs as WAV
+- [x] **PLAY-02**: User can download songs as MP3
+- [x] **PLAY-03**: User can download songs as WAV
 
 ### Infrastructure
 
@@ -85,8 +85,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GEN-05 | Phase 2 | Complete |
 | GEN-06 | Phase 2 | Complete |
 | PLAY-01 | Phase 3 | Pending |
-| PLAY-02 | Phase 3 | Pending |
-| PLAY-03 | Phase 3 | Pending |
+| PLAY-02 | Phase 3 | Complete |
+| PLAY-03 | Phase 3 | Complete |
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 1 | Complete |
 | INFRA-03 | Phase 1 | Complete |

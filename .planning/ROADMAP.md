@@ -66,7 +66,7 @@ Plans:
   2. User can download a generated song as an MP3 file that plays in standard media players
   3. User can download a generated song as a WAV file
   4. Both song variants from a generation are independently playable and downloadable without navigating away
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — MP3 conversion pipeline, filename helper, schema + R2 + API updates
@@ -97,5 +97,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Foundation | 3/3 | Complete   | 2026-03-04 |
 | 2. Generation API | 3/4 | In Progress|  |
-| 3. Playback and Download | 0/2 | Not started | - |
+| 3. Playback and Download | 1/2 | In Progress|  |
 | 4. UX Polish | 0/TBD | Not started | - |

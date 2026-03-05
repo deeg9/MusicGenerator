@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-03-05T02:57:54.240Z"
+stopped_at: "Completed 03-01: Backend audio delivery with WAV-to-MP3 pipeline"
+last_updated: "2026-03-05T05:13:38.004Z"
 last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 9
+  completed_plans: 8
   percent: 33
 ---
 
@@ -55,6 +55,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 02-generation-api P01 | 8 | 2 tasks | 2 files |
 | Phase 02-generation-api P02 | 7min | 2 tasks | 5 files |
 | Phase 02-generation-api P03 | 25min | 3 tasks | 6 files |
+| Phase 03-playback-and-download P01 | 18min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,10 @@ Recent decisions affecting current work:
 - [Phase 02-generation-api]: useGenerationStatus dual-interval cleanup: single stopPolling() clears both poll and elapsed intervals, preventing timer leaks on unmount or jobId change
 - [Phase 02-generation-api]: setJobId(null) before new submission triggers useEffect cleanup and prevents simultaneous polling loops on regeneration
 - [Phase 02-generation-api]: page.tsx is a Server Component thin shell — only renders GenerationPage; all interactivity lives in client components
+- [Phase 03-playback-and-download]: drizzle-kit push hangs indefinitely — used direct SQL migration script for schema changes
+- [Phase 03-playback-and-download]: MP3 conversion failure is non-fatal: WAV-only fallback, mp3R2Key stays null
+- [Phase 03-playback-and-download]: Presigned URL expiry bumped from 1h to 24h — research recommendation
+- [Phase 03-playback-and-download]: vi.mock('@/env') pattern for testing modules with module-level env validation
 
 ### Pending Todos
 
@@ -97,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T02:57:54.238Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-playback-and-download/03-CONTEXT.md
+Last session: 2026-03-05T05:13:38.002Z
+Stopped at: Completed 03-01: Backend audio delivery with WAV-to-MP3 pipeline
+Resume file: None
