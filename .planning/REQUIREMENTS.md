@@ -41,7 +41,7 @@ Requirements for brand redesign milestone. Each maps to roadmap phases.
 ### Brand Tokens
 
 - [x] **BRAND-01**: Design tokens define a warm color palette (cream, amber, sky-blue) in OKLCH format with light and dark mode variants
-- [ ] **BRAND-02**: Typography uses Bricolage Grotesque for headings and Figtree for body text, loaded via next/font
+- [x] **BRAND-02**: Typography uses Bricolage Grotesque for headings and Figtree for body text, loaded via next/font
 - [x] **BRAND-03**: Spacing, border-radius, and shadow tokens are defined in the Tailwind v4 @theme system
 - [x] **BRAND-04**: User can toggle between light and dark mode, with preference persisted and no FOUC on reload
 
@@ -119,7 +119,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-02 | Phase 4 | Complete |
 | UX-03 | Phase 4 | Complete |
 | BRAND-01 | Phase 5 | Complete |
-| BRAND-02 | Phase 5 | Pending |
+| BRAND-02 | Phase 5 | Complete |
 | BRAND-03 | Phase 5 | Complete |
 | BRAND-04 | Phase 5 | Complete |
 | COMP-01 | Phase 6 | Pending |
