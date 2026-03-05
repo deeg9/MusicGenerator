@@ -50,8 +50,8 @@ Requirements for brand redesign milestone. Each maps to roadmap phases.
 - [x] **COMP-01**: Hero section reflects the warm brand with updated colors, typography, and layout
 - [x] **COMP-02**: Generation form (inputs, buttons, mode toggle, tags) uses brand tokens throughout
 - [x] **COMP-03**: Loading animation and error banners use brand colors and feel cohesive with the new design
-- [ ] **COMP-04**: Waveform player and result cards use brand accent colors, updating dynamically on theme switch
-- [ ] **COMP-05**: Example cards use brand styling with warm card backgrounds and updated typography
+- [x] **COMP-04**: Waveform player and result cards use brand accent colors, updating dynamically on theme switch
+- [x] **COMP-05**: Example cards use brand styling with warm card backgrounds and updated typography
 
 ### New Components
 
@@ -125,8 +125,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-01 | Phase 6 | Complete |
 | COMP-02 | Phase 6 | Complete |
 | COMP-03 | Phase 6 | Complete |
-| COMP-04 | Phase 6 | Pending |
-| COMP-05 | Phase 6 | Pending |
+| COMP-04 | Phase 6 | Complete |
+| COMP-05 | Phase 6 | Complete |
 | NEW-01 | Phase 7 | Pending |
 | NEW-02 | Phase 8 | Pending |
 | NEW-03 | Phase 8 | Pending |
