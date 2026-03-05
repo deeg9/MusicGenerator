@@ -1,4 +1,4 @@
-# Requirements: MusicGenerator
+# Requirements: Notera (MusicGenerator)
 
 **Defined:** 2026-03-03
 **Core Value:** Anyone can create a unique, personal song in seconds — no musical skill required.
@@ -59,7 +59,43 @@ Requirements for brand redesign milestone. Each maps to roadmap phases.
 - [ ] **NEW-02**: Stacked circular footer with navigation links, social icons, and email subscription form
 - [ ] **NEW-03**: A /style-guide dev page displays all brand colors, typography, spacing, and component variants
 
-## v2 Requirements
+## v2.0 Requirements
+
+Requirements for Suno-Style UX Overhaul. Each maps to roadmap phases.
+
+### Homepage & Workspace
+
+- [ ] **HOME-01**: User sees a clean centered headline and prompt input box on the homepage
+- [ ] **HOME-02**: User can type a song description in the prompt box and click Create to start generation
+- [ ] **HOME-03**: Homepage transforms in-place to a two-panel workspace (form left, results right) after clicking Create
+- [ ] **HOME-04**: Two-panel workspace layout is responsive (stacks vertically on mobile)
+- [ ] **HOME-05**: Workspace state is reflected in URL (`?mode=create`) so it survives page refresh
+- [ ] **HOME-06**: Transition from homepage to workspace is animated (Framer Motion layout)
+
+### Library
+
+- [ ] **LIB2-01**: User can navigate to /library page from the sidebar
+- [ ] **LIB2-02**: Library page displays all previously generated songs as browsable cards
+- [ ] **LIB2-03**: Each library card shows song title, genre/style, duration, and generation date
+- [ ] **LIB2-04**: User can play a song directly from a library card (triggers persistent player)
+- [ ] **LIB2-05**: Library cards have GSAP scramble text hover animation on title/genre
+- [ ] **LIB2-06**: Library page shows an empty state when no songs have been generated
+
+### Persistent Player
+
+- [ ] **PERS-01**: Fixed bottom audio player bar is visible across all pages when a track is playing
+- [ ] **PERS-02**: Player bar shows current track title, artist/genre, and playback progress
+- [ ] **PERS-03**: Player bar has play/pause, skip forward, and skip backward controls
+- [ ] **PERS-04**: Player bar displays a mini waveform visualization of the current track
+- [ ] **PERS-05**: Player bar persists across page navigation (home ↔ library) without interrupting playback
+
+### Bug Fixes & Prerequisites
+
+- [ ] **FIX-01**: Fix GenerationPage useEffect missing dependency array (performance leak)
+- [ ] **FIX-02**: Install gsap + @gsap/react dependencies
+- [ ] **FIX-03**: Create centralized gsap-config.ts with "use client" boundary
+
+## v3.0 Requirements
 
 Deferred to future milestone. Tracked but not in current roadmap.
 
@@ -76,11 +112,20 @@ Deferred to future milestone. Tracked but not in current roadmap.
 - **CRED-04**: Credits deducted atomically at generation submission, refunded on failure
 - **CRED-05**: Upgrade CTA shown when credits are low or exhausted
 
-### Social & Library
+### Discovery & Social
 
-- **LIB-01**: User can view generation history (prompt metadata, not audio files)
-- **LIB-02**: User can share a song via short-lived link (48h expiry)
-- **SOCL-01**: User can explore publicly shared songs
+- **DISC-01**: Homepage "For You" section showing recommended/trending songs
+- **DISC-02**: Homepage "For Every Mood" section with genre/mood browse cards
+- **DISC-03**: Search page for finding songs across the platform
+- **SOCL-01**: User can share generated songs via link
+- **SOCL-02**: User can favorite/like songs in library
+- **SOCL-03**: Public profile page showing user's published songs
+
+### Advanced Playback
+
+- **ADVP-01**: Queue management (add to queue, reorder)
+- **ADVP-02**: Shuffle and repeat modes
+- **ADVP-03**: Volume control in persistent player
 
 ## Out of Scope
 
@@ -88,14 +133,15 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
+| Separate /create route | Decision: same-page transformation, not a new route |
 | Mobile apps | Web-first; responsive web works on mobile browsers |
-| Song library with audio storage | Requires S3/CDN infrastructure; doubles scope |
-| Remixing / repaint tools | ACE-Step supports it but requires complex UI; v2+ |
-| Stem extraction (vocals, drums, bass) | Base model only (not turbo), slower, specialist UI |
+| Song editing/remixing | ACE-Step supports it but requires complex UI; v3+ |
+| Stem extraction | Base model only (not turbo), slower, specialist UI |
 | LoRA style personalization | Training pipeline + per-user model storage; massive lift |
-| Admin dashboard | Manual DB queries + direct access sufficient for prototype |
-| Real-time streaming playback | ACE-Step is async poll-based; turbo is fast enough (<10s) |
-| Song versioning / history with audio | Storage costs; direct-download flow sufficient |
+| Admin dashboard | Manual DB queries sufficient for prototype |
+| Real-time streaming | ACE-Step is async poll-based; turbo is fast enough (<10s) |
+| Playlist creation | Requires auth + social features, defer to v3+ |
+| Cover art generation | Advanced feature, not core to UX overhaul |
 
 ## Traceability
 
@@ -130,13 +176,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NEW-01 | Phase 7 | Pending |
 | NEW-02 | Phase 8 | Pending |
 | NEW-03 | Phase 8 | Pending |
+| HOME-01 | — | Pending |
+| HOME-02 | — | Pending |
+| HOME-03 | — | Pending |
+| HOME-04 | — | Pending |
+| HOME-05 | — | Pending |
+| HOME-06 | — | Pending |
+| LIB2-01 | — | Pending |
+| LIB2-02 | — | Pending |
+| LIB2-03 | — | Pending |
+| LIB2-04 | — | Pending |
+| LIB2-05 | — | Pending |
+| LIB2-06 | — | Pending |
+| PERS-01 | — | Pending |
+| PERS-02 | — | Pending |
+| PERS-03 | — | Pending |
+| PERS-04 | — | Pending |
+| PERS-05 | — | Pending |
+| FIX-01 | — | Pending |
+| FIX-02 | — | Pending |
+| FIX-03 | — | Pending |
 
 **Coverage:**
 - v1.0 requirements: 15 total (all complete)
-- v1.1 requirements: 12 total (all mapped)
-- Mapped to phases: 15 (v1.0) + 12 (v1.1)
-- Unmapped: 0
+- v1.1 requirements: 12 total (9 complete, 3 pending)
+- v2.0 requirements: 20 total (all pending, unmapped)
+- Unmapped: 20 ⚠️
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-05 after v1.1 roadmap creation*
+*Last updated: 2026-03-05 after v2.0 milestone definition*
