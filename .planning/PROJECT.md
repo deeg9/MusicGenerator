@@ -8,19 +8,19 @@ An AI-powered music generation web app where people create personalized songs fo
 
 Anyone can create a unique, personal song in seconds — no musical skill required.
 
-## Current Milestone: v1.1 — Brand & Visual Redesign
+## Current Milestone: v2.0 — Suno-Style UX Overhaul
 
-**Goal:** Transform the UI from a generic dark interface into a warm, inviting creative platform that stands apart from competitors like Suno — establish a brand identity that feels like a creative playground, not a pro studio tool.
+**Goal:** Redesign the app to match Suno's proven UX layout — clean homepage with centered headline + prompt box, same-page transformation to two-panel create workspace, separate library page for browsing generated songs, and a persistent bottom audio player.
 
 **Target features:**
-- Brand kit: design tokens (colors, typography, spacing, radii, shadows) for light + dark modes
-- Full visual redesign: hero, cards, buttons, form inputs, layout, spacing
-- Replace typewriter with danielpetho's Framer Motion typewriter component
-- Stacked circular footer (from spectrum-ui)
-- `/style-guide` dev page showing all brand elements and components
-- Warm, poppy, retro-creative aesthetic — deliberately different from Suno's sterile dark look
+- Homepage: centered headline + prompt input + Create CTA (clean, Suno-inspired)
+- Same-page create workspace: form panel left, results/workspace panel right
+- Separate /library page with GSAP portfolio list + music player cards
+- Persistent bottom audio player bar (Suno/Spotify-style, persists across pages)
+- Sidebar navigation linking Home / Create / Library
+- Music player card component for library browsing
 
-**Brand direction:** Warmer alternative to Suno. Suno = pro studio; MusicGenerator = creative playground for gifts and personal moments. Inspired by Notera's warm palette (baby blue, sunny yellow, soft whites) adapted for music context.
+**Design reference:** Suno.com layout as primary inspiration. Keep our warm brand tokens (amber/sky-blue) but adopt Suno's proven UX patterns: centered prompt → workspace → library.
 
 ## Requirements
 
@@ -39,19 +39,19 @@ Anyone can create a unique, personal song in seconds — no musical skill requir
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Brand design tokens (color palette, typography, spacing) with light + dark mode support
-- [ ] Full visual redesign of all pages and components
-- [ ] Warm, creative brand identity distinct from competitor aesthetic
-- [ ] Component library with `/style-guide` dev page
-- [ ] New typewriter component (Framer Motion based)
-- [ ] Stacked circular footer
+- [ ] Suno-style homepage: centered headline + prompt box + Create button
+- [ ] Same-page create workspace: two-panel layout (form left, results right)
+- [ ] Separate /library page with generated songs browsing
+- [ ] Persistent bottom audio player bar across all pages
+- [ ] Music player card component for library items
+- [ ] GSAP portfolio list with scramble text for library browsing
 
 ### Out of Scope
 
 <!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
 - Mobile apps — web-first, mobile later (v2+)
-- Song library / saved songs — keep v1 tight, generate-and-download
+- ~~Song library / saved songs~~ — now in scope for v2.0
 - Social features (sharing, profiles, explore page) — not core to v1 value
 - Remixing / editing tools — adds complexity, defer to v2
 - Cover generation / style transfer — advanced features for later
@@ -91,6 +91,9 @@ Anyone can create a unique, personal song in seconds — no musical skill requir
 | RunPod Persistent Pod (not Serverless) | Serverless cold starts 20-60s break UX; Persistent Pod has zero cold start, stop when not in use | ✓ Good |
 | Cloudflare R2 for audio storage | Zero egress fees on audio files; S3-compatible API; 10GB free tier sufficient for prototype | ✓ Good |
 | Warmer brand vs Suno dark aesthetic | Differentiate as creative playground, not pro studio. Suno = dark/sterile, MusicGenerator = warm/inviting | — Pending |
+| Adopt Suno UX layout patterns | Suno's layout is proven: centered prompt → workspace → library. Use their UX structure with our brand tokens. | — Pending |
+| Same-page create transformation | User stays on homepage, page transforms to workspace on Create click. No separate /create route. | — Pending |
+| Persistent bottom audio player | Like Suno/Spotify — audio plays across page navigation. Needed for library browsing. | — Pending |
 
 ---
-*Last updated: 2026-03-05 after v1.0 completion, starting v1.1 brand redesign*
+*Last updated: 2026-03-05 after v1.1 completion, starting v2.0 Suno-style UX overhaul*
