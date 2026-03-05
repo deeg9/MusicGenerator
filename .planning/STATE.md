@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Brand & Visual Redesign
 status: planning
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-05T19:00:50.261Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-05T19:18:08.248Z"
 last_activity: 2026-03-05 — v1.1 roadmap finalized, v1.0 complete (Phases 1-4)
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 15
+  completed_plans: 14
   percent: 0
 ---
 
@@ -57,6 +57,8 @@ Recent decisions affecting current work:
 - [Pre-v1.1]: tailwind-merge v3 required (v2 doesn't understand Tailwind v4 CSS var colors)
 - [Pre-v1.1]: Typewriter + footer are copy-paste, not npm packages (Framer Motion + lucide already installed)
 - [Pre-v1.1]: wavesurfer waveform colors need JS re-init on resolvedTheme change (Shadow DOM doesn't inherit CSS vars)
+- [Phase 05]: Amber locked to backgrounds/CTAs only, never foreground text (WCAG AA)
+- [Phase 05]: Class-based dark mode via :root.dark, replaced @media prefers-color-scheme
 
 ### Pending Todos
 
@@ -69,6 +71,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T19:00:50.259Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-token-foundation-theme-infrastructure/05-CONTEXT.md
+Last session: 2026-03-05T19:18:08.247Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None
