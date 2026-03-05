@@ -3,7 +3,8 @@
 ## Milestones
 
 - ✅ **v1.0 Core Generation** - Phases 1-4 (shipped 2026-03-05)
-- 🚧 **v1.1 Brand & Visual Redesign** - Phases 5-8 (in progress)
+- ✅ **v1.1 Brand & Visual Redesign** - Phases 5-8 (shipped 2026-03-05)
+- 🚧 **v2.0 Suno-Style UX Overhaul** - Phases 9-12 (in progress)
 
 ## Phases
 
@@ -47,92 +48,129 @@ Plans:
 
 </details>
 
+<details>
+<summary>✅ v1.1 Brand & Visual Redesign (Phases 5-8) - SHIPPED 2026-03-05</summary>
+
+### Phase 5: Token Foundation + Theme Infrastructure
+**Goal**: The brand token system and dark mode infrastructure are in place and verified — all semantic CSS variables defined, Tailwind v4 bridge operational, theme toggle functional with no FOUC, and a /style-guide stub exists so every subsequent phase has a visual test harness.
+**Plans**: 3/3 plans complete
+
+Plans:
+- [x] 05-01-PLAN.md — Primitive + semantic token files, globals.css bridge, Tailwind v4 border fix
+- [x] 05-02-PLAN.md — next-themes ThemeProvider, @custom-variant dark, theme toggle component, suppressHydrationWarning
+- [x] 05-03-PLAN.md — next/font typography setup, /style-guide stub with color/type/spacing swatches
+
+### Phase 6: Component Audit + Core Redesign
+**Goal**: Every existing component has been audited for hardcoded color classes and restyled using semantic token utilities — the hero, generation form, loading state, waveform player, and example cards all reflect the warm brand identity with the theme switch working correctly everywhere.
+**Plans**: 3/3 plans complete
+
+Plans:
+- [x] 06-01-PLAN.md — OKLCH color utility + leaf component token swaps (EnhancedCaptionDisplay, LoadingAnimation, GenerationPage, GenerationForm submit)
+- [x] 06-02-PLAN.md — Hero section redesign (6xl-7xl headline, amber glow, accent CTA, sky-blue typewriter)
+- [x] 06-03-PLAN.md — WaveformPlayer theme sync via setOptions() + VariantCard full token rewrite + final grep audit
+
+### Phase 7: Animation + Typewriter
+**Goal**: The hero typewriter is replaced with the Framer Motion-based component, card hover lifts and generation flow transitions are added, and all animations respect prefers-reduced-motion — the app feels playful and alive without blocking the render or bloating the bundle.
+**Plans**: 2/2 plans complete
+
+Plans:
+- [x] 07-01-PLAN.md — Framer Motion typewriter integration (copy-paste component, LazyMotion, CLS fix, reduced-motion)
+- [x] 07-02-PLAN.md — Card hover lift, generation flow AnimatePresence transition, bundle size verification
+
+### Phase 8: Footer + Style Guide Completion
+**Goal**: The stacked circular footer is integrated with brand tokens and passes mobile overflow testing, and the /style-guide page is complete — showing all tokens, all component variants (including animated), contrast ratios, and gated from production.
+**Plans**: 2/2 plans complete
+
+Plans:
+- [x] 08-01-PLAN.md — Spectrum-ui footer copy-paste integration, brand token application, overflow-hidden mobile fix
+- [x] 08-02-PLAN.md — /style-guide completion pass: all component sections, contrast ratios, animated demos, production gating
+
+</details>
+
 ---
 
-### 🚧 v1.1 Brand & Visual Redesign (In Progress)
+### 🚧 v2.0 Suno-Style UX Overhaul (In Progress)
 
-**Milestone Goal:** Transform the UI from a generic dark interface into a warm, inviting creative platform with a coherent brand identity — warm cream + amber + sky-blue palette, Bricolage Grotesque + Figtree typography, full light/dark mode, and every existing component restyled using semantic tokens.
+**Milestone Goal:** Redesign to match Suno's proven UX — clean homepage with centered prompt, same-page two-panel create workspace, separate library page for browsing generated songs, and a persistent bottom audio player that survives page navigation.
 
 ---
 
 ## Phase Details
 
-### Phase 5: Token Foundation + Theme Infrastructure
-**Goal**: The brand token system and dark mode infrastructure are in place and verified — all semantic CSS variables defined, Tailwind v4 bridge operational, theme toggle functional with no FOUC, and a /style-guide stub exists so every subsequent phase has a visual test harness.
-**Depends on**: Phase 4
-**Requirements**: BRAND-01, BRAND-02, BRAND-03, BRAND-04
+### Phase 9: Foundation Fixes + Navigation
+**Goal**: Known bugs that compound under v2.0 complexity are resolved before new work begins, and the sidebar Library link navigates to a real route — giving users a functional entry point to everything built in subsequent phases.
+**Depends on**: Phase 8
+**Requirements**: FIX-01, FIX-02, FIX-03, LIB2-01
 **Success Criteria** (what must be TRUE):
-  1. User can toggle between light and dark mode via a visible control and the entire app switches immediately with no white flash on hard reload
-  2. All brand colors (cream, amber, sky-blue) are visible as color swatches on the /style-guide page in both light and dark mode
-  3. Typography renders with Bricolage Grotesque for headings and Figtree for body copy — visible on /style-guide with type scale samples
-  4. Spacing, border-radius, and shadow tokens are all visible on /style-guide as labeled reference swatches
-  5. No Tailwind v4 border regression visible anywhere — all card and input borders match the defined --border token, not currentColor
-**Plans**: 3 plans
-
-Plans:
-- [ ] 05-01-PLAN.md — Primitive + semantic token files, globals.css bridge, Tailwind v4 border fix
-- [ ] 05-02-PLAN.md — next-themes ThemeProvider, @custom-variant dark, theme toggle component, suppressHydrationWarning
-- [ ] 05-03-PLAN.md — next/font typography setup, /style-guide stub with color/type/spacing swatches
-
----
-
-### Phase 6: Component Audit + Core Redesign
-**Goal**: Every existing component has been audited for hardcoded color classes and restyled using semantic token utilities — the hero, generation form, loading state, waveform player, and example cards all reflect the warm brand identity with the theme switch working correctly everywhere.
-**Depends on**: Phase 5
-**Requirements**: COMP-01, COMP-02, COMP-03, COMP-04, COMP-05
-**Success Criteria** (what must be TRUE):
-  1. Zero hardcoded Tailwind palette classes (bg-zinc-*, text-slate-*, etc.) remain in any component — grep audit returns no matches
-  2. Hero section displays Bricolage Grotesque headline at correct scale with warm cream/amber background in both light and dark mode
-  3. Generation form inputs, tag chips, and submit button use brand accent colors (amber CTA, rounded pill chips, warm input borders)
-  4. Waveform player shows the amber progress bar in both light and dark mode — switching themes updates waveform color immediately without page reload
-  5. Example cards display with warm card backgrounds, brand typography, and correct hover states in both modes
-**Plans**: 3 plans
-
-Plans:
-- [ ] 06-01-PLAN.md — OKLCH color utility + leaf component token swaps (EnhancedCaptionDisplay, LoadingAnimation, GenerationPage, GenerationForm submit)
-- [ ] 06-02-PLAN.md — Hero section redesign (6xl-7xl headline, amber glow, accent CTA, sky-blue typewriter)
-- [ ] 06-03-PLAN.md — WaveformPlayer theme sync via setOptions() + VariantCard full token rewrite + final grep audit
-
----
-
-### Phase 7: Animation + Typewriter
-**Goal**: The hero typewriter is replaced with the Framer Motion-based component, card hover lifts and generation flow transitions are added, and all animations respect prefers-reduced-motion — the app feels playful and alive without blocking the render or bloating the bundle.
-**Depends on**: Phase 6
-**Requirements**: NEW-01
-**Success Criteria** (what must be TRUE):
-  1. Hero headline displays the Framer Motion typewriter with correct brand font (Bricolage Grotesque), brand color, configurable speed, and cursor animation — no cumulative layout shift as text types
-  2. Variant result cards lift slightly on hover (whileHover y: -2) without jumping or causing layout shift
-  3. Switching from generation form to results view is animated (AnimatePresence fade/slide) rather than an instant swap
-  4. All animations stop or reduce to instant transitions when prefers-reduced-motion is enabled in the OS
+  1. Clicking "Library" in the sidebar navigates to /library (does not stay on #) and the Library item shows an active visual state when the user is on /library
+  2. GenerationPage no longer registers duplicate event listeners on every render — verified by opening DevTools Performance and seeing the navigate-create handler registered exactly once
+  3. GSAP and @gsap/react appear in package.json and the dev server starts without module-not-found errors
+  4. src/lib/gsap-config.ts exists with a "use client" directive, registers ScrambleTextPlugin, and all subsequent animation files import from it rather than directly from gsap
 **Plans**: TBD
 
 Plans:
-- [ ] 07-01-PLAN.md — Framer Motion typewriter integration (copy-paste component, LazyMotion, CLS fix, reduced-motion)
-- [ ] 07-02-PLAN.md — Card hover lift, generation flow AnimatePresence transition, bundle size verification
+- [ ] 09-01-PLAN.md — FIX-01: GenerationPage useEffect dependency array fix + FIX-02/FIX-03: gsap + @gsap/react install + gsap-config.ts client boundary + sidebar Library link wired to /library with usePathname active state
 
 ---
 
-### Phase 8: Footer + Style Guide Completion
-**Goal**: The stacked circular footer is integrated with brand tokens and passes mobile overflow testing, and the /style-guide page is complete — showing all tokens, all component variants (including animated), contrast ratios, and gated from production.
-**Depends on**: Phase 7
-**Requirements**: NEW-02, NEW-03
+### Phase 10: Library Data Layer
+**Goal**: The /library route exists and renders real data — all previously generated songs are fetched server-side from Supabase, presigned URLs are generated server-side, and an empty state is shown when no songs exist.
+**Depends on**: Phase 9
+**Requirements**: LIB2-02, LIB2-03, LIB2-06
 **Success Criteria** (what must be TRUE):
-  1. The stacked circular footer is visible on all pages with navigation links, social icons, and an email subscription form rendered in brand tokens
-  2. Footer causes no horizontal scroll at 375px viewport width — overflow-hidden wrapper confirmed on a real device
-  3. /style-guide page shows all brand colors with contrast ratios, the full type scale, spacing/radius/shadow tokens, and every component variant (buttons, cards, form inputs, waveform player) in both light and dark mode
-  4. /style-guide is not accessible in production (NODE_ENV check gates the route — returns 404 in prod, 200 in dev)
+  1. Navigating to /library shows a list of all previously generated songs sorted newest-first, with each entry displaying a title (derived from prompt), genre/style tags, duration, and generation date
+  2. Navigating to /library when no songs have been generated shows a branded empty state with a visible "Create your first song" call-to-action
+  3. The library page renders without a client-side loading spinner — data is present on first paint (server-side fetch confirmed via View Source showing song content, not a loading skeleton)
 **Plans**: TBD
 
 Plans:
-- [ ] 08-01-PLAN.md — Spectrum-ui footer copy-paste integration, brand token application, overflow-hidden mobile fix
-- [ ] 08-02-PLAN.md — /style-guide completion pass: all component sections, contrast ratios, animated demos, production gating
+- [ ] 10-01-PLAN.md — app/library/page.tsx RSC: Drizzle query (generations + outputs, 50-item limit, newest-first) + R2 presigned URL generation + LibraryEmpty component + basic list rendering
+
+---
+
+### Phase 11: Library UI + Persistent Player
+**Goal**: Library songs are playable from cards that delegate audio to the persistent bottom player, the player bar is visible across all pages when a track is active, and GSAP scramble text animates card titles on hover.
+**Depends on**: Phase 10
+**Requirements**: LIB2-04, LIB2-05, PERS-01, PERS-02, PERS-03, PERS-04, PERS-05
+**Success Criteria** (what must be TRUE):
+  1. Clicking play on a library card starts audio in the persistent bottom player bar without navigating away from the library page
+  2. The bottom player bar remains visible and continues playing when the user navigates between /library and the homepage — playback does not stop or restart on navigation
+  3. The player bar displays the current track title and genre, a playback progress indicator, and play/pause + skip backward + skip forward controls that function correctly
+  4. The player bar shows a mini waveform visualization of the actively playing track
+  5. Hovering over a library card title triggers a GSAP scramble text animation — characters cycle through random characters before resolving to the actual title
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01-PLAN.md — LibraryCard + LibraryList components: play-request architecture (no local wavesurfer), AudioPlayerContext.play() integration, hover-reveal play button, active track indicator
+- [ ] 11-02-PLAN.md — Wire BottomAudioPlayer: verify cross-route persistence, player bar track info + progress + controls, mini waveform visualization
+- [ ] 11-03-PLAN.md — GSAP scramble text on LibraryCard titles: useGSAP with scope, ScrambleTextPlugin, hover trigger, play-once-per-hover behavior
+
+---
+
+### Phase 12: Same-Page Workspace Transformation
+**Goal**: The homepage transforms in-place into a two-panel workspace when the user clicks Create — the hero collapses, the form appears left and results right, workspace state survives page refresh via URL, and the transition is animated.
+**Depends on**: Phase 11
+**Requirements**: HOME-01, HOME-02, HOME-03, HOME-04, HOME-05, HOME-06
+**Success Criteria** (what must be TRUE):
+  1. The homepage shows a clean centered headline and single large prompt input box — the existing multi-panel generation form is not visible until Create is clicked
+  2. Clicking Create on the homepage transforms the page into a two-panel layout (form left, results right) without a route change — the URL updates to /?mode=create but the pathname stays /
+  3. Refreshing the browser while on /?mode=create returns the user directly to the two-panel workspace, not the homepage hero — workspace state survives hard reload
+  4. The two-panel workspace stacks vertically on a 375px viewport with each panel fully accessible above the player bar
+  5. Pressing back (browser back button) or a visible back control on the workspace returns the user to the homepage hero view
+  6. The transition from hero to workspace is animated — the hero collapses and the workspace panels expand with a Framer Motion layout transition
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01-PLAN.md — HeroSection prompt-first redesign: centered headline + large prompt input + Create CTA; remove example cards above the fold
+- [ ] 12-02-PLAN.md — Same-page transformation: isWorkspaceActive state + ?mode=create URL encoding + useSearchParams read + back navigation
+- [ ] 12-03-PLAN.md — Two-panel layout: CSS Grid form/results split, responsive stack at mobile, pb-[var(--player-bar-height)] on each column, Framer Motion layout transition
 
 ---
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 5 -> 6 -> 7 -> 8
+Phases execute in numeric order: 9 → 10 → 11 → 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -140,7 +178,11 @@ Phases execute in numeric order: 5 -> 6 -> 7 -> 8
 | 2. Generation API | v1.0 | 3/3 | Complete | 2026-03-05 |
 | 3. Playback and Download | v1.0 | 2/2 | Complete | 2026-03-05 |
 | 4. UX Polish | v1.0 | 3/3 | Complete | 2026-03-05 |
-| 5. Token Foundation + Theme Infrastructure | 3/3 | Complete   | 2026-03-05 | - |
-| 6. Component Audit + Core Redesign | 3/3 | Complete   | 2026-03-05 | - |
-| 7. Animation + Typewriter | v1.1 | 0/2 | Not started | - |
-| 8. Footer + Style Guide Completion | v1.1 | 0/2 | Not started | - |
+| 5. Token Foundation + Theme Infrastructure | v1.1 | 3/3 | Complete | 2026-03-05 |
+| 6. Component Audit + Core Redesign | v1.1 | 3/3 | Complete | 2026-03-05 |
+| 7. Animation + Typewriter | v1.1 | 2/2 | Complete | 2026-03-05 |
+| 8. Footer + Style Guide Completion | v1.1 | 2/2 | Complete | 2026-03-05 |
+| 9. Foundation Fixes + Navigation | v2.0 | 0/1 | Not started | - |
+| 10. Library Data Layer | v2.0 | 0/1 | Not started | - |
+| 11. Library UI + Persistent Player | v2.0 | 0/3 | Not started | - |
+| 12. Same-Page Workspace Transformation | v2.0 | 0/3 | Not started | - |

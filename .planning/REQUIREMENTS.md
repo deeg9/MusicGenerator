@@ -55,9 +55,9 @@ Requirements for brand redesign milestone. Each maps to roadmap phases.
 
 ### New Components
 
-- [ ] **NEW-01**: Typewriter component replaced with danielpetho's Framer Motion typewriter (configurable speed, cursor animation)
-- [ ] **NEW-02**: Stacked circular footer with navigation links, social icons, and email subscription form
-- [ ] **NEW-03**: A /style-guide dev page displays all brand colors, typography, spacing, and component variants
+- [x] **NEW-01**: Typewriter component replaced with danielpetho's Framer Motion typewriter (configurable speed, cursor animation)
+- [x] **NEW-02**: Stacked circular footer with navigation links, social icons, and email subscription form
+- [x] **NEW-03**: A /style-guide dev page displays all brand colors, typography, spacing, and component variants
 
 ## v2.0 Requirements
 
@@ -173,36 +173,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-03 | Phase 6 | Complete |
 | COMP-04 | Phase 6 | Complete |
 | COMP-05 | Phase 6 | Complete |
-| NEW-01 | Phase 7 | Pending |
-| NEW-02 | Phase 8 | Pending |
-| NEW-03 | Phase 8 | Pending |
-| HOME-01 | — | Pending |
-| HOME-02 | — | Pending |
-| HOME-03 | — | Pending |
-| HOME-04 | — | Pending |
-| HOME-05 | — | Pending |
-| HOME-06 | — | Pending |
-| LIB2-01 | — | Pending |
-| LIB2-02 | — | Pending |
-| LIB2-03 | — | Pending |
-| LIB2-04 | — | Pending |
-| LIB2-05 | — | Pending |
-| LIB2-06 | — | Pending |
-| PERS-01 | — | Pending |
-| PERS-02 | — | Pending |
-| PERS-03 | — | Pending |
-| PERS-04 | — | Pending |
-| PERS-05 | — | Pending |
-| FIX-01 | — | Pending |
-| FIX-02 | — | Pending |
-| FIX-03 | — | Pending |
+| NEW-01 | Phase 7 | Complete |
+| NEW-02 | Phase 8 | Complete |
+| NEW-03 | Phase 8 | Complete |
+| FIX-01 | Phase 9 | Pending |
+| FIX-02 | Phase 9 | Pending |
+| FIX-03 | Phase 9 | Pending |
+| LIB2-01 | Phase 9 | Pending |
+| LIB2-02 | Phase 10 | Pending |
+| LIB2-03 | Phase 10 | Pending |
+| LIB2-06 | Phase 10 | Pending |
+| LIB2-04 | Phase 11 | Pending |
+| LIB2-05 | Phase 11 | Pending |
+| PERS-01 | Phase 11 | Pending |
+| PERS-02 | Phase 11 | Pending |
+| PERS-03 | Phase 11 | Pending |
+| PERS-04 | Phase 11 | Pending |
+| PERS-05 | Phase 11 | Pending |
+| HOME-01 | Phase 12 | Pending |
+| HOME-02 | Phase 12 | Pending |
+| HOME-03 | Phase 12 | Pending |
+| HOME-04 | Phase 12 | Pending |
+| HOME-05 | Phase 12 | Pending |
+| HOME-06 | Phase 12 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 15 total (all complete)
-- v1.1 requirements: 12 total (9 complete, 3 pending)
-- v2.0 requirements: 20 total (all pending, unmapped)
-- Unmapped: 20 ⚠️
+- v1.1 requirements: 12 total (all complete)
+- v2.0 requirements: 20 total (all pending, mapped to phases 9-12)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-05 after v2.0 milestone definition*
+*Last updated: 2026-03-05 after v2.0 roadmap creation*
