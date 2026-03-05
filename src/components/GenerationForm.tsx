@@ -27,6 +27,7 @@ export function GenerationForm({ onSubmit, isSubmitting }: GenerationFormProps) 
   const [duration, setDuration] = useState(120);
   const [instrumental, setInstrumental] = useState(false);
   const [lyrics, setLyrics] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   function handleToggleGenre(genre: string) {
     setSelectedGenres((prev) =>
@@ -34,8 +35,27 @@ export function GenerationForm({ onSubmit, isSubmitting }: GenerationFormProps) 
     );
   }
 
+  function validate(): Record<string, string> {
+    const errs: Record<string, string> = {};
+    if (!prompt.trim()) {
+      errs.prompt = 'Describe your song to get started.';
+    }
+    if (mode === 'custom' && lyrics.trim() && lyrics.length > 5000) {
+      errs.lyrics = 'Lyrics must be under 5000 characters.';
+    }
+    return errs;
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
+
+    setErrors({});
 
     const customTags = customGenreText
       .split(',')
@@ -58,7 +78,7 @@ export function GenerationForm({ onSubmit, isSubmitting }: GenerationFormProps) 
     onSubmit(data);
   }
 
-  const canSubmit = prompt.trim().length > 0 && !isSubmitting;
+  const canSubmit = !isSubmitting;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -71,16 +91,38 @@ export function GenerationForm({ onSubmit, isSubmitting }: GenerationFormProps) 
         <input
           type="text"
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={(e) => {
+            setPrompt(e.target.value);
+            setErrors((prev) => { const { prompt: _p, ...rest } = prev; return rest; });
+          }}
           placeholder="Describe the vibe of your song..."
-          className="w-full bg-card border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          aria-invalid={!!errors.prompt}
+          className={`w-full bg-card border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring transition-colors ${
+            errors.prompt ? 'border-destructive ring-destructive' : 'border-border'
+          }`}
         />
+        {errors.prompt && <p className="mt-1 text-xs text-destructive">{errors.prompt}</p>}
       </div>
 
-      {/* Lyrics — Custom mode only */}
-      {mode === 'custom' && (
-        <LyricsTextarea lyrics={lyrics} onChange={setLyrics} />
-      )}
+      {/* Lyrics — always mounted, animated via CSS grid-template-rows */}
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{ gridTemplateRows: mode === 'custom' ? '1fr' : '0fr' }}
+      >
+        <div
+          className="overflow-hidden transition-opacity duration-300"
+          style={{ opacity: mode === 'custom' ? 1 : 0 }}
+        >
+          <LyricsTextarea
+            lyrics={lyrics}
+            onChange={(val) => {
+              setLyrics(val);
+              setErrors((prev) => { const { lyrics: _l, ...rest } = prev; return rest; });
+            }}
+          />
+          {errors.lyrics && <p className="mt-1 text-xs text-destructive">{errors.lyrics}</p>}
+        </div>
+      </div>
 
       {/* Genre chips */}
       <GenreChips

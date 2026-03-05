@@ -17,7 +17,7 @@ describe('GenerationForm', () => {
     );
     const submitBtn = screen.getByRole('button', { name: /generate/i });
     fireEvent.click(submitBtn);
-    expect(await screen.findByText(/describe your song/i)).toBeDefined();
+    expect(await screen.findByText(/describe your song to get started/i)).toBeDefined();
   });
 
   it.todo('clears error when user types in prompt field');
