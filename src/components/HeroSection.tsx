@@ -37,6 +37,14 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden bg-background">
+      {/* Amber radial glow blob — editorial brand warmth */}
+      <div
+        className="pointer-events-none absolute inset-0 flex items-center justify-center -translate-y-8"
+        aria-hidden="true"
+      >
+        <div className="h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
+      </div>
+
       {/* Animated waveform accent background */}
       <div className="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
         <svg
@@ -69,23 +77,25 @@ export function HeroSection() {
         </svg>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-16 sm:py-24 text-center">
-        {/* Headline */}
-        <h1 className="relative text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
+      <div className="mx-auto max-w-4xl px-4 py-24 text-center">
+        {/* Headline — brand editorial scale with Bricolage Grotesque */}
+        <h1 className="relative text-6xl sm:text-7xl font-display font-bold tracking-tight text-foreground">
           Create{' '}
-          <Typewriter words={TYPEWRITER_WORDS} speed={80} cursorChar="|" />
+          <span className="text-primary">
+            <Typewriter words={TYPEWRITER_WORDS} speed={80} cursorChar="|" />
+          </span>
         </h1>
 
         {/* Subtitle */}
-        <p className="relative mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
+        <p className="relative mt-6 text-xl text-muted-foreground max-w-xl mx-auto">
           Describe a vibe, add your own lyrics, and get a unique song in seconds. No musical skills
           needed.
         </p>
 
-        {/* CTA */}
+        {/* CTA — amber accent = action */}
         <a
           href="#create"
-          className="relative inline-block mt-8 bg-primary text-primary-foreground font-medium px-8 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+          className="relative inline-block mt-10 bg-accent text-accent-foreground font-semibold px-8 py-3 rounded-lg hover:bg-accent/90 transition-colors"
         >
           Start Creating
         </a>
