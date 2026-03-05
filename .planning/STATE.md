@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-04T23:11:31.234Z"
+stopped_at: "Completed 02-01-PLAN.md: format_input integration"
+last_updated: "2026-03-05T02:20:05.980Z"
 last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 7
+  completed_plans: 5
   percent: 33
 ---
 
@@ -52,6 +52,7 @@ Progress: [███░░░░░░░] 33%
 *Updated after each plan completion*
 | Phase 01-infrastructure-foundation P03 | 10min | 1 tasks | 3 files |
 | Phase 01-infrastructure-foundation P03 | 47min | 2 tasks | 4 files |
+| Phase 02-generation-api P01 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 01-infrastructure-foundation]: Next.js 16 App Router route params are async (Promise<{...}>) — must await params before destructuring
 - [Phase 01-infrastructure-foundation]: queryJobStatus parses nested ACE-Step envelope: raw.data[0].status and JSON.parse(raw.data[0].result) for audio URLs
 - [Phase 01-infrastructure-foundation]: R2 presigned URL 403 is token permission issue (needs Object Read scope) — audio uploads correctly, not blocking Phase 2
+- [Phase 02-generation-api]: format_input called before every generation job with genre tags concatenated into prompt for better BPM/key LLM output
+- [Phase 02-generation-api]: Graceful fallback: format_input failure is non-fatal, generation proceeds with raw prompt
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T23:11:31.231Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-generation-api/02-CONTEXT.md
+Last session: 2026-03-05T02:20:05.978Z
+Stopped at: Completed 02-01-PLAN.md: format_input integration
+Resume file: None
