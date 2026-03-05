@@ -67,7 +67,7 @@ Plans:
   3. Typography renders with Bricolage Grotesque for headings and Figtree for body copy — visible on /style-guide with type scale samples
   4. Spacing, border-radius, and shadow tokens are all visible on /style-guide as labeled reference swatches
   5. No Tailwind v4 border regression visible anywhere — all card and input borders match the defined --border token, not currentColor
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 05-01-PLAN.md — Primitive + semantic token files, globals.css bridge, Tailwind v4 border fix
@@ -96,7 +96,7 @@ Plans:
 ---
 
 ### Phase 7: Animation + Typewriter
-**Goal**: The hero typewriter is replaced with the Framer Motion–based component, card hover lifts and generation flow transitions are added, and all animations respect prefers-reduced-motion — the app feels playful and alive without blocking the render or bloating the bundle.
+**Goal**: The hero typewriter is replaced with the Framer Motion-based component, card hover lifts and generation flow transitions are added, and all animations respect prefers-reduced-motion — the app feels playful and alive without blocking the render or bloating the bundle.
 **Depends on**: Phase 6
 **Requirements**: NEW-01
 **Success Criteria** (what must be TRUE):
@@ -132,7 +132,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 5 → 6 → 7 → 8
+Phases execute in numeric order: 5 -> 6 -> 7 -> 8
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -140,7 +140,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 2. Generation API | v1.0 | 3/3 | Complete | 2026-03-05 |
 | 3. Playback and Download | v1.0 | 2/2 | Complete | 2026-03-05 |
 | 4. UX Polish | v1.0 | 3/3 | Complete | 2026-03-05 |
-| 5. Token Foundation + Theme Infrastructure | v1.1 | 0/3 | Not started | - |
+| 5. Token Foundation + Theme Infrastructure | v1.1 | 0/3 | Planning | - |
 | 6. Component Audit + Core Redesign | v1.1 | 0/3 | Not started | - |
 | 7. Animation + Typewriter | v1.1 | 0/2 | Not started | - |
 | 8. Footer + Style Guide Completion | v1.1 | 0/2 | Not started | - |
