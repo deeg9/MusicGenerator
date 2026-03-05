@@ -1,372 +1,392 @@
 # Pitfalls Research
 
-**Domain:** Visual Redesign & Design System — Adding brand kit to existing Next.js + Tailwind v4 + shadcn/ui app
+**Domain:** Suno-Style UX Overhaul — Persistent audio player, GSAP animations, library page, two-panel workspace in existing Next.js App Router app
 **Researched:** 2026-03-05
-**Confidence:** HIGH (shadcn/ui + Tailwind v4 specifics from official docs; Framer Motion from official performance guide; accessibility from WCAG + WebAIM; dark mode hydration from confirmed GitHub issues)
+**Confidence:** HIGH (wavesurfer.js pitfalls from official GitHub issues; GSAP from official docs and confirmed Next.js forum discussions; audio state hydration from official Next.js/Zustand docs; layout pitfalls from first-principles code analysis of the existing codebase)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: shadcn/ui CSS Variable Format Mismatch After Tailwind v4 Migration
+### Pitfall 1: AudioPlayerContext Uses React Reducer — No Actual Audio Element
 
 **What goes wrong:**
-shadcn/ui v3-style globals.css defines CSS variables as bare HSL channel values: `--background: 0 0% 100%`. Tailwind v4 with `@theme inline` expects variables to be full color values with the `hsl()` wrapper: `--background: hsl(0 0% 100%)`. When both formats exist in the same globals.css (which happens when shadcn components are already installed and you add `@theme inline` to adopt v4 patterns), the `hsl(--background)` references in component classes render as transparent or invalid — cards go transparent, inputs disappear, buttons lose their fill. This is a confirmed shadcn/ui GitHub issue (#4845).
+The existing `AudioPlayerContext.tsx` manages playback *state* (isPlaying, currentTrack) but owns no actual `<audio>` element or wavesurfer instance. The real audio lives inside `BottomAudioPlayer.tsx` → `PlayerContent` → `useWavesurfer`. This means the context and the audio engine are decoupled through a fragile "sync" loop: context says `isPlaying: true`, wavesurfer reads that and calls `wavesurfer.play()`. When adding a library page that also dispatches `play()`, three separate sync loops can race — the context state, wavesurfer's internal state, and the new library card's local state — producing double-plays, ghost plays (context says playing but wavesurfer is paused), or the waveform not loading at all because wavesurfer's container element is hidden while trying to initialize.
 
 **Why it happens:**
-The shadcn/ui CLI `init` command generates the v3-format variables (bare channels). Tailwind v4's `@theme inline` directive assumes variables are already wrapped. Mixing old and new format in one file causes the CSS to evaluate `hsl(0 0% 100%)` correctly in some places and `hsl(220 20% 8%)` (a raw value inserted into hsl()) correctly in others, with the mismatch only visible in the final rendered output — not at build time.
+The current design was built for a single-page use case where the BottomAudioPlayer is always mounted and the only thing that plays audio. Adding a library page with its own "Play" buttons creates new callers of `play()` that assume the BottomAudioPlayer is visible and wavesurfer is initialized — but wavesurfer only initializes when `currentTrack` changes and the container ref is attached. A library card dispatching `play()` before the BottomAudioPlayer's `useWavesurfer` has mounted causes a no-op.
 
 **How to avoid:**
-Pick one format for the entire globals.css and be consistent. For Tailwind v4, the correct approach is:
+Before building the library page, consolidate the audio engine. The audio element (or wavesurfer instance) must be the single source of truth, not the context reducer. Two valid approaches:
 
-```css
-/* Step 1: Define raw semantic tokens at :root */
-:root {
-  --background: hsl(210 30% 98%);
-  --foreground: hsl(220 20% 20%);
-  --primary: hsl(200 80% 50%);
-}
+Option A — Move the wavesurfer instance into context directly (store the ref in context, expose `wavesurfer` to consumers). All play/pause calls go through the wavesurfer instance, not a mirrored state variable.
 
-.dark {
-  --background: hsl(220 20% 8%);
-  --foreground: hsl(210 20% 95%);
-}
+Option B — Keep the current architecture but add an explicit initialization guard: library card "Play" buttons do not dispatch `play()` directly; they dispatch `requestPlay(track)` which the BottomAudioPlayer acknowledges and confirms when ready. No double-trigger possible.
 
-/* Step 2: Register as Tailwind theme tokens */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-}
-```
-
-Do NOT mix `hsl(var(--background))` (v3 pattern) with direct variable references in the same codebase. When adding new brand tokens alongside existing shadcn tokens, convert all existing variables to the full-value format before adding new ones.
-
-**Warning signs:**
-- Components have invisible/transparent backgrounds after globals.css edits
-- Cards or buttons render with correct text but no fill
-- Browser DevTools shows `hsl(...)` with a raw HSL string inside (invalid CSS)
-- Dark mode background renders correctly but light mode goes white/transparent or vice versa
-- `background-color: hsl(var(--card))` in computed styles (indicates v3 format still active while v4 pattern was added)
-
-**Phase to address:** Token Foundation phase (first wave) — establish the correct variable format before any component restyling.
-
----
-
-### Pitfall 2: Tailwind v4 `border` Default Change Breaks All Card/Input Borders
-
-**What goes wrong:**
-In Tailwind v3, `border` utilities default to `gray-200`. In Tailwind v4, `border` defaults to `currentColor`. Existing components that use `border` (without an explicit color class like `border-border`) suddenly render with dark/black borders that match the text color. Every card, input, dialog, and button that relied on the v3 default border color appears broken — thick dark outlines appear everywhere, the layout looks broken, and the light/dark mode border scheme stops working.
-
-**Why it happens:**
-This is a documented breaking change in Tailwind v4. Developers who scaffolded with v3 (or early v4 with shadcn CLI defaults) relied on the implicit gray border default. The change affects every utility that adds a border without explicitly specifying color — a very common pattern in shadcn components.
-
-**How to avoid:**
-Audit the codebase for bare `border`, `border-t`, `border-b`, `border-l`, `border-r` classes before starting redesign work. Replace them with `border border-border` (using the shadcn semantic token). Set a global CSS baseline in globals.css if needed:
-
-```css
-*, *::before, *::after {
-  border-color: var(--border);
-}
-```
-
-Run a search for bare border classes before adding any Tailwind v4 `@theme` directives:
-
-```
-grep -r "className.*\bborder\b" src/ --include="*.tsx"
-```
-
-**Warning signs:**
-- Black outlines appear on all inputs, cards, dialogs, modals after any globals.css change
-- The outline matches text `foreground` color (proof it's using `currentColor`)
-- Border issue appears in light mode but not dark mode (or vice versa), because `currentColor` differs between modes
-- Build succeeds with no errors — this is a silent visual regression
-
-**Phase to address:** Token Foundation phase (first wave) — fix border defaults before any visual redesign work.
-
----
-
-### Pitfall 3: Dark Mode Flash of Unstyled Content (FOUC) from Mismatched SSR/Client Theme State
-
-**What goes wrong:**
-The app renders in light mode on the server (SSR default), then on the client detects `prefers-color-scheme: dark` and switches — causing a visible flash from light to dark. This is especially jarring with a warm color palette (light mode is cream/white, dark mode is deep navy) because the color distance is large. Users who prefer dark mode see a full-brightness white flash on every page load. With Next.js App Router, this happens even with `next-themes` if the ThemeProvider is not set up with `suppressHydrationWarning` and an inline script that reads system preference before React hydrates.
-
-**Why it happens:**
-SSR cannot read `localStorage` or `prefers-color-scheme` — the server renders without knowing the user's theme preference. React hydrates and detects the mismatch, triggering a re-render. Without a blocking script in `<head>` that applies the theme class before paint, the browser shows the default (usually light) state briefly.
-
-**How to avoid:**
-Use `next-themes` with the correct configuration for App Router:
+The simpler fix is Option B: rename `play` to `requestPlay` in context, and have `PlayerContent` listen for `requestPlay` and only confirm the play after wavesurfer fires its `ready` event.
 
 ```tsx
-// app/layout.tsx
-import { ThemeProvider } from 'next-themes';
+// In context, add state:
+type AudioPlayerAction =
+  | { type: 'REQUEST_PLAY'; track: AudioTrack }  // new: intent
+  | { type: 'CONFIRM_PLAY' }                      // new: wavesurfer ready
+  | { type: 'PAUSE' }
+  | { type: 'STOP' };
+```
 
-export default function RootLayout({ children }) {
+**Warning signs:**
+- Library card "Play" button dispatches but no audio starts
+- Clicking Play twice makes audio start (first click sets track, second click catches wavesurfer after it initializes)
+- `isPlaying: true` in context but wavesurfer `isPlaying()` returns `false`
+- Audio plays correctly from VariantCard but not from library page
+
+**Phase to address:** Persistent Player foundation phase — fix the context architecture before building any additional callers.
+
+---
+
+### Pitfall 2: wavesurfer.js Container Renders with Zero Width When Hidden
+
+**What goes wrong:**
+wavesurfer.js reads the container element's dimensions at initialization time to calculate how wide to draw the waveform SVG. If the container has `display: none`, `visibility: hidden`, or zero width at initialization, wavesurfer renders a 0px waveform — audio loads and plays but no waveform is visible. The mobile layout in `BottomAudioPlayer.tsx` already does this intentionally (hidden wavesurfer div for audio engine only), but it becomes a problem if the BottomAudioPlayer is conditionally hidden during transitions or if the library page uses cards that start with the waveform container display:none until expansion.
+
+In the library page context: a song card that hides its waveform until the user clicks "expand" will get a 0px waveform that never renders correctly — the container is 0px at wavesurfer init time.
+
+**Why it happens:**
+This is a documented wavesurfer.js behavior: `getBoundingClientRect()` on a hidden element returns zeros. wavesurfer does not re-measure on visibility changes. This was confirmed in wavesurfer.js GitHub discussions #3190 and #3523.
+
+**How to avoid:**
+Never initialize wavesurfer into a hidden or zero-width container. Two patterns work:
+
+Pattern A — Lazy initialization: only mount the wavesurfer component after the container becomes visible. Use CSS for the expand/collapse animation, and only render `<WaveformPlayer>` in the DOM after the card is expanded (conditional render, not CSS hide).
+
+Pattern B — Deferred initialization: pass `width` explicitly to wavesurfer options, bypassing the container measurement. Only works if you know the container width in advance (e.g., 100% of a known parent).
+
+Pattern A is simpler and already consistent with the existing codebase approach:
+
+```tsx
+{isExpanded && <WaveformPlayer url={track.url} ... />}
+// Not: <WaveformPlayer url={track.url} className={isExpanded ? '' : 'hidden'} />
+```
+
+**Warning signs:**
+- Waveform container is empty (no SVG drawn) even though audio plays
+- `wavesurfer.getDuration()` returns correct value but the visual is blank
+- Waveform renders correctly after navigating away and back (because remount triggers re-initialization with visible container)
+- Mobile layout has audio playing but no visual feedback
+
+**Phase to address:** Library page phase — establish the conditional-render pattern for waveform cards before building any library list component.
+
+---
+
+### Pitfall 3: GSAP Imported in a Server Component File Crashes the Build
+
+**What goes wrong:**
+GSAP requires direct DOM access (`window`, `document`, `requestAnimationFrame`). If a file that imports GSAP — or imports a component that imports GSAP — is treated as a Server Component by Next.js App Router (no `"use client"` directive), the build fails with `ReferenceError: window is not defined` or the module fails to resolve in the Node.js server environment.
+
+In this project the risk is subtle: the library page (`/app/library/page.tsx`) will be a Server Component by default. If a developer imports a `LibraryList` component that imports GSAP directly at the top level, the server component is poisoned even though the actual GSAP animation code only runs in browser effects.
+
+**Why it happens:**
+Next.js App Router evaluates all imports at the module level on the server. Even if GSAP is only *used* inside a `useEffect`, the `import gsap from 'gsap'` statement at the top of the file is evaluated on the server, where `window` does not exist.
+
+**How to avoid:**
+Establish a strict boundary: all GSAP imports live in files with `"use client"` at the top. Never import a GSAP-using component into a Server Component directly — import a client wrapper instead.
+
+Create a central GSAP config file:
+
+```tsx
+// src/lib/gsap-config.ts — "use client" at top
+'use client';
+import { gsap } from 'gsap';
+import { TextPlugin } from 'gsap/TextPlugin';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(TextPlugin, ScrollTrigger);
+
+export { gsap, ScrollTrigger };
+```
+
+All animated components import from `@/lib/gsap-config`, never directly from `gsap`. Plugin registration happens once.
+
+**Warning signs:**
+- `ReferenceError: window is not defined` during `next build`
+- Build succeeds in development (`next dev`) but fails in production build (dev mode is more lenient about server/client boundaries)
+- Error message points to a GSAP plugin import line, not the animation code itself
+- The error disappears when you add `"use client"` to the page file (wrong fix — fixes symptom, not cause)
+
+**Phase to address:** GSAP setup phase — establish `gsap-config.ts` before writing any animation code.
+
+---
+
+### Pitfall 4: GSAP ScrollTrigger Leaks Across Route Changes in App Router
+
+**What goes wrong:**
+ScrollTrigger instances attach to the document scroll position. In Next.js App Router, navigating from the library page (which has GSAP ScrollTrigger animations on the song list) to the home page does not fully unmount the library page immediately — especially if the BottomAudioPlayer or AppShell layout is persistent. ScrollTrigger instances that weren't killed during unmount continue to fire their callbacks on the home page. Symptoms: GSAP animations from the library page trigger on the home page scroll, console errors about GSAP animating elements that no longer exist in the DOM, or the library page animations play in wrong positions on revisit.
+
+**Why it happens:**
+The `useGSAP()` hook from `@gsap/react` does handle cleanup automatically when the component unmounts — but only if the component *actually* unmounts. If the library page layout stays partially mounted (because it's inside a persistent layout segment), the cleanup hook never fires. Additionally, if `useEffect` is used instead of `useGSAP()`, cleanup must be manual and developers frequently forget to call `ScrollTrigger.getAll().forEach(t => t.kill())` in the cleanup function.
+
+**How to avoid:**
+Use `useGSAP()` from `@gsap/react` exclusively — never raw `useEffect` for GSAP. The hook handles revert/cleanup automatically on unmount.
+
+```tsx
+'use client';
+import { useGSAP } from '@gsap/react';
+import { gsap, ScrollTrigger } from '@/lib/gsap-config';
+import { useRef } from 'react';
+
+export function LibraryList({ tracks }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    gsap.from('.track-row', {
+      opacity: 0,
+      y: 20,
+      stagger: 0.05,
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: 'top 80%',
+      },
+    });
+  }, { scope: containerRef }); // scope: prevents targeting outside the component
+
+  return <div ref={containerRef}>...</div>;
+}
+```
+
+The `scope` option is critical: it ensures GSAP only targets elements within `containerRef`, preventing cross-component contamination.
+
+**Warning signs:**
+- GSAP animations from library page run on home page after navigation
+- Console errors: `GSAP target [.track-row] not found`
+- Library animations play in wrong positions on second visit to library page
+- ScrollTrigger count in `ScrollTrigger.getAll().length` grows with each page visit (never cleaned up)
+
+**Phase to address:** GSAP animations phase — establish `useGSAP` with `scope` as the mandatory pattern before writing any scroll animations.
+
+---
+
+### Pitfall 5: Two-Panel Layout Breaks When Bottom Audio Player Appears
+
+**What goes wrong:**
+The two-panel create workspace (form panel left, results panel right) uses `h-screen` or `height: 100vh` to fill the viewport. When the BottomAudioPlayer slides in (`--player-bar-height: 80px`), the two-panel layout does not account for the player bar height — the bottom of the results panel is obscured by the persistent player. The existing `AppShell` adds `paddingBottom` to `<main>` dynamically when a track is playing, but a two-panel layout with `overflow-y-auto` on each panel independently (needed to allow each panel to scroll separately) does not inherit this padding correctly.
+
+Additionally, on mobile where the layout collapses to a single-column stacked view, the fixed bottom player overlaps the last action button in the form or the download button in the results.
+
+**Why it happens:**
+The `AppShell` applies `paddingBottom: currentTrack ? 'var(--player-bar-height)' : undefined` to `<main>`, which works when the content is a single scrolling area. A two-panel layout with independently scrollable columns creates two separate scroll containers. The padding on `<main>` only affects the outer flex container, not the inner scroll containers of each panel.
+
+**How to avoid:**
+Use CSS custom properties to communicate the player height to all layout layers:
+
+```css
+/* globals.css */
+:root {
+  --player-bar-height: 0px; /* updated by JS when player is active */
+}
+[data-player-active="true"] {
+  --player-bar-height: 80px;
+}
+```
+
+In each independently scrollable panel column, use `padding-bottom: var(--player-bar-height)` rather than relying on the parent `<main>` padding. Add a `data-player-active` attribute to the `<html>` or layout wrapper based on `currentTrack` state.
+
+Alternatively, use a layout that sizes panels with `calc(100vh - var(--player-bar-height))` and transitions this value when the player appears.
+
+**Warning signs:**
+- Bottom of results panel is cut off when audio is playing in the two-panel workspace
+- Scrolling to the bottom of the results panel reveals content is hidden behind the player bar
+- Mobile: "Download" or "Create New Song" button is behind the bottom player
+- The padding appears correctly on the home page but not on the two-panel workspace
+
+**Phase to address:** Two-panel workspace phase — test with audio playing before considering the layout complete.
+
+---
+
+### Pitfall 6: Zustand Persist Middleware Causes Hydration Mismatch for Audio State
+
+**What goes wrong:**
+If the audio player state is migrated from React Context to Zustand (a reasonable upgrade for the library page feature) and the persist middleware is added to remember the last-played track across page reloads, a hydration mismatch occurs. The server renders the page with `currentTrack: null` (initial state), but the client's Zustand store rehydrates from `localStorage` with a track object. React detects the difference and throws a hydration error, or worse, silently renders the wrong UI (player bar visible on initial server render because it was playing when the user last left).
+
+This is the most commonly reported Zustand + Next.js issue — it has its own dedicated section in the official Zustand Next.js guide.
+
+**Why it happens:**
+Next.js renders on the server, where `localStorage` does not exist. Zustand's persist middleware hydrates from `localStorage` on the client after React's initial render. The two renders produce different HTML. React 18's hydration process detects the mismatch and errors.
+
+**How to avoid:**
+If adding Zustand for audio state, do NOT use the persist middleware naively. Instead, use the `skipHydration` pattern from the official Zustand Next.js docs:
+
+```tsx
+// In the store:
+export const useAudioStore = create(
+  persist(
+    (set) => ({ currentTrack: null, isPlaying: false }),
+    { name: 'audio-player', skipHydration: true }
+  )
+);
+
+// In a root client component (e.g., AppShell):
+useEffect(() => {
+  useAudioStore.persist.rehydrate();
+}, []);
+```
+
+This ensures the store is never rehydrated on the server, and client rehydration only happens after the initial render, preventing the mismatch.
+
+Alternatively: do not persist audio state at all. The current React Context approach (no persistence) is correct for audio — users do not expect audio to resume where they left off after a full page reload. Only persist UI preferences (volume level, mute state) not the current track.
+
+**Warning signs:**
+- Hydration error: "Text content does not match server-rendered HTML"
+- BottomAudioPlayer is visible on first server render (before user interaction)
+- Player reappears with last track after hard page refresh (unexpected for most users)
+- Console error mentions Zustand or localStorage during SSR
+
+**Phase to address:** Audio state phase — if Zustand is introduced, implement `skipHydration` before adding any state that references `localStorage`.
+
+---
+
+### Pitfall 7: Multiple wavesurfer Instances Playing Simultaneously When Navigating Between Library Items
+
+**What goes wrong:**
+On the library page, each song card that has ever been expanded gets its own wavesurfer instance. When a user clicks Play on card A, then clicks Play on card B, both wavesurfer instances fire `play()` — card A's instance is not paused because only the context `isPlaying` state was updated, not card A's local wavesurfer instance directly. The result: two songs play at the same time.
+
+The existing `WaveformPlayer.tsx` handles this for the VariantCard case via the `isActive` prop — when `isActive` becomes false, the component pauses its local wavesurfer. But the library page is a new context with many potential instances, and if `WaveformPlayer` is reused as-is, each instance has independent local `isPlaying` state that only pauses when `isActive` becomes false. If a library card is off-screen and not re-rendered when a new track starts, its `isActive` prop update never fires.
+
+**Why it happens:**
+React components that are off-screen (scrolled out of view but still mounted in the DOM) do not get re-rendered unless their props change. In a virtualized list or in a long non-virtualized list, cards that were playing but are now off-screen will not respond to the global state change.
+
+**How to avoid:**
+The only reliable way to prevent multi-instance playback is to route ALL play/pause commands through the global audio player. Library cards should not have their own independent audio playback — they are UI affordances that request playback from the BottomAudioPlayer:
+
+```tsx
+// Library card: no local audio playback
+function LibraryCard({ track }) {
+  const { currentTrack, isPlaying, play, pause } = useAudioPlayer();
+  const isThisTrackPlaying = currentTrack?.url === track.url && isPlaying;
+
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+    <button onClick={() => isThisTrackPlaying ? pause() : play(track)}>
+      {isThisTrackPlaying ? <Pause /> : <Play />}
+    </button>
+    // No <WaveformPlayer> here — the BottomAudioPlayer owns the waveform
   );
 }
 ```
 
-The `suppressHydrationWarning` on `<html>` prevents React from throwing a hydration error when `next-themes` adds the `dark` class server vs. client. The `disableTransitionOnChange` option prevents the CSS transition from animating the flash. For Tailwind v4 class-based dark mode, ensure `darkMode: 'class'` behavior is replicated in the CSS: `.dark { ... }` selectors match the `class="dark"` applied by `next-themes`.
+Library cards show a waveform *visualization* (static SVG or pre-computed peaks), not a live interactive wavesurfer instance. Only the BottomAudioPlayer gets a real wavesurfer instance.
 
 **Warning signs:**
-- Visible white flash on page load when system is set to dark mode
-- React hydration warnings about `className` mismatch on `<html>` element
-- Dark mode works correctly after load but the initial render is wrong
-- Flash only appears on hard refresh, not on client-side navigation
+- Two songs play simultaneously when clicking between library cards
+- Audio from previous card continues after navigating away from it
+- Console shows multiple wavesurfer instances created (add a counter to verify)
+- Pausing in the BottomAudioPlayer does not stop audio from a library card
 
-**Phase to address:** Token Foundation phase — configure theme provider before any color work; a correct foundation prevents this from affecting any later component work.
+**Phase to address:** Library page phase — design library cards as play-requestors, not audio players, from the start.
 
 ---
 
-### Pitfall 4: Yellow Accent Color Fails WCAG AA Contrast on White/Cream Backgrounds
+### Pitfall 8: Same-Page Workspace Transformation Breaks URL Deep-Linking
 
 **What goes wrong:**
-The brand accent (`hsl(48 95% 55%)` — a sunny yellow) fails WCAG AA contrast (4.5:1 for normal text, 3:1 for large text) when used as text on white or cream backgrounds, and also when white text is placed on the yellow accent. Yellow at this brightness has a contrast ratio of approximately 1.1:1 against white — essentially invisible. This means: yellow button labels on white backgrounds are unreadable, yellow highlighted text in form inputs is unreadable, and accent-colored icon labels disappear for users with color vision deficiencies. The WebAIM Million study identifies color contrast as the #1 accessibility violation (83.6% of sites fail it).
+The existing `GenerationPage.tsx` already manages the `?job=` URL query parameter to allow deep-linking to a specific generation result. When the homepage transforms to the two-panel workspace, if this transformation is triggered by React state (e.g., `const [showWorkspace, setShowWorkspace] = useState(false)`) without a URL change, the workspace state is lost on page refresh. Users who are in the workspace, reload the page, and expect to return to their in-progress state instead see the blank hero. Worse: if a user shares the URL, the recipient sees the hero page, not the workspace.
 
 **Why it happens:**
-Designers choose warm yellows for aesthetic reasons, test them visually against the dark mode (where yellow on dark navy reads well), and miss the light mode contrast failures. The same yellow that looks vibrant on `hsl(220 20% 8%)` (dark background, passes at ~7:1) is invisible on `hsl(210 30% 98%)` (light cream background, fails at ~1.1:1).
+State-only transformations are not URL-serializable. The current codebase uses `router.replace` to persist `?job=` but the workspace visibility itself is not in the URL.
 
 **How to avoid:**
-Never use the accent yellow as a text color on light backgrounds. Use it only as a background fill, border, or decorative element — never as foreground text. For button labels on a yellow background, use dark foreground text (`hsl(220 20% 20%)` at approximately 8:1 contrast against the yellow).
-
-The brand kit already specifies `accent-foreground: hsl(220 20% 20%)` — enforce this rigorously. Add a contrast check to the `/style-guide` page that shows pass/fail ratios for all token combinations. Use [accessiblepalette.com](https://accessiblepalette.com) to verify every token combination before finalizing.
-
-Critical pairs to verify:
-- `accent` background + `accent-foreground` text: target ≥ 4.5:1
-- `muted-foreground` text on `background`: target ≥ 4.5:1 (muted text often fails)
-- `primary` text on `background`: target ≥ 4.5:1
-- Placeholder text in inputs: minimum 4.5:1 against input background
-
-**Warning signs:**
-- Yellow elements with white text look fine in dark mode but disappear in light mode
-- Placeholder text in form inputs appears invisible or very faint
-- "Muted" text tokens that look appropriate in dark mode fail contrast in light mode
-- Accessibility scanner (axe DevTools, WAVE) flags contrast errors after redesign
-
-**Phase to address:** Token Foundation phase — verify all token contrast pairs before building any components. Build the `/style-guide` contrast audit into Phase 1.
-
----
-
-### Pitfall 5: Framer Motion Typewriter Component Forces Entire Page Section to Client Component
-
-**What goes wrong:**
-The danielpetho typewriter component uses Framer Motion's `motion` primitives and requires `"use client"`. When this component is placed in a section that was previously a Server Component (like the hero section of a landing page), the entire parent component subtree becomes a client component — all its children lose server-rendering benefits, fetch calls inside them move to client-side data fetching, and the JavaScript bundle grows. If the hero section fetches recent examples or featured content, those fetches now happen on the client, adding a loading state that wasn't there before.
-
-**Why it happens:**
-In Next.js App Router, the `"use client"` boundary is contagious upward through props, but more importantly, any component that imports a client component can only itself be a client component if it directly uses client-only APIs. The real problem is when developers put the typewriter in a large component file alongside server-only data fetching, not realizing the boundary rules.
-
-**How to avoid:**
-Isolate the typewriter into the smallest possible leaf component:
+Encode the workspace state in the URL from the start. The simplest approach: use a `?mode=create` query parameter. When the user clicks "Create" on the hero, add `?mode=create` to the URL. The page reads `searchParams.get('mode')` to determine whether to show the hero or the workspace. This preserves deep-linking and survives refresh.
 
 ```tsx
-// src/components/HeroTypewriter.tsx
-"use client";
-import { TypewriterComponent } from 'danielpetho-typewriter'; // or similar
-
-export function HeroTypewriter({ phrases }: { phrases: string[] }) {
-  return <TypewriterComponent phrases={phrases} />;
-}
+// In the home page component:
+const searchParams = useSearchParams();
+const mode = searchParams.get('mode'); // null = hero, 'create' = workspace
 ```
 
-Keep the parent hero section as a Server Component that fetches data and passes strings down as props. The `"use client"` boundary stops at the leaf. Use `LazyMotion` from Framer Motion to reduce the initial bundle:
-
-```tsx
-import { LazyMotion, domAnimation } from 'motion/react';
-// Reduces Framer Motion bundle from 34kb to ~4.6kb for the initial render
-```
+The existing `?job=` parameter can coexist — `?mode=create&job=abc123` means "workspace visible, showing results for job abc123".
 
 **Warning signs:**
-- Hero section that previously rendered instantly now shows a loading state
-- Network tab shows hero content fetched via client-side XHR rather than in the HTML
-- Bundle analyzer shows Framer Motion added to a large chunk that covers most of the page
-- `"use client"` in a component file that also contains `async` data fetching or imports from server-only modules
+- Two-panel workspace disappears on page refresh, returning to hero
+- Browser back button does not return to workspace from a subsequent navigation
+- Sharing the URL while in workspace shows hero to the recipient
+- The `handleNewGeneration` function in `GenerationPage.tsx` clears `?job=` but does not clear `?mode=create`, leaving the workspace visible with no job
 
-**Phase to address:** Animation Components phase — establish the client boundary pattern before building any animated components.
+**Phase to address:** Homepage transformation phase — establish URL encoding before adding GSAP transitions on top of state.
 
 ---
 
-### Pitfall 6: Framer Motion Layout Animations Cause Cumulative Layout Shift (CLS) on Generation Page
+### Pitfall 9: GSAP ScrambleText / TextPlugin Requires GSAP Club License in Production
 
 **What goes wrong:**
-Adding `layout` prop to elements on the generation page (the form that hides when generation starts, the results that appear) causes Framer Motion to use FLIP animations to smooth the layout change. If the elements don't have stable keys or if `AnimatePresence` is not wrapping the conditional renders properly, elements "jump" to their final position before the animation starts — causing a visible CLS that looks worse than no animation at all. This is particularly noticeable on the existing generation flow where the form unmounts and results mount.
+The milestone specifies "GSAP portfolio list with scramble text for library browsing." GSAP's ScrambleTextPlugin is a Club GSAP (paid) plugin. The free tier of GSAP (npm install gsap) does not include ScrambleText. If a developer installs the free `gsap` package and tries to import `ScrambleTextPlugin`, the import resolves to `undefined`, GSAP throws a warning, and the scramble animation is silently skipped. The library page appears to work in development (no error thrown, just no animation) but ships with a missing animation.
 
 **Why it happens:**
-`layout` animation requires Framer Motion to measure element positions before and after the DOM change. If the DOM change happens synchronously (React's default), the measurement is missed. Developers add `layout` to individual elements without wrapping their conditional rendering in `AnimatePresence`, which is required for exit animations and stable measurement.
+The free GSAP npm package includes TextPlugin (text replacement, not scramble) but not ScrambleTextPlugin. The distinction is easy to miss because both sound similar and are both in the GSAP documentation. The error is silent in most configurations.
 
 **How to avoid:**
-Always pair `AnimatePresence` with conditional renders, and always provide stable `key` props:
+Two valid paths:
 
-```tsx
-<AnimatePresence mode="wait">
-  {phase === 'idle' && (
-    <motion.div key="form" exit={{ opacity: 0 }} layout>
-      <GenerationForm />
-    </motion.div>
-  )}
-  {phase === 'done' && (
-    <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} layout>
-      <GenerationResults />
-    </motion.div>
-  )}
-</AnimatePresence>
+Path A — Use TextPlugin (free, included). TextPlugin animates text content directly — not scramble/matrix style but smooth character-by-character reveal. It is sufficient for most UI animations and does not require a license.
+
+Path B — Use a CSS-only scramble effect via a custom hook. A scramble effect can be implemented without GSAP using `setInterval` + character randomization in a React hook. This is approximately 15 lines of code and produces the same visual effect.
+
+Path C — Purchase a GSAP Club license ($150/yr or one-time) which enables `ScrambleTextPlugin`.
+
+Confirm which plugins are available before building animations that depend on them:
+
+```ts
+import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
+console.log(ScrambleTextPlugin); // undefined = not available in free tier
 ```
 
-Use only `opacity` and `transform` for animations — avoid animating `height`, `width`, or `padding` directly, as these trigger layout recalculations and are not GPU-accelerated.
-
 **Warning signs:**
-- Elements visually "snap" to new positions before smoothly animating (measurement missed)
-- Chrome DevTools Performance panel shows layout events during animations
-- CLS score in Lighthouse degrades after adding animations
-- Animations that work in development jank in production (React StrictMode double-renders can mask timing issues)
+- ScrambleTextPlugin import returns undefined without error
+- Scramble animation works in a CodePen (where Club GSAP is often pre-loaded) but not in the local project
+- `gsap.registerPlugin(ScrambleTextPlugin)` logs a GSAP warning about an invalid plugin
+- Animation is "working" (no error) but text does not scramble
 
-**Phase to address:** Animation Components phase — establish AnimatePresence patterns in the component that already has the phase state machine (GenerationPage.tsx).
+**Phase to address:** GSAP animations phase — verify available plugins before planning specific animation types.
 
 ---
 
-### Pitfall 7: wavesurfer.js Waveform Colors Don't Update on Theme Switch
+### Pitfall 10: `useEffect` Listener Added Without Cleanup in GenerationPage Causes Memory Leak
 
 **What goes wrong:**
-wavesurfer.js renders into a Shadow DOM. Its waveform bar colors are set via JavaScript options (`waveColor`, `progressColor`, `cursorColor`) at initialization time. When the user switches from light to dark mode, or when the `dark` class is toggled on `<html>`, wavesurfer does not reactively update these colors — the waveform stays in the initialization-time color until the component re-mounts. This means in light mode the waveform looks correct, but after toggling dark mode the waveform remains using the light-mode colors (or vice versa).
-
-**Why it happens:**
-CSS variables work in regular DOM elements but do not penetrate the Shadow DOM boundary in wavesurfer.js. Setting `waveColor: "var(--primary)"` in the options does not work — the Shadow DOM does not inherit the CSS variables from the outer document, and even if it did, wavesurfer would not react to their changes. The `::part()` selector only applies to structural parts, not canvas colors.
-
-**How to avoid:**
-Read the resolved CSS variable values in JavaScript at initialization time, and re-initialize (or use the wavesurfer `setOptions` API if available) when the theme changes:
+`GenerationPage.tsx` line 146 adds a `window.addEventListener('navigate-create', onNavigateCreate)` inside a `useEffect` with no dependency array:
 
 ```tsx
-"use client";
-import { useTheme } from 'next-themes';
-import { useEffect, useRef } from 'react';
-
-function WaveformPlayer({ audioUrl }) {
-  const { resolvedTheme } = useTheme();
-  const wsRef = useRef(null);
-
-  useEffect(() => {
-    const style = getComputedStyle(document.documentElement);
-    const waveColor = style.getPropertyValue('--primary').trim();
-    const progressColor = style.getPropertyValue('--accent').trim();
-
-    if (wsRef.current) wsRef.current.destroy();
-    wsRef.current = WaveSurfer.create({
-      container: '#waveform',
-      waveColor: `hsl(${waveColor})`,
-      progressColor: `hsl(${progressColor})`,
-      // ...
-    });
-    return () => wsRef.current?.destroy();
-  }, [resolvedTheme, audioUrl]); // Re-init when theme changes
-}
+useEffect(() => {
+  function onNavigateCreate() { ... }
+  window.addEventListener('navigate-create', onNavigateCreate);
+  return () => window.removeEventListener('navigate-create', onNavigateCreate);
+}); // No dependency array — runs on EVERY render
 ```
 
-**Warning signs:**
-- Waveform colors don't change when toggling dark/light mode
-- Setting `waveColor: "var(--primary)"` in wavesurfer options has no effect
-- `::part(wave)` CSS selector doesn't change canvas colors (expected — canvas is not a CSS-styleable element)
-- Waveform appears in wrong color scheme after SSR hydration
-
-**Phase to address:** Theming Integration phase — after design tokens are established, explicitly test waveform theming under light/dark toggle before shipping.
-
----
-
-### Pitfall 8: Hardcoded Colors in Existing Components Survive Token Refactor
-
-**What goes wrong:**
-The existing app has components written with specific Tailwind utility classes like `bg-zinc-900`, `text-slate-400`, `border-gray-700`, `text-white`. When the new brand tokens are defined and applied globally, these hardcoded classes do not update — they override the semantic token system. Components look visually inconsistent: the new design system applies warm cream in light mode, but hardcoded `bg-zinc-900` stays dark regardless of theme. This is the most common failure mode in visual redesigns: the new tokens work, but dozens of existing hardcoded color classes are still in the codebase.
+Without a dependency array, this `useEffect` runs on every render, adding a new event listener and removing the old one. In a two-panel workspace with frequent state updates (polling, phase transitions, GSAP animations triggering re-renders), this runs dozens of times per minute. Each listener addition/removal is a real DOM operation. While the `return () => removeEventListener` cleanup prevents listener accumulation, the excessive add/remove cycle degrades performance and is a latent bug waiting to cause issues if the return cleanup is ever accidentally removed.
 
 **Why it happens:**
-When building fast, developers use specific Tailwind color utilities because they're easy to autocomplete. There is no build-time enforcement that prevents using `bg-zinc-900` vs `bg-background`. After a redesign, these become invisible landmines — they don't cause errors, they just render wrong.
+Missing dependency array is a common `useEffect` oversight. The React linter (eslint-plugin-react-hooks) would catch this as an "exhaustive-deps" warning if enabled.
 
 **How to avoid:**
-Before starting component restyling, run an audit to catalog all hardcoded color classes:
-
-```bash
-grep -rE "bg-(zinc|slate|gray|neutral|stone|white|black|red|blue|green|yellow|orange|purple|pink|rose|indigo|sky|teal|emerald|violet|fuchsia|lime|amber|cyan)-[0-9]" src/ --include="*.tsx" -l
-grep -rE "text-(zinc|slate|gray|neutral|stone|white|black)-[0-9]" src/ --include="*.tsx" -l
-grep -rE "border-(zinc|slate|gray|neutral|stone)-[0-9]" src/ --include="*.tsx" -l
-```
-
-Map each hardcoded value to its semantic token equivalent. Establish a lint rule (or coding convention) that disallows hardcoded palette colors in favor of semantic tokens. Add a check in the `/style-guide` page that renders all components against both light and dark backgrounds to catch theme mismatches.
-
-**Warning signs:**
-- Some components look correct in dark mode but have wrong background in light mode
-- Components using old `zinc`/`slate`/`gray` color scale appear alongside new brand-colored components
-- Light/dark toggle only partially updates the page (some elements switch, others don't)
-- Browser DevTools shows `background-color: rgb(24, 24, 27)` (zinc-900) hardcoded inline
-
-**Phase to address:** Component Restyling phase — audit first, then restyle. Never restyle components without the audit completed.
-
----
-
-### Pitfall 9: Stacked Circular Footer Breaks Layout on Mobile When Viewport is Narrow
-
-**What goes wrong:**
-The spectrum-ui stacked circular footer uses absolutely positioned circular elements with fixed pixel sizes. On mobile viewports (< 375px wide), the circles overflow the viewport horizontally, creating horizontal scroll on the page. This may also interact badly with `overflow-hidden` on parent containers. The footer appears correct on desktop and in browser dev tools at simulated mobile sizes (which don't account for browser chrome), then breaks on actual devices.
-
-**Why it happens:**
-Circular decorative elements sized in `vw` units or fixed pixels without responsive breakpoints overflow on narrow screens. When `overflow-hidden` is not set on the `<body>` or the footer container, horizontal scroll appears on the entire page — not just the footer section.
-
-**How to avoid:**
-Wrap the footer in `overflow-hidden` at the section level:
+Add `[]` as the dependency array to run the listener registration once on mount:
 
 ```tsx
-<footer className="relative overflow-hidden">
-  <StackedCircularFooter />
-</footer>
+useEffect(() => {
+  function onNavigateCreate() {
+    if (phase !== 'idle') handleNewGeneration();
+  }
+  window.addEventListener('navigate-create', onNavigateCreate);
+  return () => window.removeEventListener('navigate-create', onNavigateCreate);
+}, []); // Empty array = mount/unmount only
 ```
 
-Test on actual mobile devices (not just Chrome DevTools) at 375px and 320px widths. If the spectrum-ui component uses fixed pixel sizes, override them with responsive classes or add a `max-w-[100vw] overflow-hidden` wrapper. Confirm that `html, body { overflow-x: hidden }` is set in globals.css.
+Fix this before the two-panel workspace phase because the workspace will trigger significantly more re-renders than the current single-panel layout.
 
 **Warning signs:**
-- Horizontal scrollbar appears on the page after footer is added
-- Footer elements visible outside the page boundary in mobile view
-- `body` has `overflow-x: scroll` in computed styles
-- Footer looks correct in browser dev tools but breaks on real device
+- React DevTools profiler shows `GenerationPage` effects firing on every state update
+- `window.addEventListener` / `removeEventListener` calls visible in Performance tab at high frequency
+- ESLint `react-hooks/exhaustive-deps` warning on this specific `useEffect`
+- The event listener occasionally fires twice on a single `navigate-create` event
 
-**Phase to address:** Footer Component phase — test mobile overflow immediately after implementing the footer, before integrating with other page sections.
-
----
-
-### Pitfall 10: Typewriter Text Animation Causes Cumulative Layout Shift Before Stable String Length
-
-**What goes wrong:**
-The danielpetho typewriter component animates through phrases of different lengths. As text types in and out, the heading element resizes — its width and height change on every character. If the heading does not have a fixed height (or `min-h`), the content below it jumps up and down as the text length changes. This is particularly damaging on the hero section where CTA buttons are directly below the heading — users click a button only to have it shift as the typewriter completes.
-
-**Why it happens:**
-Animated text that changes length causes layout reflow if the container doesn't have a fixed or minimum size. The browser recalculates the layout for every character change. No `height` or `min-height` on the container means the rest of the page responds to the resizing.
-
-**How to avoid:**
-Set a fixed height on the typewriter container based on the tallest phrase it will display:
-
-```tsx
-<div className="min-h-[3.5rem] md:min-h-[4.5rem]">
-  <HeroTypewriter phrases={phrases} />
-</div>
-```
-
-Test all phrases at all breakpoints to ensure the `min-h` is sufficient for the longest string at the smallest font size. Place CTA buttons below a spacer, not directly below the animated element.
-
-**Warning signs:**
-- CTA buttons move vertically as the typewriter animates
-- Lighthouse CLS score above 0.1 on the landing page
-- Hero section height changes visibly during animation
-- Content below the hero animates unintentionally in sync with the typewriter
-
-**Phase to address:** Animation Components phase — set container dimensions before testing typewriter phrases.
+**Phase to address:** Homepage/workspace foundation phase — fix before adding two-panel layout complexity.
 
 ---
 
@@ -376,30 +396,30 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Hardcoding colors in components instead of using semantic tokens | Faster initial implementation, no token lookup required | Theme switching breaks individual components; redesigns require touching every file | Never — tokens are trivially easy to use |
-| Using `animate` on `height` property for accordions/collapsibles | Smooth open/close animation with minimal code | Triggers layout recalculation on every frame; causes jank on low-end devices | Never — use `scaleY` + `overflow-hidden`, or CSS `grid-template-rows` trick instead |
-| Storing theme preference in a React state variable | Simple implementation | State is lost on page refresh; causes FOUC on every navigation | Never — use `next-themes` or a cookie-backed solution |
-| Adding `"use client"` to large layout components to enable animations | Quick fix for "Framer Motion must be client component" error | Converts large portions of the page to client components, bloating JS bundle | Acceptable only for leaf components; never for layout or page components |
-| Setting wavesurfer colors as hardcoded hex values | Consistent colors that don't depend on CSS variable resolution | Waveform stays wrong color after theme switch | Acceptable only as temporary during development; replace with JS-resolved CSS variables before shipping |
-| Skipping `/style-guide` contrast audit | Saves time during development | Ships with contrast failures; fails accessibility and EAA (European Accessibility Act, in force June 2025) | Never — the audit is the prevention mechanism |
-| Defining font imports directly in component files | Works | Fonts load multiple times; layout shift from FOIT/FOUT on each component mount | Never — define fonts once in layout.tsx via `next/font` |
+| Library cards each own their own wavesurfer instance | Easy to implement, existing WaveformPlayer reusable | Multiple simultaneous playback, memory grows with library size, no coordination with BottomAudioPlayer | Never — always route through the global player |
+| Using raw `useEffect` for GSAP instead of `useGSAP()` | Familiar React pattern, no additional package | ScrollTrigger leaks across routes, memory grows on navigation, animations re-run on wrong pages | Never — `@gsap/react` is free and official |
+| Encoding workspace state in local React state only (not URL) | Simpler code, no router manipulation | Workspace lost on refresh, no deep-linking, broken browser back/forward | Never for main workspace view |
+| Adding Zustand persist middleware to audio state | Restores last track on page reload | Hydration mismatch errors, player visible on first server render | Never for current track — acceptable for UI prefs (volume) |
+| Hiding waveform container with `display:none` instead of conditional render | Smooth CSS transition for show/hide | wavesurfer initializes into 0px container, waveform never renders | Never — always use conditional render for wavesurfer containers |
+| Importing GSAP plugins directly from `gsap` in each component file | Simpler per-file imports | Plugin registration runs multiple times, ScrollTrigger not registered when first animation runs | Never — use centralized `gsap-config.ts` with single registration |
+| Using `window.dispatchEvent` / `window.addEventListener` for cross-component communication | Quick way to trigger actions without prop drilling | Not type-safe, no React integration, leaks if cleanup missed, impossible to test | Acceptable only as a temporary bridge; replace with context or Zustand |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when connecting to external services.
+Common mistakes when connecting to external services or libraries.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| shadcn/ui + Tailwind v4 | Mixing v3 HSL channel format (`--background: 0 0% 100%`) with v4 full-value format (`hsl(0 0% 100%)`) in globals.css | Pick one format for the entire file; v4 approach: full `hsl()` values in `:root`, referenced via `@theme inline` |
-| next-themes + App Router | Forgetting `suppressHydrationWarning` on `<html>` tag | Add `suppressHydrationWarning` to prevent React hydration errors on theme class mismatch |
-| next-themes + Tailwind v4 | Using `attribute="data-theme"` when Tailwind v4 dark mode is configured for `class` | Use `attribute="class"` to match Tailwind's `.dark { }` selectors |
-| wavesurfer.js + CSS variables | Passing `waveColor: "var(--primary)"` — Shadow DOM doesn't inherit outer CSS variables | Read computed value in JavaScript: `getComputedStyle(document.documentElement).getPropertyValue('--primary')` |
-| Framer Motion + Next.js App Router | Importing motion components in Server Components | Create a dedicated `"use client"` leaf component for each animated element; never add animation to Server Component files |
-| danielpetho typewriter | Not providing stable phrase array reference | Memoize the phrases array with `useMemo` or define it outside the component; unstable reference causes re-initialization on every render |
-| spectrum-ui footer | No `overflow-hidden` on footer container | Wrap in `<footer className="relative overflow-hidden">` to prevent circle elements from creating horizontal scroll |
-| Google Fonts / next/font | Importing fonts in component files with `@next/font/google` | Import once in `layout.tsx`, pass className down; never import in individual components |
+| wavesurfer.js + hidden container | `display:none` on container during init | Conditionally render `<WaveformPlayer>` only when its container is visible; never hide with CSS |
+| wavesurfer.js + global player | Creating one instance per library card | Only one wavesurfer instance lives in BottomAudioPlayer; library cards are play-request buttons only |
+| GSAP + Next.js App Router | Importing GSAP in Server Component files | All GSAP imports behind `"use client"`; central `gsap-config.ts` file; never in page.tsx directly |
+| GSAP + React | Using `useEffect` for animations | Use `useGSAP()` from `@gsap/react`; it handles cleanup, revert, and SSR fallback automatically |
+| GSAP ScrollTrigger + persistent layout | Not scoping to component ref | Always pass `scope: containerRef` to `useGSAP()`; prevents cross-component animation targeting |
+| Zustand + Next.js SSR | Using persist middleware with `localStorage` | Use `skipHydration: true` in persist config; call `rehydrate()` in a client-side `useEffect` |
+| BottomAudioPlayer + two-panel layout | Relying on `<main>` paddingBottom for scroll clearance | Each independently-scrolling panel column must have its own `pb-[var(--player-bar-height)]` |
+| Same-page workspace transformation | State-only transition, no URL update | Encode workspace mode in URL (`?mode=create`) so the state survives refresh and can be deep-linked |
 
 ---
 
@@ -409,11 +429,11 @@ Patterns that work at small scale but fail as usage grows.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Importing full Framer Motion (`import { motion } from 'framer-motion'`) everywhere | 34kb+ added to every client bundle that includes any animation | Use `LazyMotion` + `domAnimation` feature set; use `m` instead of `motion` for lazy-loaded components | Immediately — measurable on first load |
-| Animating `layout` on every section element | Page feels sluggish during scroll; Lighthouse performance score drops | Only add `layout` prop to elements that actually need FLIP animations (form/results swap) | On low-end mobile devices or complex pages |
-| Using `initial={{ opacity: 0 }}` without `viewport` prop on below-fold sections | Elements invisible until JavaScript hydrates; blank sections flash in | Add `viewport={{ once: true }}` to trigger animation when element enters viewport, or skip `initial` for content below fold | On slow connections where JS is delayed |
-| Loading all custom fonts as `display: block` (no FOIT mitigation) | Blank text until font loads; layout shift when font loads | Use `display: 'swap'` in `next/font` options; preload font in `<head>` | On first visit from any user |
-| Framer Motion `AnimatePresence` at a high component level (e.g., layout.tsx) | Every page transition triggers expensive remount/animation for all children | Keep `AnimatePresence` scoped to the specific UI section that transitions | Page transitions on complex pages |
+| Mounting a `<WaveformPlayer>` for every library item | Page sluggish, high memory, multiple audio contexts | Lazy-mount wavesurfer only for the active track in BottomAudioPlayer; library cards use static waveform SVG | At 20+ library items on one page |
+| Non-virtualized library list with many DOM nodes | Scroll jank, layout recalculations | Use `react-window` or `react-virtual` if library grows beyond 50 items | At ~50 items for low-end devices |
+| GSAP `stagger` on all rows without `ScrollTrigger` viewport check | Entire list animates instantly on page load, no progressive reveal | Add `scrollTrigger.start: 'top 80%'` so only visible rows animate | Immediately on lists longer than the viewport |
+| `AnimatePresence` wrapping the entire two-panel workspace | Every panel state change triggers full exit/enter animation | Scope `AnimatePresence` to only the element that actually transitions (results panel content, not the panels themselves) | Any time a form field updates |
+| Polling interval running in library page (if status polling is added for "generating" library items) | Network requests every 2s even when user is on a different page | Always cancel polling intervals on component unmount; tie polling to route-level focus | Immediately — polling is always active until explicitly stopped |
 
 ---
 
@@ -423,9 +443,9 @@ Domain-specific security issues beyond general web security.
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Embedding third-party animation component JS inline without CSP update | Content Security Policy violation breaks the animation in production | Update CSP headers in `next.config.ts` to allow inline scripts if required by third-party component |
-| Adding Google Fonts via `<link>` tag in HTML instead of `next/font` | Fonts bypass the Content Security Policy and connect to Google's servers directly; violates GDPR for EU users | Use `next/font/google` which self-hosts font files at build time — no Google CDN connection at runtime |
-| Using external CDN for animation assets (Lottie files, video backgrounds) | CDN outage breaks visual components; CDN JS can be compromised | Self-host all animation assets in `/public`; never load JS from external CDNs |
+| Storing `currentTrack.url` (presigned R2 URL) in localStorage via Zustand persist | Presigned URL exposed in localStorage (accessible to any JS), URL may expire but remains in storage | Do not persist track URLs; persist only track metadata (title, jobId) and regenerate the presigned URL on demand |
+| GSAP plugin loaded from CDN fallback | If CDN is compromised, malicious animation scripts run in user context | Always import GSAP from npm; never use `<script>` CDN tag as fallback |
+| Library page fetches all user tracks without pagination at the API level | API returns unlimited rows; malicious actor can enumerate all tracks | Add `LIMIT` to all library queries; paginate at the database level, not just the UI level |
 
 ---
 
@@ -435,12 +455,12 @@ Common user experience mistakes in this domain.
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Animations play on every page visit, not just first | Returning users find the typewriter and entrance animations annoying after the first view | Use `sessionStorage` to track first visit; skip animations on return visits, or use subtle variants instead of full entrance sequences |
-| Dark mode defaults to system preference without a toggle UI | Users on light mode devices cannot switch to the brand's warm light aesthetic; users on dark mode cannot switch to light | Add a visible theme toggle even if simple; defer to Phase 2 but don't lock users into system preference only |
-| Form inputs in light mode have very low contrast placeholders | Users with low vision cannot see placeholder text; particularly bad with warm cream backgrounds | Ensure placeholder color has at least 4.5:1 contrast against input background; use `--muted-foreground` only if it passes |
-| Page transition animations cause motion sickness for `prefers-reduced-motion` users | Vestibular disorder users experience nausea from page-level animations | Wrap all animations with `useReducedMotion` from Framer Motion or CSS `@media (prefers-reduced-motion: reduce)` |
-| Typewriter stops after one cycle on single-phrase configurations | User who loads the page between cycles sees a blank heading | Test the typewriter with a single phrase; ensure it loops or leaves text visible when the cycle ends |
-| `/style-guide` page exposed in production | Competitors can see the full design system and tokens | Gate the style-guide behind `NODE_ENV === 'development'` check or behind an auth check in production |
+| Scramble text animation on library items plays on every scroll | Animation is exciting the first time, annoying after 3 scrolls; re-triggers on back navigation | Use `once: true` in ScrollTrigger; do not replay animation on scroll-back |
+| BottomAudioPlayer appears while user is on homepage before any interaction | Jarring first impression; player shows last persisted track that user didn't intend to play | Never show BottomAudioPlayer until user explicitly triggers play in this session; do not restore track from storage |
+| Two-panel workspace has no way to collapse back to hero / single-column view | Users who want more room feel trapped in the split layout | Add a "Minimize" or back-arrow affordance that returns to hero (clears `?mode=create`) |
+| Library page plays audio but the BottomAudioPlayer is not visible because user scrolled | User cannot see what is playing; no playback control | BottomAudioPlayer must be `position: fixed` (already implemented) — verify it is not obscured by library page scroll container |
+| Waveform visualization in library cards is a live interactive player | Users click the waveform expecting to scrub; it jumps to BottomAudioPlayer instead | Be explicit in design: library cards have a play button only, waveform in library is decorative; full scrubbing only in BottomAudioPlayer |
+| GSAP animation on library list delays first paint of track titles | Users see blank rows for 0.3-0.5s before items animate in | Always set `opacity: 1` by default; use GSAP `from` not `to` so content is visible if GSAP fails to load |
 
 ---
 
@@ -448,16 +468,16 @@ Common user experience mistakes in this domain.
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **Brand tokens:** Token file exists in globals.css — verify each token passes contrast checks as text-on-background AND background-with-text combinations at [accessiblepalette.com](https://accessiblepalette.com)
-- [ ] **Dark mode:** Theme toggle works in browser — verify no FOUC on hard refresh when system is set to dark mode, test with `next-themes` and `suppressHydrationWarning`
-- [ ] **wavesurfer theming:** Waveform renders in brand colors — verify colors update when toggling dark/light mode (requires JS re-init, not CSS)
-- [ ] **Framer Motion typewriter:** Animation plays on load — verify `min-h` container prevents CLS, test all phrases at all breakpoints, verify `LazyMotion` reduces bundle size
-- [ ] **Component restyling:** Components look correct — verify no hardcoded `zinc`/`slate`/`gray` color classes remain by running the grep audit
-- [ ] **Footer:** Footer renders correctly on desktop — verify no horizontal scroll on 375px mobile viewport (test on real device, not only DevTools)
-- [ ] **Border defaults:** Cards and inputs have correct borders — verify no `currentColor` (black) borders appeared after globals.css changes
-- [ ] **`/style-guide` page:** Page renders all components — verify page is gated from production (only visible in development or behind auth)
-- [ ] **Reduced motion:** Animations play as expected — verify `prefers-reduced-motion` users see static or minimal-motion fallbacks
-- [ ] **Font loading:** Correct fonts render on first load — verify no FOUT (flash of unstyled text) by checking network tab for font files loaded via `next/font` (self-hosted)
+- [ ] **BottomAudioPlayer:** Shows waveform and plays audio — verify it accounts for `--player-bar-height` in both the two-panel workspace and library page scroll containers
+- [ ] **Library page play buttons:** Click triggers audio — verify only ONE audio source plays at a time (no simultaneous playback from multiple library cards)
+- [ ] **GSAP library animations:** Animations play on scroll — verify `useGSAP` with `scope` is used, not raw `useEffect`, and verify ScrollTrigger instances are killed on library page unmount
+- [ ] **GSAP ScrambleText:** Scramble animation runs — verify the plugin is actually available in the npm package being used (free vs Club GSAP)
+- [ ] **Same-page workspace:** Homepage transforms to two-panel — verify `?mode=create` is in the URL and the workspace survives page refresh
+- [ ] **Workspace + player:** Two-panel layout looks correct — verify the bottom panel content is NOT obscured by the BottomAudioPlayer bar when a track is playing
+- [ ] **wavesurfer in library:** Waveform renders in library cards — verify wavesurfer container is never initialized while hidden; if library cards use conditional waveform display, verify unmount/remount not CSS hide
+- [ ] **Context architecture:** Play button works from library page — verify `play()` from a library card actually starts wavesurfer in BottomAudioPlayer (test with the BottomAudioPlayer visible)
+- [ ] **`useEffect` dependency arrays:** All `useEffect` calls have correct deps — verify `GenerationPage.tsx` listener `useEffect` has `[]` dependency array
+- [ ] **Mobile:** All features work at 375px — verify BottomAudioPlayer does not obscure CTA buttons on library page or workspace at small viewport
 
 ---
 
@@ -467,14 +487,16 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| CSS variable format mismatch (transparent backgrounds) | MEDIUM | Convert all `:root` variables to full `hsl()` values; update `@theme inline` references; test both light and dark modes |
-| Border default change (black borders everywhere) | LOW | Add `border-border` class to all bare `border` utilities; or set global `border-color: var(--border)` in globals.css |
-| Dark mode FOUC shipped to production | LOW | Add `next-themes` with correct `suppressHydrationWarning` config; deploy; FOUC disappears without data migration |
-| Yellow accent contrast failure identified post-launch | MEDIUM | Darken the accent token (reduce lightness from 55% to 40% for text use); audit all usages; update and redeploy |
-| Hardcoded colors found after "done" | MEDIUM | Run grep audit; systematically replace with semantic tokens; requires visual QA for each changed component |
-| Framer Motion bundle size bloat | LOW | Replace direct `motion` imports with `LazyMotion` + `m` component API; no visual change, just bundle reduction |
-| wavesurfer wrong colors in one mode | LOW | Add `resolvedTheme` to the wavesurfer `useEffect` dependency array; trigger re-initialization on theme change |
-| Footer horizontal scroll on mobile | LOW | Wrap footer in `overflow-hidden`; confirm `html/body` overflow is controlled |
+| Context/wavesurfer sync race (double-play, ghost play) | HIGH | Consolidate audio engine into context; add `requestPlay`/`confirmPlay` handshake; retest all callers |
+| wavesurfer 0px container (blank waveform) | LOW | Replace `display:none` hide with conditional render; wavesurfer re-initializes on mount with correct container size |
+| GSAP in Server Component (build crash) | LOW | Add `"use client"` to the file that imports GSAP; move GSAP import to `gsap-config.ts` |
+| ScrollTrigger leak (cross-page animations) | MEDIUM | Replace all raw `useEffect` GSAP calls with `useGSAP()`; add `scope: ref` to each; verify `ScrollTrigger.getAll().length` resets on navigation |
+| Two-panel layout obscured by player bar | LOW | Add `pb-[var(--player-bar-height)]` to each panel scroll container; test with track playing |
+| Zustand hydration mismatch | LOW | Add `skipHydration: true` to persist config; add `rehydrate()` in `useEffect([], [])` |
+| Multiple simultaneous audio | MEDIUM | Remove wavesurfer from library cards entirely; route all play through BottomAudioPlayer context |
+| Workspace state lost on refresh | LOW | Add `?mode=create` URL param; read from `useSearchParams()` to determine view |
+| ScrambleText not available | LOW | Switch to TextPlugin (free) or implement custom scramble hook |
+| `useEffect` listener without deps leaking | LOW | Add `[]` dependency array; verify with React DevTools profiler |
 
 ---
 
@@ -484,42 +506,37 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| CSS variable format mismatch (transparent components) | Token Foundation (Phase 1, Wave 1) | Render all shadcn/ui base components in both light and dark modes; verify no transparent backgrounds |
-| Tailwind v4 border default (black borders) | Token Foundation (Phase 1, Wave 1) | Render inputs and cards; verify border color is `var(--border)` not `currentColor` |
-| Dark mode FOUC on hard refresh | Token Foundation (Phase 1, Wave 1) | Hard refresh in dark mode system preference; verify no white flash before first paint |
-| Yellow accent contrast failures | Token Foundation (Phase 1, Wave 1) | Run all token pairs through contrast checker; add to `/style-guide` audit section |
-| Hardcoded color classes surviving redesign | Component Restyling (Phase 2) | Run grep audit before starting; verify no palette-specific classes remain after restyling |
-| Framer Motion `"use client"` boundary pollution | Animation Components (Phase 3) | Verify hero section parent remains a Server Component; check React DevTools "client" boundary boundaries |
-| Typewriter CLS | Animation Components (Phase 3) | Run Lighthouse on landing page with typewriter active; CLS score must be < 0.1 |
-| Framer Motion layout CLS on generation page | Animation Components (Phase 3) | Run generation flow; verify form→results transition has no position snapping; check AnimatePresence wraps all conditional renders |
-| wavesurfer waveform wrong color on theme switch | Theming Integration (Phase 2) | Toggle light/dark mode while audio is loaded; verify waveform bar colors update |
-| Footer horizontal scroll on mobile | Footer Component (Phase 4) | Test on real 375px mobile device or BrowserStack; verify no horizontal scroll |
-| Reduced motion not respected | Animation Components (Phase 3) | Enable OS reduced motion setting; verify all animations stop or use opacity-only fallbacks |
-| `/style-guide` exposed in production | Style Guide (Phase 1) | Verify page returns 404 or redirects in `NODE_ENV=production` build |
+| AudioPlayerContext/wavesurfer sync race | Persistent player architecture phase | Play from BottomAudioPlayer; then dispatch `play()` programmatically from a test button; verify single audio source |
+| wavesurfer 0px container | Library page phase | Expand/collapse a library card; verify waveform renders after expand; inspect container dimensions in DevTools |
+| GSAP build crash (Server Component import) | GSAP setup phase | Run `next build`; confirm no `window is not defined` errors |
+| GSAP ScrollTrigger leak | GSAP animations phase | Navigate library → home → library; verify `ScrollTrigger.getAll().length` does not grow |
+| Two-panel layout + player bar overlap | Workspace layout phase | Start audio playback, then use workspace; verify all content is scrollable and accessible above player bar |
+| Zustand hydration mismatch | Audio state phase (if Zustand is added) | Run `next build && next start`; verify no hydration errors in console |
+| Multiple simultaneous audio | Library page phase | Click Play on 3 different library cards in quick succession; verify only 1 audio source plays |
+| Workspace URL state loss | Homepage transformation phase | Navigate to workspace, hard refresh; verify workspace is restored |
+| GSAP plugin availability | GSAP setup phase | `console.log(ScrambleTextPlugin)` before using; confirm defined or switch to TextPlugin |
+| useEffect listener memory leak | GenerationPage fix phase | React DevTools profiler; verify `navigate-create` listener does not accumulate |
+| Bottom player obscuring content on mobile | Mobile polish phase | Test at 375px with audio playing; verify all interactive elements are accessible above player bar |
 
 ---
 
 ## Sources
 
-- shadcn/ui Tailwind v4 Migration Guide (official) — CSS variable format changes, component updates required: https://ui.shadcn.com/docs/tailwind-v4
-- shadcn/ui GitHub Issue #4845 — Default Next.js CSS variables conflict with shadcn theme, transparency bug: https://github.com/shadcn-ui/ui/issues/4845
-- Tailwind CSS v4.0 Release Notes — border default change (`currentColor`), `@theme` directive, OKLCH color space: https://tailwindcss.com/blog/tailwindcss-v4
-- Tailwind CSS v4 Migration Guide (DEV Community, Umesh Malik) — `@apply` deprecation, color variable migration: https://dev.to/umesh_malik/tailwindcss-v4-migration-guide-what-changed-and-how-to-upgrade-525g
-- next-themes GitHub — `suppressHydrationWarning`, App Router setup, FOUC prevention: https://github.com/pacocoursey/next-themes
-- shadcn/ui GitHub Issue #5552 — ThemeProvider hydration error in Next.js 15: https://github.com/shadcn-ui/ui/issues/5552
-- Fixing Dark Mode FOUC in React and Next.js (Not A Number blog): https://notanumber.in/blog/fixing-react-dark-mode-flickering
-- WCAG 2.1 Contrast Minimum (1.4.3) — 4.5:1 for normal text, 3:1 for large text: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html
-- WebAIM Million 2024 — Color contrast is #1 accessibility violation (83.6% of sites): https://webaim.org/articles/contrast/
-- Yellow, Purple, and the Myth "Accessibility Limits Color Palettes" (Stéphanie Walter) — yellow on white contrast failures: https://stephaniewalter.design/blog/yellow-purple-and-the-myth-of-accessibility-limits-color-palettes/
-- Motion (Framer Motion) Performance Guide — transform/opacity are GPU-accelerated; layout property usage: https://motion.dev/docs/performance
-- Framer Motion Bundle Size Reduction — `LazyMotion` + `domAnimation` reduces 34kb to ~4.6kb: https://motion.dev/docs/react-reduce-bundle-size
-- Framer Motion + Next.js App Router ("use client" requirements) — StaticMania guide: https://staticmania.com/blog/how-to-use-framer-motion-animations-in-next-js
-- Framer Motion vs Motion One Mobile Performance 2025 — JavaScript-driven animations on low-end devices: https://reactlibraries.com/blog/framer-motion-vs-motion-one-mobile-animation-performance-in-2025
-- wavesurfer.js Shadow DOM CSS targeting — `::part()` selector, Shadow DOM CSS limitations: https://github.com/katspaugh/wavesurfer.js/discussions/3330
-- Customizing shadcn/ui Themes Without Breaking Updates (Medium, Suresh Kumar): https://medium.com/@sureshdotariya/customizing-shadcn-ui-themes-without-breaking-updates-a3140726ca1e
-- Theming shadcn/ui with Tailwind v4 and CSS Variables (Medium, Joseph Goins): https://medium.com/@joseph.goins/theming-shadcn-with-tailwind-v4-and-css-variables-d602f6b3c258
-- Accessible Palette tool — contrast verification for design tokens: https://accessiblepalette.com/
+- wavesurfer.js Discussion #3190 — Multiple Wavesurfer instances and bottom player in React/Next.js (Soundcloud-like): https://github.com/katspaugh/wavesurfer.js/discussions/3190
+- wavesurfer.js Discussion #3523 — Global player bug, waveform not displaying when switching sources: https://github.com/katspaugh/wavesurfer.js/discussions/3523
+- wavesurfer.js Discussion #3591 — Multiple waveforms: how to stop a playing waveform when another starts: https://github.com/katspaugh/wavesurfer.js/discussions/3591
+- GSAP React docs (official) — useGSAP hook, cleanup, scope, ScrollTrigger with Next.js App Router: https://gsap.com/resources/React/
+- GSAP Community — ScrollTrigger and React component cycle cleanup: https://gsap.com/community/forums/topic/35810-scrolltrigger-and-react-component-cycle-cleanup/
+- GSAP Community — Using ScrollTriggers in Next.js with useGSAP(): https://gsap.com/community/forums/topic/40128-using-scrolltriggers-in-nextjs-with-usegsap/
+- Medium — Optimizing GSAP Animations in Next.js 15: Best Practices for Initialization and Cleanup: https://medium.com/@thomasaugot/optimizing-gsap-animations-in-next-js-15-best-practices-for-initialization-and-cleanup-2ebaba7d0232
+- Zustand Next.js guide (official) — skipHydration pattern, per-request stores, SSR hydration: https://zustand.docs.pmnd.rs/guides/nextjs
+- Zustand Discussion #1382 — Persist middleware with localStorage causes hydration errors in Next.js: https://github.com/pmndrs/zustand/discussions/1382
+- Medium — Fix Next.js 14 hydration error with Zustand state management: https://medium.com/@koalamango/fix-next-js-hydration-error-with-zustand-state-management-0ce51a0176ad
+- Next.js Docs — React Hydration Error: https://nextjs.org/docs/messages/react-hydration-error
+- Medium — Using Context API or Redux to Store and Manage an Audio Element in Next.js: https://medium.com/@milton_bhowmick/how-to-store-an-audio-element-in-next-js-3bfbc324c5d9
+- Next.js GitHub Issue #8441 — How to make music player continue playing when moving between pages: https://github.com/vercel/next.js/issues/8441
+- Existing codebase analysis — AudioPlayerContext.tsx, BottomAudioPlayer.tsx, WaveformPlayer.tsx, GenerationPage.tsx, AppShell.tsx (direct inspection, 2026-03-05)
 
 ---
-*Pitfalls research for: Visual Redesign & Design System — Next.js + Tailwind v4 + shadcn/ui brand kit migration*
+*Pitfalls research for: Suno-Style UX Overhaul — persistent audio player, GSAP animations, library page, two-panel workspace in existing Next.js App Router app*
 *Researched: 2026-03-05*

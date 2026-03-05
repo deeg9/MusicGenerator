@@ -1,90 +1,99 @@
 # Architecture Research
 
-**Domain:** Design system, brand kit, and light/dark theming for Next.js + Tailwind v4 + shadcn/ui
+**Domain:** Suno-style UX overhaul — persistent audio player, library page, two-panel workspace integration into existing Next.js App Router app
 **Researched:** 2026-03-05
-**Confidence:** HIGH (Tailwind v4 @theme mechanics, next-themes, shadcn/ui v4 integration — all verified against official docs and current sources)
+**Confidence:** HIGH — based on direct codebase inspection; no speculation about what exists
 
 ---
 
 ## Note on Prior Architecture Document
 
-The original ARCHITECTURE.md (v1.0, researched 2026-03-03) covered backend infrastructure: RunPod, ACE-Step, BFF pattern, credit deduction, Stripe. That content remains valid for Phase 1 concerns. This document replaces it with v1.1 design system architecture. The v1.0 content is preserved in `.planning/phases/01-*/` plan files.
+The previous ARCHITECTURE.md (v1.1, 2026-03-05) covered design system and token infrastructure. That content remains valid and complete. This document supersedes it as ARCHITECTURE.md for the v2.0 Suno-style UX overhaul milestone. The v1.1 design system content is preserved in `.planning/phases/` plan files.
 
 ---
 
-## Standard Architecture
+## What Already Exists (Do Not Re-build)
 
-### System Overview: Design Token Flow
+A direct codebase audit reveals these structures are already in place:
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                      DESIGN TOKEN LAYERS                              │
-│                                                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐ │
-│  │  LAYER 1: Primitive Tokens  (src/styles/tokens/primitives.css)  │ │
-│  │  Raw values — not used directly in components                    │ │
-│  │  --color-blue-400: oklch(0.67 0.15 235)                         │ │
-│  │  --color-yellow-300: oklch(0.87 0.19 98)                        │ │
-│  │  --font-size-xl: 1.25rem                                         │ │
-│  │  --spacing-4: 1rem                                               │ │
-│  └──────────────────────────────┬──────────────────────────────────┘ │
-│                                 │ reference only                      │
-│  ┌──────────────────────────────▼──────────────────────────────────┐ │
-│  │  LAYER 2: Semantic Tokens   (src/styles/tokens/semantic.css)    │ │
-│  │  Purpose-driven — these are what components actually use         │ │
-│  │  :root (light) and .dark (dark) CSS variable blocks              │ │
-│  │  --background: var(--color-white)          (light)               │ │
-│  │  --primary: var(--color-blue-400)          (light)               │ │
-│  │  --accent: var(--color-yellow-300)         (light)               │ │
-│  └──────────────────────────────┬──────────────────────────────────┘ │
-│                                 │ mapped via @theme inline            │
-│  ┌──────────────────────────────▼──────────────────────────────────┐ │
-│  │  LAYER 3: Tailwind Utilities  (src/app/globals.css @theme inline)│ │
-│  │  Bridges semantic tokens to Tailwind utility class generation    │ │
-│  │  --color-background: var(--background)                           │ │
-│  │  --color-primary: var(--primary)                                 │ │
-│  │  → generates: bg-background, text-primary, border-accent, etc.  │ │
-│  └──────────────────────────────┬──────────────────────────────────┘ │
-│                                 │ consumed by                         │
-│  ┌──────────────────────────────▼──────────────────────────────────┐ │
-│  │  COMPONENTS                                                       │ │
-│  │  shadcn/ui components + feature components                       │ │
-│  │  Use utility classes: bg-background, text-primary, etc.         │ │
-│  │  Never hardcode raw values; always reference semantic tokens     │ │
-│  └─────────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────┘
-```
+| Component | File | Status |
+|-----------|------|--------|
+| `AudioPlayerContext` | `src/contexts/AudioPlayerContext.tsx` | Complete — useReducer state, PLAY/PAUSE/RESUME/STOP actions, `AudioTrack` type |
+| `AudioPlayerProvider` | same | Complete — wraps `AppShell`, scoped to entire app |
+| `BottomAudioPlayer` | `src/components/layout/BottomAudioPlayer.tsx` | Complete — wavesurfer.js, desktop + mobile layouts, AnimatePresence slide-in |
+| `AppShell` | `src/components/layout/AppShell.tsx` | Complete — `SidebarProvider` + `AudioPlayerProvider` + `BottomAudioPlayer` wired in layout |
+| `Sidebar` | `src/components/layout/Sidebar.tsx` | Complete — hover-expand desktop, mobile overlay, Home/Create/Library/Search nav items |
+| `SidebarProvider` | `src/components/layout/SidebarProvider.tsx` | Complete — open/mobileOpen state, context |
+| `VariantCard` | `src/components/VariantCard.tsx` | Complete — delegates play to `AudioPlayerContext`, inline waveform visual-only |
+| `GenerationPage` | `src/components/GenerationPage.tsx` | Complete — phase state machine (idle/submitting/polling/done/error), form + results |
+| `useGenerationStatus` | `src/hooks/useGenerationStatus.ts` | Complete — polling hook, 2.5s interval, returns `StatusResult` |
 
-### Theme Switching Data Flow
+**Key finding:** The persistent bottom player bar, audio player context, sidebar with Library link, and AppShell layout are already built. The v2.0 milestone is about wiring them to actual content and adding the missing pages — not rebuilding infrastructure.
+
+---
+
+## System Overview
 
 ```
-User clicks theme toggle
-    ↓
-ThemeToggle component calls setTheme('dark' | 'light' | 'system')
-    ↓
-next-themes adds/removes .dark class on <html> element
-    ↓
-@custom-variant dark (&:where(.dark, .dark *))
-activates dark: utility classes throughout the tree
-    ↓
-CSS variables in :root are OVERRIDDEN by .dark block:
-  .dark { --background: oklch(0.12 0.02 235); ... }
-    ↓
-All components reading var(--background) via bg-background
-automatically reflect the new value — zero component changes
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           layout.tsx (RSC)                                   │
+│  ThemeProvider                                                                │
+│  └── AppShell (Client)                                                        │
+│       ├── SidebarProvider (Context)                                           │
+│       ├── AudioPlayerProvider (Context) ◄─── ALREADY EXISTS                  │
+│       ├── Sidebar (Client) ◄────────────────── ALREADY EXISTS                │
+│       ├── <main> (scrollable content area)                                    │
+│       │    └── {children} ─── page.tsx routes                                │
+│       └── BottomAudioPlayer (Client) ◄──── ALREADY EXISTS                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Page Routes (src/app/)
+├── page.tsx ─────────── MODIFY: HeroSection → same-page two-panel workspace
+└── library/
+     └── page.tsx ──── NEW: library browsing page
+
+Context Layer (src/contexts/)
+└── AudioPlayerContext.tsx ─── ALREADY EXISTS (PLAY/PAUSE/RESUME/STOP + AudioTrack)
+
+Components (src/components/)
+├── layout/
+│   ├── AppShell.tsx ─────── EXISTS (minor: player bar height CSS var)
+│   ├── Sidebar.tsx ──────── MODIFY (Library link: href='#' → href='/library')
+│   ├── SidebarProvider.tsx ─ NO CHANGE
+│   └── BottomAudioPlayer.tsx ─ NO CHANGE (already complete)
+├── HeroSection.tsx ──────── MODIFY (add prompt input + Create CTA, remove example cards)
+├── GenerationPage.tsx ───── MODIFY (two-panel layout when active)
+├── VariantCard.tsx ──────── NO CHANGE (already calls audioPlayer.play())
+└── [NEW components]
+     ├── WorkspacePanel.tsx ─ NEW (right panel: results/workspace)
+     ├── LibraryPage.tsx ──── NEW (or colocate in app/library/page.tsx)
+     ├── LibraryCard.tsx ──── NEW (music player card for library items)
+     └── LibraryList.tsx ──── NEW (GSAP portfolio list container)
+
+API Routes (src/app/api/)
+├── generate/ ──── NO CHANGE
+├── status/ ───── NO CHANGE
+├── audio/ ────── NO CHANGE
+└── library/ ──── NEW: GET /api/library — fetch generations list from DB
 ```
 
-### Component Responsibilities
+---
 
-| Component | Responsibility | Implementation |
-|-----------|----------------|----------------|
-| `src/styles/tokens/primitives.css` | Raw color/scale palette — brand's full color vocabulary | CSS custom properties, no utility class generation |
-| `src/styles/tokens/semantic.css` | Light/dark semantic token definitions | `:root` block (light) + `.dark` block (dark override) |
-| `src/app/globals.css` | Tailwind entry point, `@theme inline` bridge, `@custom-variant dark`, animations | Single import chain + @theme inline block |
-| `src/lib/providers.tsx` | Wraps app with `ThemeProvider` from next-themes | Client component, attribute="class" strategy |
-| `src/app/layout.tsx` | Applies font CSS variables, wraps with Providers | `suppressHydrationWarning` on `<html>` |
-| `src/app/style-guide/page.tsx` | Dev-only page showing all tokens, components, typography | Static route, no auth, excluded from sitemap |
-| `src/components/ui/theme-toggle.tsx` | Light/dark/system toggle button | Uses `useTheme()` from next-themes |
+## Component Responsibilities
+
+| Component | Responsibility | Status |
+|-----------|----------------|--------|
+| `AppShell` | Root shell: sidebar + main content area + bottom player | EXISTS — no structural change needed |
+| `AudioPlayerContext` | Global audio state: current track, play/pause/stop actions | EXISTS — may need `queue` addition later |
+| `BottomAudioPlayer` | Persistent player bar: wavesurfer, controls, track info | EXISTS — no change needed |
+| `Sidebar` | Navigation: Home / Create / Library links | EXISTS — change Library `href` from `#` to `/library` |
+| `HeroSection` | Homepage hero: headline + prompt input + Create CTA | MODIFY — becomes slim prompt-first layout; remove example cards section or defer below fold |
+| `GenerationPage` | Two-panel workspace: form left, results right when active | MODIFY — add two-panel layout state |
+| `WorkspacePanel` | Right panel in workspace: results, loading, error | NEW — extracted from GenerationPage or built alongside |
+| `/library` page | Library browsing: list of past generations | NEW route + page component |
+| `LibraryCard` | Individual song card in library: play, download, metadata | NEW — similar to VariantCard but library-oriented |
+| `LibraryList` | GSAP-animated list container for library items | NEW |
+| `GET /api/library` | Fetch generations from DB with outputs and presigned URLs | NEW API route |
 
 ---
 
@@ -93,486 +102,403 @@ automatically reflect the new value — zero component changes
 ```
 src/
 ├── app/
-│   ├── globals.css              # MODIFIED — import chain + @custom-variant dark + @theme inline
-│   ├── layout.tsx               # MODIFIED — add <Providers>, suppressHydrationWarning
-│   ├── style-guide/
-│   │   └── page.tsx             # NEW — dev-only design system showcase
-│   └── page.tsx                 # MODIFIED — visual redesign
+│   ├── layout.tsx              # NO CHANGE
+│   ├── page.tsx                # MODIFY: add same-page transformation logic
+│   ├── library/
+│   │   └── page.tsx            # NEW: /library route (RSC — fetches generations server-side)
+│   ├── api/
+│   │   ├── generate/           # NO CHANGE
+│   │   ├── status/             # NO CHANGE
+│   │   ├── audio/              # NO CHANGE
+│   │   └── library/
+│   │       └── route.ts        # NEW: GET — list generations with outputs
+│   └── globals.css             # NO CHANGE (tokens + theme complete)
 │
-├── styles/                      # NEW directory
-│   └── tokens/
-│       ├── primitives.css       # NEW — raw color/scale values
-│       └── semantic.css         # NEW — :root + .dark semantic variable blocks
+├── components/
+│   ├── layout/
+│   │   ├── AppShell.tsx        # MINOR: verify --player-bar-height CSS var exists
+│   │   ├── Sidebar.tsx         # MODIFY: Library href → '/library', active state
+│   │   ├── BottomAudioPlayer.tsx # NO CHANGE
+│   │   └── SidebarProvider.tsx # NO CHANGE
+│   │
+│   ├── HeroSection.tsx         # MODIFY: slim hero + prompt input + CTA
+│   ├── GenerationPage.tsx      # MODIFY: two-panel layout when active
+│   ├── GenerationForm.tsx      # NO CHANGE (form fields unchanged)
+│   ├── GenerationResults.tsx   # NO CHANGE (results rendering unchanged)
+│   ├── VariantCard.tsx         # NO CHANGE (already delegates to AudioPlayerContext)
+│   ├── WaveformPlayer.tsx      # NO CHANGE
+│   │
+│   ├── library/               # NEW directory
+│   │   ├── LibraryList.tsx     # NEW: GSAP-animated list container
+│   │   ├── LibraryCard.tsx     # NEW: individual song card (play + download + meta)
+│   │   └── LibraryEmpty.tsx    # NEW: empty state for library
+│   │
+│   └── ui/                    # NO CHANGE (existing shadcn-style primitives)
 │
-├── lib/
-│   └── providers.tsx            # NEW — next-themes ThemeProvider wrapper
+├── contexts/
+│   └── AudioPlayerContext.tsx  # NO CHANGE (PLAY/PAUSE/RESUME/STOP complete)
 │
-└── components/
-    ├── ui/
-    │   ├── theme-toggle.tsx     # NEW — light/dark/system switcher
-    │   └── [existing shadcn]    # UNCHANGED — consume tokens via utility classes
-    ├── brand/                   # NEW directory
-    │   ├── Logo.tsx             # NEW — SVG logo component
-    │   └── LogoMark.tsx         # NEW — icon-only variant
-    └── [existing feature components]  # MODIFIED — updated to use semantic token classes
+├── hooks/
+│   ├── useGenerationStatus.ts  # NO CHANGE
+│   └── useReducedMotion.ts     # NO CHANGE
+│
+└── lib/
+    ├── r2.ts                   # NO CHANGE (getAudioPresignedUrl already works)
+    └── [existing files]        # NO CHANGE
 ```
 
-### New vs Modified Files
+### Structure Rationale
 
-| File | Status | What Changes |
-|------|--------|-------------|
-| `src/app/globals.css` | MODIFIED | Add `@import` for token files, add `@custom-variant dark`, replace inline vars with `@import` reference |
-| `src/app/layout.tsx` | MODIFIED | Wrap `{children}` in `<Providers>`, add `suppressHydrationWarning` to `<html>` |
-| `src/styles/tokens/primitives.css` | NEW | Full color scale palette (primitives only) |
-| `src/styles/tokens/semantic.css` | NEW | `:root` + `.dark` semantic token blocks (migrated from globals.css, expanded) |
-| `src/lib/providers.tsx` | NEW | Client component wrapping next-themes `ThemeProvider` |
-| `src/components/ui/theme-toggle.tsx` | NEW | Toggle button using `useTheme()` |
-| `src/app/style-guide/page.tsx` | NEW | Dev showcase page |
-| `src/components/brand/Logo.tsx` | NEW | Brand logo SVG component |
-| All feature components | MODIFIED | Update class names to use semantic token utilities |
+- **`app/library/`:** Next.js App Router colocation — route + page in same folder. The page.tsx can be a React Server Component that fetches generations directly from the DB via Drizzle, passing data to client components.
+- **`components/library/`:** New directory groups library-specific components. Mirrors the `layout/` pattern already in the project.
+- **`api/library/route.ts`:** Simple DB read — no RunPod involvement. Returns generations with their outputs, with presigned URLs for playback. Reuses existing Drizzle + R2 patterns.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Two-File Token Split (Primitives → Semantic)
+### Pattern 1: Same-Page Transformation (Home → Workspace)
 
-**What:** Raw color values live in `primitives.css` and are never used in components. Semantic tokens in `semantic.css` reference primitives and define how colors are used (background, primary, muted, etc.). Both are imported into `globals.css`.
+**What:** The homepage `page.tsx` renders `HeroSection` and `GenerationPage` as siblings. When the user clicks Create, `GenerationPage` transitions from a centered single-column form to a two-panel layout (form left, results right). This is a layout-only change — no route change, no new URL.
 
-**When to use:** Always. This is the standard design system approach. It enables brand color changes (update primitives) without touching semantic meaning, and semantic meaning changes (e.g. swap what "primary" points to) without touching raw values.
+**When to use:** The PROJECT.md decision is explicit: "Same-page create transformation — User stays on homepage, page transforms to workspace on Create click. No separate /create route."
 
-**Trade-offs:** Adds one layer of indirection. Worth it for any project expecting visual redesign iterations. Overkill for a one-page micro-site; right-sized for this app.
+**How it works:** `GenerationPage` already has phase state (`idle | submitting | polling | done | error`). Add a `isWorkspaceActive` boolean that becomes true on first submit and stays true. When `isWorkspaceActive`, apply a two-panel grid layout. When false, render the centered single-column form.
+
+**Trade-offs:** Simpler URL structure (no /create route to maintain). The main complexity is responsive layout — two-panel on desktop, stacked on mobile.
 
 **Example:**
+```typescript
+// GenerationPage.tsx modification
+const [isWorkspaceActive, setIsWorkspaceActive] = useState(false);
 
-```css
-/* src/styles/tokens/primitives.css */
-:root {
-  /* Brand palette — raw values only */
-  --color-sky-300: oklch(0.78 0.13 220);
-  --color-sky-400: oklch(0.67 0.15 222);
-  --color-sky-500: oklch(0.55 0.17 224);
-  --color-yellow-200: oklch(0.93 0.17 100);
-  --color-yellow-300: oklch(0.87 0.19 98);
-  --color-yellow-400: oklch(0.79 0.19 96);
-  --color-cream-50:  oklch(0.98 0.02 90);
-  --color-cream-100: oklch(0.95 0.03 88);
-  --color-slate-800: oklch(0.22 0.02 250);
-  --color-slate-900: oklch(0.16 0.02 252);
-  --color-slate-950: oklch(0.12 0.02 252);
+async function handleSubmit(data: GenerationFormData) {
+  setIsWorkspaceActive(true); // lock into workspace mode on first submit
+  // ... existing submit logic
+}
 
-  /* Typography scale */
-  --font-size-xs:   0.75rem;
-  --font-size-sm:   0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg:   1.125rem;
-  --font-size-xl:   1.25rem;
-  --font-size-2xl:  1.5rem;
-  --font-size-3xl:  1.875rem;
-  --font-size-4xl:  2.25rem;
-  --font-size-5xl:  3rem;
+return (
+  <div className={isWorkspaceActive
+    ? 'grid md:grid-cols-[1fr_1fr] gap-6 px-4 py-8'
+    : 'mx-auto max-w-2xl px-4 py-8'
+  }>
+    {/* Left panel: always the form */}
+    <div>
+      <GenerationForm onSubmit={handleSubmit} ... />
+    </div>
 
-  /* Spacing scale (extends Tailwind defaults) */
-  --space-18: 4.5rem;
-  --space-22: 5.5rem;
+    {/* Right panel: results/loading/error — only rendered when active */}
+    {isWorkspaceActive && (
+      <div>
+        {/* loading, results, error states */}
+      </div>
+    )}
+  </div>
+);
+```
+
+### Pattern 2: Library Page as React Server Component
+
+**What:** `/library` page fetches generations from Supabase via Drizzle directly in the RSC (no API round-trip needed). Passes serialized data to client `LibraryList` and `LibraryCard` components. Presigned URLs are generated server-side and passed as props — they don't need to be fetched client-side.
+
+**When to use:** Anytime you have a read-only page that can be pre-rendered. Library browsing is a natural RSC — no user input drives the initial data load.
+
+**Trade-offs:** Presigned URLs expire (typically 1 hour for R2). For the prototype scale (5-10 users), this is fine. If users load the page and leave it open for hours, URLs will expire. Accept this tradeoff now; solve with refresh-on-play later if needed.
+
+**Example:**
+```typescript
+// app/library/page.tsx (RSC — no 'use client')
+import { db } from '@/db';
+import { generations, outputs } from '@/db/schema';
+import { desc, eq } from 'drizzle-orm';
+import { getAudioPresignedUrl } from '@/lib/r2';
+import { LibraryList } from '@/components/library/LibraryList';
+
+export default async function LibraryPage() {
+  const rows = await db.query.generations.findMany({
+    where: eq(generations.status, 'completed'),
+    with: { outputs: true },
+    orderBy: [desc(generations.startedAt)],
+    limit: 50,
+  });
+
+  // Resolve presigned URLs server-side
+  const tracks = await Promise.all(rows.map(async (gen) => ({
+    id: gen.id,
+    promptText: gen.promptText,
+    startedAt: gen.startedAt,
+    outputs: await Promise.all(gen.outputs.map(async (out) => ({
+      ...out,
+      playbackUrl: await getAudioPresignedUrl(out.r2Key, false),
+      mp3Url: out.mp3R2Key ? await getAudioPresignedUrl(out.mp3R2Key, true) : null,
+    }))),
+  })));
+
+  return <LibraryList tracks={tracks} />;
 }
 ```
 
-```css
-/* src/styles/tokens/semantic.css */
+### Pattern 3: LibraryCard → AudioPlayerContext (Existing Pattern)
 
-/* Light mode (default) */
-:root {
-  --background:           var(--color-cream-50);
-  --foreground:           var(--color-slate-800);
-  --card:                 oklch(1 0 0);
-  --card-foreground:      var(--color-slate-800);
-  --primary:              var(--color-sky-400);
-  --primary-foreground:   oklch(1 0 0);
-  --secondary:            var(--color-yellow-200);
-  --secondary-foreground: var(--color-slate-800);
-  --accent:               var(--color-yellow-300);
-  --accent-foreground:    var(--color-slate-800);
-  --muted:                var(--color-cream-100);
-  --muted-foreground:     oklch(0.55 0.02 248);
-  --border:               oklch(0.88 0.02 88);
-  --input:                oklch(0.88 0.02 88);
-  --ring:                 var(--color-sky-400);
-  --destructive:          oklch(0.59 0.22 29);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-}
+**What:** `LibraryCard` calls `audioPlayer.play(track)` from `AudioPlayerContext` — exactly the same pattern `VariantCard` already uses. The bottom player bar responds automatically. No new audio infrastructure needed.
 
-/* Dark mode override */
-.dark {
-  --background:           var(--color-slate-950);
-  --foreground:           var(--color-cream-50);
-  --card:                 var(--color-slate-900);
-  --card-foreground:      var(--color-cream-50);
-  --primary:              var(--color-sky-300);
-  --primary-foreground:   var(--color-slate-950);
-  --secondary:            oklch(0.22 0.03 252);
-  --secondary-foreground: var(--color-cream-50);
-  --accent:               var(--color-yellow-400);
-  --accent-foreground:    var(--color-slate-950);
-  --muted:                oklch(0.20 0.02 252);
-  --muted-foreground:     oklch(0.65 0.02 248);
-  --border:               oklch(0.24 0.02 252);
-  --input:                oklch(0.24 0.02 252);
-  --ring:                 var(--color-sky-300);
-  --destructive:          oklch(0.65 0.22 29);
-}
-```
+**When to use:** Every component that needs to trigger audio playback. The context is already provided at the root via `AppShell`.
 
-### Pattern 2: @theme inline as Bridge (Tailwind v4 Specific)
-
-**What:** `@theme inline` in `globals.css` maps semantic CSS variables to Tailwind's utility class system. Without this bridge, `bg-background` doesn't exist — Tailwind doesn't know about your custom variables. `@theme inline` (not bare `@theme`) is critical because it tells Tailwind to generate utilities that resolve the variable at use site, not at definition site.
-
-**When to use:** Every semantic token that needs a Tailwind utility class. All tokens in `semantic.css` should have a corresponding entry in `@theme inline`.
-
-**Trade-offs:** None. This is the canonical Tailwind v4 + shadcn/ui pattern. The `inline` keyword is required for correct CSS variable resolution across component trees.
+**Trade-offs:** None. This is the existing pattern. Reusing it means the library and the create workspace share the same player state — playing from the library stops whatever was playing in the workspace, which is the correct Suno-like behavior.
 
 **Example:**
-
-```css
-/* src/app/globals.css */
-@import "tailwindcss";
-@import "../styles/tokens/primitives.css";
-@import "../styles/tokens/semantic.css";
-
-/* Enable class-based dark mode (next-themes adds .dark to <html>) */
-@custom-variant dark (&:where(.dark, .dark *));
-
-/* Bridge semantic tokens → Tailwind utility classes */
-@theme inline {
-  --color-background:          var(--background);
-  --color-foreground:          var(--foreground);
-  --color-card:                var(--card);
-  --color-card-foreground:     var(--card-foreground);
-  --color-primary:             var(--primary);
-  --color-primary-foreground:  var(--primary-foreground);
-  --color-secondary:           var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-accent:              var(--accent);
-  --color-accent-foreground:   var(--accent-foreground);
-  --color-muted:               var(--muted);
-  --color-muted-foreground:    var(--muted-foreground);
-  --color-border:              var(--border);
-  --color-input:               var(--input);
-  --color-ring:                var(--ring);
-  --color-destructive:         var(--destructive);
-
-  /* Typography */
-  --font-sans:   var(--font-dm-sans);
-  --font-serif:  var(--font-libre-baskerville);
-  --font-mono:   var(--font-geist-mono);
-
-  /* Radii */
-  --radius-sm:   var(--radius-sm);
-  --radius-md:   var(--radius-md);
-  --radius-lg:   var(--radius-lg);
-  --radius-xl:   var(--radius-xl);
-
-  /* Animations */
-  --animate-eq-bar: eq-bar 0.9s ease-in-out infinite alternate;
-  --animate-wave:   wave 4s ease-in-out infinite;
-}
-
-/* Base styles */
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-}
-
-h1, h2, h3 {
-  font-family: var(--font-serif), ui-serif, Georgia, serif;
-}
-
-@keyframes eq-bar {
-  0%   { transform: scaleY(0.15); }
-  100% { transform: scaleY(1); }
-}
-
-@keyframes wave {
-  0%, 100% { transform: translateX(0); }
-  50%       { transform: translateX(-5%); }
-}
-```
-
-### Pattern 3: next-themes with Class Strategy
-
-**What:** `next-themes` manages theme state, persists to `localStorage`, syncs with system preference, and applies the active theme by toggling the `.dark` class on `<html>`. This is the canonical approach for Next.js App Router — zero flicker on load because the class is set before hydration.
-
-**When to use:** Whenever you need a user-controlled light/dark/system toggle. Using `@custom-variant dark (&:where(.dark, .dark *))` in CSS wires up Tailwind's `dark:` prefix to respond to this class.
-
-**Trade-offs:** Requires a thin client component wrapper (`providers.tsx`) because `ThemeProvider` uses React context. `suppressHydrationWarning` on `<html>` is required to suppress the SSR/client mismatch warning when next-themes sets the class before hydration.
-
-**Example:**
-
-```tsx
-// src/lib/providers.tsx
+```typescript
+// components/library/LibraryCard.tsx
 'use client';
+import { useAudioPlayer } from '@/contexts/AudioPlayerContext';
 
-import { ThemeProvider } from 'next-themes';
+export function LibraryCard({ track }: { track: LibraryTrack }) {
+  const { play, currentTrack, isPlaying } = useAudioPlayer();
+  const isNowPlaying = currentTrack?.url === track.playbackUrl && isPlaying;
 
-export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
+    <div onClick={() => play({
+      url: track.playbackUrl,
+      title: track.promptText,
+      mp3Url: track.mp3Url,
+    })}>
+      {/* card content */}
+    </div>
+  );
+}
+```
+
+### Pattern 4: Sidebar Active State via usePathname
+
+**What:** The Sidebar currently has `Library` pointing to `href="#"`. To make it a real route link and highlight the active nav item, use Next.js `usePathname()` to compare the current path against each nav item's href.
+
+**When to use:** Any sidebar/nav with multiple routes. Standard Next.js App Router pattern.
+
+**Trade-offs:** Sidebar is already a client component (`'use client'`), so `usePathname()` works without additional wrappers.
+
+**Example:**
+```typescript
+// In Sidebar.tsx, update NAV_ITEMS and NavLink
+import { usePathname } from 'next/navigation';
+
+const NAV_ITEMS = [
+  { label: 'Home', href: '/', icon: House },
+  { label: 'Create', href: '/', icon: Music, scrollToCreate: true },
+  { label: 'Library', href: '/library', icon: Library },
+];
+
+function NavLink({ href, ... }) {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+
+  return (
+    <a
+      href={href}
+      className={cn(
+        'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+        isActive
+          ? 'bg-accent/20 text-foreground'
+          : 'text-muted-foreground hover:bg-accent/10 hover:text-foreground'
+      )}
     >
-      {children}
-    </ThemeProvider>
+      ...
+    </a>
   );
 }
-```
-
-```tsx
-// src/app/layout.tsx
-import { Providers } from '@/lib/providers';
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${dmSans.variable} ${libreBaskerville.variable} ${geistMono.variable} antialiased`}>
-        <Providers>
-          {children}
-        </Providers>
-      </body>
-    </html>
-  );
-}
-```
-
-```tsx
-// src/components/ui/theme-toggle.tsx
-'use client';
-
-import { useTheme } from 'next-themes';
-import { Sun, Moon, Monitor } from 'lucide-react';
-
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-
-  return (
-    <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-      {theme === 'dark' ? <Sun /> : <Moon />}
-    </button>
-  );
-}
-```
-
-### Pattern 4: /style-guide Page Structure
-
-**What:** A static Next.js page at `/style-guide` that renders every design token, typography style, and component variant in one scrollable view. Divided into named sections by anchor links. No auth required (dev-only page, can be gated in production via middleware if needed).
-
-**When to use:** Throughout active development. Acts as a living contract between design intentions and implementation. Catches regressions immediately when tokens change.
-
-**Trade-offs:** Requires maintenance discipline — add new components to the style guide when building them. Small overhead but high value for visual consistency.
-
-**Suggested section structure:**
-
-```
-/style-guide
-├── #colors         — Color swatches for all semantic + primitive tokens
-│   ├── Light mode swatches (bg-background, bg-card, bg-primary, etc.)
-│   └── Dark mode swatches (same tokens, different values)
-├── #typography     — Font families, sizes, weights, line-heights
-│   ├── Heading scale (h1–h6 with font-serif)
-│   ├── Body scale (xs, sm, base, lg, xl with font-sans)
-│   └── Mono scale (font-mono)
-├── #spacing        — Spacing scale demonstration (padding/margin examples)
-├── #radii          — Border radius examples (sm, md, lg, xl)
-├── #shadows        — Box shadow examples
-├── #animations     — Animated elements (eq-bar, wave, etc.)
-├── #components     — Component showcase
-│   ├── Buttons (primary, secondary, outline, ghost, destructive)
-│   ├── Cards
-│   ├── Inputs (text, textarea, select)
-│   ├── Badges / chips
-│   ├── Loading states
-│   └── Audio player (waveform)
-├── #brand          — Logo, logotype, brand assets
-│   ├── Logo on light background
-│   ├── Logo on dark background
-│   └── Logo variants (full, mark, text-only)
-└── #text-effects   — Special text effects
-    ├── TextShimmer component demo
-    └── Typewriter component demo
 ```
 
 ---
 
 ## Data Flow
 
-### Theme Initialization (No Flicker)
+### Homepage → Workspace Transformation
 
 ```
-Browser requests page
+User lands on /
     ↓
-Next.js SSR renders <html> (no .dark class yet)
+page.tsx renders: HeroSection (prompt + CTA) + GenerationPage (form, idle state)
     ↓
-next-themes injects inline script in <head> BEFORE content paints:
-  reads localStorage("theme") or prefers-color-scheme
-  immediately sets <html class="dark"> or <html class="light">
+User enters prompt, clicks Create
     ↓
-CSS variables in .dark block activate instantly
+HeroSection dispatches 'navigate-create' event (existing pattern)
+  OR GenerationPage.handleSubmit() called directly from new prompt input
     ↓
-React hydrates — suppressHydrationWarning suppresses class mismatch warning
+GenerationPage: isWorkspaceActive = true
+  → layout changes to two-panel grid
+  → form moves to left panel
+  → right panel shows loading state
     ↓
-User sees correct theme with zero flash
+Poll /api/status/{jobId} every 2.5s (existing useGenerationStatus hook)
+    ↓
+Completion → right panel shows GenerationResults + VariantCards
+    ↓
+User clicks play on VariantCard
+    ↓
+audioPlayer.play(track) → AudioPlayerContext dispatches PLAY
+    ↓
+BottomAudioPlayer renders (already fixed at bottom via position:fixed)
+Audio plays — persists if user navigates to /library
 ```
 
-### Token Consumption Flow (Component Rendering)
+### Library Page Data Flow
 
 ```
-Tailwind processes globals.css at build time:
-  @theme inline { --color-background: var(--background) }
+User clicks Library in Sidebar
     ↓
-Generates: .bg-background { background-color: var(--background) }
-           .text-foreground { color: var(--foreground) }
+Next.js App Router navigates to /library
+  → AppShell persists (BottomAudioPlayer continues playing if active)
     ↓
-Component renders: <div className="bg-background text-foreground">
+RSC: app/library/page.tsx runs on server
+  → db.query.generations.findMany({ status: 'completed', with: { outputs } })
+  → getAudioPresignedUrl() for each output (server-side R2 signing)
     ↓
-Browser resolves var(--background) from closest ancestor:
-  - In light mode: :root sets --background → cream-50 value
-  - In dark mode:  .dark sets --background → slate-950 value
+Serialized track data passed to LibraryList (client component)
     ↓
-Correct color applied — no JavaScript needed for color switching
+LibraryList renders LibraryCards with GSAP animation
+    ↓
+User clicks play on LibraryCard
+    ↓
+audioPlayer.play(track) — same AudioPlayerContext, same BottomAudioPlayer
+  → if something was playing, it stops (PLAY action replaces currentTrack)
 ```
 
-### Style Guide Page Data Flow
+### Audio Player State Flow
 
 ```
-Developer visits /style-guide
-    ↓
-Page.tsx renders all design system sections (RSC — no client JS needed)
-    ↓
-Each color swatch reads bg-[token-name] utility class
-    ↓
-ThemeToggle in style guide header lets dev verify light/dark
-    ↓
-Both modes verifiable without leaving the page
+AudioPlayerContext (root — persists across navigation)
+    ↓ provides
+  play(track) / pause() / resume() / stop()
+  currentTrack: AudioTrack | null
+  isPlaying: boolean
+    ↓ consumed by
+  BottomAudioPlayer ← renders when currentTrack !== null
+  VariantCard ← calls play() on click
+  LibraryCard ← calls play() on click (new)
+  AppShell ← reads currentTrack to add paddingBottom to <main>
 ```
 
 ---
 
-## Build Order (This Milestone)
+## Integration Points: New vs Modified vs Unchanged
 
-Dependencies must be built in this order — each step unlocks the next.
+### New Files to Create
 
-```
-WAVE 0: Token Foundation (no visual output yet)
-  1. Create src/styles/tokens/primitives.css  ← brand palette raw values
-  2. Create src/styles/tokens/semantic.css    ← :root + .dark semantic blocks
-  3. Modify src/app/globals.css              ← @import chain, @custom-variant dark, @theme inline
-  Result: All utility classes available, dark mode wired up
+| File | What It Does | Depends On |
+|------|--------------|------------|
+| `src/app/library/page.tsx` | RSC: fetches generations from DB, renders LibraryList | `db`, `getAudioPresignedUrl`, `LibraryList` |
+| `src/app/api/library/route.ts` | Optional: if library page needs client-side refresh | Drizzle, R2 — same patterns as `/api/status/[jobId]` |
+| `src/components/library/LibraryList.tsx` | GSAP-animated list of LibraryCards | GSAP (must install), LibraryCard |
+| `src/components/library/LibraryCard.tsx` | Clickable song card: play, download, metadata | `useAudioPlayer` (exists) |
+| `src/components/library/LibraryEmpty.tsx` | Empty state shown when no completed generations | none |
 
-WAVE 1: Theme Infrastructure
-  4. npm install next-themes
-  5. Create src/lib/providers.tsx            ← ThemeProvider wrapper
-  6. Modify src/app/layout.tsx              ← add Providers, suppressHydrationWarning
-  7. Create src/components/ui/theme-toggle.tsx
-  Result: Theme switching works end-to-end
+### Files to Modify
 
-WAVE 2: Style Guide Page (reference implementation)
-  8. Create src/app/style-guide/page.tsx    ← all sections, all tokens documented
-  Result: Living design system reference in browser — validates Wave 0+1
+| File | What Changes | Risk |
+|------|--------------|------|
+| `src/app/page.tsx` | Minimal: HeroSection redesign may change how `#home`/`#create` sections stack | LOW — structural, not logic |
+| `src/components/HeroSection.tsx` | Add inline prompt input + Create button at hero level; remove or reposition example cards | MEDIUM — visual redesign |
+| `src/components/GenerationPage.tsx` | Add `isWorkspaceActive` state; conditional two-panel grid layout; keep all existing phase logic | LOW — additive change only |
+| `src/components/layout/Sidebar.tsx` | Change Library `href="#"` → `href="/library"`; add active state via `usePathname()`; use `<Link>` for real routes | LOW — surgical change |
+| `src/components/layout/AppShell.tsx` | Verify `--player-bar-height` CSS var is set in globals.css; no other changes expected | LOW |
 
-WAVE 3: Brand Assets
-  9. Create src/components/brand/Logo.tsx
-  10. Create src/components/brand/LogoMark.tsx
-  Result: Brand identity buildable into pages
+### Files That Require No Changes
 
-WAVE 4: Component Redesign
-  11. Update shadcn/ui component classes     ← leverage semantic token utilities
-  12. Redesign HeroSection.tsx
-  13. Redesign GenerationForm.tsx
-  14. Redesign GenerationResults.tsx / VariantCard.tsx
-  15. Redesign footer (stacked circular from spectrum-ui)
-  Result: Full visual redesign applied
-
-WAVE 5: Style Guide Completion
-  16. Add all redesigned components to /style-guide
-  Result: Style guide reflects final state
-```
-
-**Wave 0 must ship before any component work.** Trying to redesign components before tokens exist leads to hardcoded values that must be refactored later.
-
-**Wave 2 (style guide) before Wave 4 (redesign)** gives you a reference frame during redesign — you see exactly what the tokens produce before applying them to production pages.
+| File | Why Unchanged |
+|------|---------------|
+| `src/contexts/AudioPlayerContext.tsx` | Complete — PLAY/PAUSE/RESUME/STOP + AudioTrack type covers all use cases |
+| `src/components/layout/BottomAudioPlayer.tsx` | Complete — handles desktop + mobile, wavesurfer, AnimatePresence |
+| `src/components/layout/SidebarProvider.tsx` | Complete |
+| `src/components/VariantCard.tsx` | Already calls `audioPlayer.play()` — integrates with library pattern naturally |
+| `src/components/WaveformPlayer.tsx` | Reusable — LibraryCard can use it optionally |
+| `src/hooks/useGenerationStatus.ts` | Polling infrastructure complete |
+| `src/app/api/generate/route.ts` | Generation endpoint unchanged |
+| `src/app/api/status/[jobId]/route.ts` | Status endpoint unchanged |
+| `src/db/schema.ts` | Schema complete — `generations` + `outputs` tables cover library needs |
+| `src/lib/r2.ts` | `getAudioPresignedUrl()` already works — reuse directly |
 
 ---
 
-## Anti-Patterns
+## Build Order
 
-### Anti-Pattern 1: Mixing @theme and @theme inline
+Dependencies dictate this order. Each step unlocks the next.
 
-**What people do:** Put some tokens in bare `@theme {}` and others in `@theme inline {}` in the same file, inconsistently.
+```
+PHASE 1: Navigation (unblocks everything)
+  1. Modify Sidebar.tsx — Library href + active state via usePathname()
+  → Sidebar now links to /library (even before page exists, 404 is acceptable)
 
-**Why it's wrong:** Bare `@theme` creates theme variables that resolve at definition time, not use time. When you use bare `@theme { --color-primary: var(--primary) }`, the utility class `.text-primary` outputs `color: var(--color-primary)`, which references the Tailwind theme variable, not your runtime CSS variable. This breaks dark mode because `.dark { --primary: ... }` changes the runtime variable but the utility class is pointing at the static theme variable.
+PHASE 2: Library Data Layer
+  2. Write app/library/page.tsx RSC — DB query + presigned URL generation
+  → /library route exists, renders data (unstyled is fine)
+  3. Write optional GET /api/library route if SSR refresh is needed
 
-**Do this instead:** Use `@theme inline` for all tokens that reference other CSS variables. The `inline` keyword makes generated utilities reference the *source* variable directly, enabling runtime CSS cascade (dark mode) to work correctly.
+PHASE 3: Library UI
+  4. Write LibraryCard.tsx — uses existing useAudioPlayer() pattern
+  5. Write LibraryEmpty.tsx — empty state
+  6. Write LibraryList.tsx — GSAP animation wrapper
+  → /library fully functional with play-to-bottom-bar behavior
 
-### Anti-Pattern 2: Putting :root and .dark Inside @layer base
+PHASE 4: Two-Panel Workspace
+  7. Modify GenerationPage.tsx — add isWorkspaceActive + two-panel grid layout
+  8. Modify HeroSection.tsx — slim hero + inline prompt + Create CTA
+  9. Modify page.tsx if section layout needs adjustment
+  → Same-page transformation works
 
-**What people do:** Follow old shadcn/ui v3 patterns that wrap `:root` and `.dark` inside `@layer base {}`.
+PHASE 5: Polish
+  10. Responsive breakpoints for two-panel (mobile: stacked, desktop: side-by-side)
+  11. GSAP scramble text on library list items
+  12. Transition animations for panel appearance
+```
 
-**Why it's wrong:** In Tailwind v4, `@layer base` has lower specificity than component styles. CSS variables defined in `@layer base` can be overridden unexpectedly. The shadcn/ui v4 migration guide explicitly says to move these out of `@layer base`.
-
-**Do this instead:** Define `:root` and `.dark` as top-level CSS rules in your token file, outside any layer. Specificity is predictable and the variables cascade correctly.
-
-### Anti-Pattern 3: Using prefers-color-scheme Media Query as Primary Dark Mode Mechanism
-
-**What people do:** Rely solely on `@media (prefers-color-scheme: dark)` without implementing class-based switching (as the existing `globals.css` does).
-
-**Why it's wrong:** Users cannot toggle the theme. The preference is OS-level only. Also conflicts with next-themes' class-based approach — both mechanisms fire simultaneously, causing specificity battles.
-
-**Do this instead:** Use `@custom-variant dark (&:where(.dark, .dark *))` for class-based switching. Optionally add `defaultTheme="system"` in ThemeProvider to respect OS preference as the default, but let users override it.
-
-### Anti-Pattern 4: Hardcoding Colors in Components
-
-**What people do:** During rapid development, write `className="bg-slate-900 text-white"` directly in components instead of `className="bg-background text-foreground"`.
-
-**Why it's wrong:** Dark mode breaks immediately. When the theme switches, `bg-slate-900` stays `bg-slate-900` — it doesn't know about semantic context. You end up with dark text on dark backgrounds or vice versa.
-
-**Do this instead:** Always use semantic token utility classes (`bg-background`, `text-foreground`, `bg-primary`, `text-muted-foreground`, etc.). Only reach for raw Tailwind color classes inside `primitives.css` definitions or in the style guide swatches where you're intentionally showing raw values.
-
-### Anti-Pattern 5: Defining All Tokens in globals.css
-
-**What people do:** Keep everything in `globals.css` as a monolithic file (as the existing implementation does for primitives and semantics).
-
-**Why it's wrong:** At scale, globals.css becomes a 300+ line file that's hard to navigate. It mixes concerns: import declarations, custom variants, theme bridge, primitives, semantics, base styles, and keyframes. Finding and updating a specific token requires scrolling through unrelated rules.
-
-**Do this instead:** Split into `primitives.css`, `semantic.css`, imported by `globals.css`. Each file has a single concern. Primitives change when brand colors change; semantics change when token meaning changes; globals.css changes only when you're adding new Tailwind variants or animations.
+**Why this order:**
+- Phase 1 first because nav links are visible and broken links are annoying during dev
+- Phase 2-3 before Phase 4 because library page is independent of workspace changes
+- Phase 4 last because it modifies existing working pages — lower risk when library is already done
+- Phase 5 is additive polish on top of functional features
 
 ---
 
-## Integration Points
+## Anti-Patterns to Avoid
 
-### Existing Code Integration
+### Anti-Pattern 1: Creating a Separate /create Route
 
-| Integration Point | Current State | What Changes |
-|-------------------|---------------|--------------|
-| `src/app/globals.css` | Inline `:root`, dark media query, `@theme inline` | Split tokens to separate files; replace media query with `.dark` class; keep `@theme inline` block (expanded) |
-| `src/app/layout.tsx` | Bare fonts + `<html>` | Add `suppressHydrationWarning`, wrap `{children}` with `<Providers>` |
-| `src/components/ui/` | Currently only text-shimmer, typewriter (unusual — no standard shadcn components installed yet) | Add theme-toggle; any new shadcn components install here |
-| Feature components | Use inline color assumptions | Update class names to semantic token utilities; audit each component |
-| `next-themes` | Not installed | Add to dependencies |
+**What people do:** Add `src/app/create/page.tsx` as a separate route for the generation workspace.
 
-### Tailwind v4 Specific Behaviors
+**Why it's wrong:** The PROJECT.md decision is explicit — same-page transformation, no /create route. A separate route means the URL changes on Create click, which breaks the scroll-based transformation UX. It also requires duplicating the `GenerationPage` component or restructuring routing.
 
-| Concern | Behavior | Action Required |
-|---------|----------|-----------------|
-| No `tailwind.config.js` | Tailwind v4 is CSS-first — all config in CSS | No action; already the case in this project |
-| `darkMode: 'class'` config | This v3 config key does not exist in v4 | Use `@custom-variant dark` in CSS instead |
-| `@theme` vs `@theme inline` | `inline` required for variable-referencing tokens | Use `@theme inline` for all CSS-variable-bridging tokens |
-| OKLCH color format | Tailwind v4 and shadcn/ui v4 default to OKLCH | New tokens should use OKLCH; existing HSL tokens work but migrate gradually |
-| Utility class generation | `@theme inline { --color-X: var(--X) }` generates `bg-X`, `text-X`, `border-X` | Every semantic token needs a `--color-*` entry to get utility classes |
+**Do this instead:** Keep everything on `page.tsx`. `isWorkspaceActive` state in `GenerationPage` drives the layout switch.
+
+### Anti-Pattern 2: Moving AudioPlayerProvider Out of AppShell
+
+**What people do:** Move `AudioPlayerProvider` into individual pages or closer to where audio is triggered.
+
+**Why it's wrong:** Audio must persist across page navigations. The provider must be in the root shell (above the router outlet). It's already correctly placed in `AppShell`.
+
+**Do this instead:** Leave `AudioPlayerProvider` in `AppShell.tsx`. All pages and components can consume `useAudioPlayer()`.
+
+### Anti-Pattern 3: Fetching Presigned URLs Client-Side in Library
+
+**What people do:** Make `/library` a client component that calls `GET /api/library` on mount to get track URLs.
+
+**Why it's wrong:** Adds a loading state, a spinner, and a round-trip fetch when the data could be server-rendered. For a browsing page, there's no user input that changes the initial data — RSC is the right pattern.
+
+**Do this instead:** Use RSC for `app/library/page.tsx`. Fetch from DB and generate presigned URLs server-side. Pass resolved data to client components as props.
+
+### Anti-Pattern 4: Duplicating Audio Logic in LibraryCard
+
+**What people do:** Implement a separate wavesurfer instance inside each `LibraryCard` for preview playback.
+
+**Why it's wrong:** The bottom player bar already handles all audio playback. Inline audio in library cards means N wavesurfer instances competing for audio focus. This is exactly what `VariantCard` was refactored away from (it now uses `mode="visual-only"`).
+
+**Do this instead:** `LibraryCard` calls `audioPlayer.play(track)` and the bottom player handles everything. Library cards can show a visual-only waveform or a simple play button — no audio engine in the card.
+
+### Anti-Pattern 5: Storing Library State in Component-Level useState
+
+**What people do:** Fetch library data in a `useState` + `useEffect` inside `LibraryPage` client component, creating loading spinners and potential stale data.
+
+**Why it's wrong:** The library is a read-mostly page. Data staleness is acceptable for a browsing view. RSC eliminates the loading spinner entirely and renders data immediately.
+
+**Do this instead:** RSC for the page, client components only for interactivity (play button, hover states). If the user needs to refresh the library after generating a new song, a simple page reload or router.refresh() is sufficient.
 
 ---
 
@@ -580,25 +506,39 @@ WAVE 5: Style Guide Completion
 
 | Scale | Architecture Adjustments |
 |-------|--------------------------|
-| Current (prototype, 5-10 users) | Single CSS token file split is sufficient. All tokens in one semantic.css file. |
-| Multi-theme future (e.g., seasonal themes, per-user themes) | Add `src/styles/tokens/themes/` directory with per-theme overrides. next-themes supports custom theme names. |
-| Design token sync with Figma | Consider Style Dictionary or Tokens Studio for Figma-to-code pipeline. Not needed for v1.1. |
-| White-labeling | The three-tier token architecture supports it: swap semantic.css per tenant, primitives.css holds their brand palette. Far future concern. |
+| 0-10 users (current) | RSC library page, no pagination, 50-item limit. Presigned URLs generated at page load. Fine. |
+| 10-1k users | Add pagination to library API (cursor-based). Consider caching presigned URLs in DB instead of re-generating per request. Library becomes a real API call with SWR/TanStack Query. |
+| 1k+ users | Auth layer (per-user libraries). Library API behind auth middleware. Consider CDN-level caching for public-shareable tracks. |
+
+**First bottleneck at scale:** Presigned URL generation for many tracks per page load. Mitigation: cache URL + expiry in the DB, only regenerate when expired. Not needed for 5-10 user prototype.
+
+---
+
+## GSAP for Library List
+
+The PROJECT.md spec calls for "GSAP portfolio list with scramble text." This requires adding GSAP as a dependency since it's not currently installed.
+
+**Recommended:** `gsap` + `@gsap/react` for React integration.
+
+```bash
+npm install gsap @gsap/react
+```
+
+**Integration point:** `LibraryList.tsx` uses `useGSAP()` from `@gsap/react` for the list animation. Text scramble uses `gsap.utils.scrambleText()` or GSAP's `ScrambleTextPlugin`. The scramble effect on library item titles is a `useGSAP` effect triggered on mount or hover.
+
+**Confidence:** MEDIUM — GSAP is a well-established library but the ScrambleTextPlugin is a Club GSAP (paid) plugin. Verify if the project has a GSAP Club license or use an alternative like gsap-scramble-text (open source alternative). If not, a custom character scramble with `setInterval` is a viable fallback.
 
 ---
 
 ## Sources
 
-- [Tailwind CSS v4 — Theme Variables (official docs)](https://tailwindcss.com/docs/theme) — HIGH confidence
-- [Tailwind CSS v4 — Dark Mode with @custom-variant (official docs)](https://tailwindcss.com/docs/dark-mode) — HIGH confidence
-- [shadcn/ui — Tailwind v4 Integration (official docs)](https://ui.shadcn.com/docs/tailwind-v4) — HIGH confidence
-- [shadcn/ui — Theming with CSS Variables (official docs)](https://ui.shadcn.com/docs/theming) — HIGH confidence
-- [next-themes — GitHub (pacocoursey/next-themes)](https://github.com/pacocoursey/next-themes) — HIGH confidence
-- [Dark Mode in Next.js 15 + Tailwind v4 (sujalvanjare.com, 2025)](https://www.sujalvanjare.com/blog/dark-mode-nextjs15-tailwind-v4) — MEDIUM confidence
-- [Tailwind v4 @theme inline discussion (GitHub tailwindlabs/tailwindcss #15600)](https://github.com/tailwindlabs/tailwindcss/discussions/15600) — HIGH confidence
-- [Design Token-Based UI Architecture (Martin Fowler)](https://martinfowler.com/articles/design-token-based-ui-architecture.html) — HIGH confidence for three-tier pattern
-- [Dark mode with Tailwind v4 and Next.js (thingsaboutweb.dev)](https://www.thingsaboutweb.dev/en/posts/dark-mode-with-tailwind-v4-nextjs) — MEDIUM confidence
+- Direct codebase inspection — `src/components/layout/`, `src/contexts/`, `src/app/` (HIGH confidence — ground truth)
+- Next.js App Router RSC patterns — https://nextjs.org/docs/app/building-your-application/rendering/server-components (HIGH confidence)
+- Next.js `usePathname()` — https://nextjs.org/docs/app/api-reference/functions/use-pathname (HIGH confidence)
+- GSAP React integration — https://gsap.com/resources/React/ (MEDIUM confidence — version compatibility with React 19 not verified against latest docs)
+- PROJECT.md decision log — "Same-page create transformation" and "Persistent bottom audio player" decisions (HIGH confidence — authoritative)
 
 ---
-*Architecture research for: Design system + brand kit + light/dark theming — Next.js 16 + Tailwind v4 + shadcn/ui*
+
+*Architecture research for: Suno-style UX overhaul — persistent audio player, library page, two-panel workspace*
 *Researched: 2026-03-05*

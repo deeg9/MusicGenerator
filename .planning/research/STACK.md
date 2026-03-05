@@ -1,168 +1,169 @@
 # Stack Research
 
-**Domain:** Design tokens system, brand kit, component showcase, new UI components (Next.js + Tailwind v4)
+**Domain:** Suno-style UX overhaul — persistent audio player, library page, two-panel workspace, GSAP scramble text (Next.js music app)
 **Researched:** 2026-03-05
-**Confidence:** HIGH (Tailwind v4 token system verified against official docs; component models verified against official sites; next-themes confirmed compatible)
+**Confidence:** HIGH (GSAP/ScrambleText verified via official docs and npm; existing architecture verified by reading live source files)
 
 ---
 
 ## Context: What Already Exists (Do Not Re-add)
 
-The v1.0 stack is fully operational. This research covers ONLY new additions needed for the v1.1 brand redesign milestone.
+The v1.0 and v1.1 stack is fully operational. This research covers ONLY net-new additions needed for the v2.0 Suno-style UX milestone.
 
-| Already In Place | Version | Notes |
-|------------------|---------|-------|
+### Already Installed and Working
+
+| Already In Place | Version | Status |
+|------------------|---------|--------|
 | Next.js | 16.1.6 | App Router, no changes needed |
 | React | 19.2.3 | No changes needed |
-| Tailwind CSS | ^4 | CSS-first config already in globals.css |
-| Framer Motion | ^12.35.0 | Already installed — fancycomponents typewriter uses this |
-| lucide-react | ^0.577.0 | Already installed — spectrum-ui footer uses this |
-| TypeScript | ^5 | No changes needed |
+| Tailwind CSS | ^4 | CSS-first config in globals.css |
+| Framer Motion | ^12.35.0 | Installed — Sidebar, BottomAudioPlayer, AnimatePresence all using it |
+| wavesurfer.js | ^7.12.1 | Installed |
+| @wavesurfer/react | ^1.0.12 | Installed — BottomAudioPlayer uses `useWavesurfer` hook |
+| next-themes | ^0.4.6 | Installed — theme toggle working |
+| lucide-react | ^0.577.0 | Installed — all icons sourced from here |
+| clsx / tailwind-merge | — | Should be present (cn() pattern used) |
+
+### Already Built (Not In package.json, In Source)
+
+These features are **already implemented** in the codebase. Research confirmed by reading live source files. No new library needed for any of them:
+
+| Feature | Implementation | Where |
+|---------|---------------|-------|
+| Persistent bottom audio player | `useWavesurfer` + React Context + `AnimatePresence` slide-up animation | `src/components/layout/BottomAudioPlayer.tsx` |
+| Audio player state management | React Context + `useReducer` — `play/pause/resume/stop` | `src/contexts/AudioPlayerContext.tsx` |
+| Two-panel layout shell | Flex layout: `<Sidebar>` (fixed-width) + `<main>` (flex-1) | `src/components/layout/AppShell.tsx` |
+| Sidebar navigation | Framer Motion spring expand/collapse, mobile overlay | `src/components/layout/Sidebar.tsx` |
+| Sidebar state | React Context — `isOpen`, `isMobileOpen` | `src/components/layout/SidebarProvider.tsx` |
+| Reduced motion hook | `useReducedMotion` | `src/hooks/useReducedMotion.ts` |
 
 ---
 
 ## Recommended Stack — New Additions Only
 
+The only library gap for v2.0 is GSAP for the library page scramble text animation. Everything else is already in place.
+
 ### Core Technologies
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| next-themes | ^0.4.6 | Light/dark mode toggle with no flash | The project currently uses `prefers-color-scheme` media query only — no user-toggled theme switching. next-themes wraps the app with a ThemeProvider, writes a class or data attribute to `<html>`, and uses a script injection technique to prevent flash-of-unstyled-content (FOUC) on hydration. Works with Next.js App Router via a "use client" wrapper. Required for the `/style-guide` page to demonstrate both modes. |
-| clsx | ^2.x | Conditional class name joining | The spectrum-ui footer and any custom components need conditional class logic. clsx handles arrays, objects, and conditionals cleanly. Already expected by shadcn-style component patterns. |
-| tailwind-merge | ^3.x | Tailwind class conflict resolution | When passing className overrides to components (e.g., `<Button className="bg-red-500">`), tailwind-merge prevents duplicate/conflicting Tailwind utilities from both sides. Required for the `cn()` utility function that shadcn-style components use. |
+| gsap | ^3.14.2 | ScrambleText animation engine for library page | Industry-standard animation library. ScrambleText plugin (previously Club GSAP paid) is now 100% free as of Webflow's acquisition in 2024. Ships in the main `gsap` npm package — no separate plugin package needed. Use `import ScrambleTextPlugin from 'gsap/ScrambleTextPlugin'` |
+| @gsap/react | ^2.1.2 | `useGSAP()` hook — the correct way to use GSAP in React | Drop-in for `useLayoutEffect/useEffect` that properly handles GSAP context and cleanup in React's render cycle. Prevents animation leaks on unmount. Implements `useIsomorphicLayoutEffect` so it's safe in Next.js SSR. Requires `"use client"` directive on any component using it. |
 
-### Component Sources (Copy-Paste, Not npm Packages)
+### What NOT to Install
 
-These are NOT npm packages. They are copy-paste components. Their dependencies (Framer Motion, lucide-react) are already installed.
-
-| Component | Source | Model | Dependencies Already Present |
-|-----------|--------|-------|------------------------------|
-| Typewriter | fancycomponents.dev — danielpetho | CLI or manual copy (`pnpm dlx shadcn add @fancy/typewriter`) | framer-motion ^12 (installed) |
-| Stacked Circular Footer | ui.spectrumhq.in/docs/footer | Manual copy into `src/components/` | lucide-react (installed), shadcn-style Button/Input/Label |
-
-**Key insight on the footer:** The spectrum-ui footer imports `@/components/ui/button`, `@/components/ui/input`, and `@/components/ui/label`. These are shadcn-style primitives. Since this project does NOT have shadcn installed, these need to be either: (a) manually copied from ui.shadcn.com as standalone files, or (b) written from scratch as simple wrappers. The primitives themselves are trivial — Button is ~50 lines, Input and Label are ~20 lines each. No Radix UI dependency is required for these three basic components.
-
-### Supporting Utilities
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| clsx | ^2.1.x | Class name conditionals | Use in every component that accepts a `className` prop or has conditional state classes |
-| tailwind-merge | ^3.x | Merge Tailwind utilities without conflicts | Use in the `cn()` utility function: `twMerge(clsx(inputs))` — this pattern is standard across all shadcn-style components |
-
----
-
-## Design Token Architecture
-
-The existing `globals.css` already implements the correct Tailwind v4 pattern: CSS custom properties in `:root` (and a dark media query override), mapped into Tailwind via `@theme inline`. This is the right approach and requires no new tooling.
-
-**What the brand redesign changes — not the mechanism, only the values:**
-
-```css
-/* Current structure (correct — keep this) */
-:root {
-  --background: hsl(...);
-  --primary: hsl(...);
-  /* etc. */
-}
-
-@media (prefers-color-scheme: dark) {
-  :root { /* dark overrides */ }
-}
-
-@theme inline {
-  --color-background: var(--background);
-  /* maps CSS vars → Tailwind utilities */
-}
-```
-
-**With next-themes, the dark media query changes to a class selector:**
-
-```css
-/* Replace media query with .dark class for next-themes compatibility */
-:root { /* light values */ }
-
-.dark {
-  --background: hsl(...);
-  /* dark overrides */
-}
-
-/* In globals.css, tell Tailwind v4 how to detect dark mode */
-@custom-variant dark (&:where(.dark, .dark *));
-```
-
-This is the only structural change to `globals.css` needed. The `@theme inline` block stays exactly as-is. All existing `bg-background`, `text-foreground` etc. utility classes continue working unchanged.
-
-**Token categories to update with new brand values (no new tooling):**
-
-| Category | Current State | What Changes |
-|----------|--------------|--------------|
-| Colors | Generic blue/yellow placeholders | Warm brand palette (baby blue, sunny yellow, soft whites, coral) |
-| Typography | DM Sans + Libre Baskerville (already in layout.tsx fonts) | Font weights, sizes — possibly add display variant |
-| Spacing | Not yet tokenized | Add `--spacing-*` tokens if needed for component-specific padding |
-| Radii | `--radius-sm/md/lg/xl` already exist | Values may need adjustment for warm/rounded aesthetic |
-| Shadows | Not yet in tokens | Add `--shadow-card`, `--shadow-button` for the warm aesthetic |
-| Animations | `eq-bar` and `wave` exist | Add typewriter cursor animation token if needed |
+| Do NOT Add | Why | Already Have / Use Instead |
+|------------|-----|---------------------------|
+| `react-gsap` (community package) | Last published 5 years ago, unmaintained | Use `@gsap/react` (official GreenSock package) |
+| `howler.js` or `react-player` | Redundant with wavesurfer.js already installed | `@wavesurfer/react` already handles audio playback |
+| `zustand` or `redux` for audio state | Adds state management library for one concern | React Context + useReducer is already implemented and sufficient at prototype scale (5-10 users) |
+| `react-resizable-panels` | Two-panel resize library | Current layout uses CSS flex — no resize handles needed for Suno-style layout |
+| Any waveform alternative library | Redundant | wavesurfer.js ^7 + @wavesurfer/react already installed and working in BottomAudioPlayer |
 
 ---
 
 ## Installation
 
 ```bash
-# New npm dependencies (3 packages)
-npm install next-themes clsx tailwind-merge
-
-# No new dev dependencies needed
-# fancycomponents typewriter and spectrum-ui footer are copy-paste — no npm install
+# Only two new packages needed for v2.0
+npm install gsap @gsap/react
 ```
 
 ---
 
-## File Structure for New Brand Additions
+## GSAP Integration Pattern for Next.js App Router
 
+GSAP requires "use client" because it manipulates the DOM. The correct pattern for Next.js App Router:
+
+```tsx
+// src/components/library/LibraryList.tsx
+"use client";
+
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
+
+// Register once per module (idempotent — safe to call multiple times)
+gsap.registerPlugin(useGSAP, ScrambleTextPlugin);
+
+export function LibraryList() {
+  const container = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    // GSAP context is scoped to container — auto-cleanup on unmount
+    gsap.to(".song-title", {
+      duration: 1,
+      scrambleText: {
+        text: "Your Song Title",
+        chars: "upperCase",
+        speed: 0.5,
+      },
+    });
+  }, { scope: container });
+
+  return <div ref={container}>{/* library items */}</div>;
+}
 ```
-src/
-  app/
-    globals.css              # Update: replace media query with .dark, add @custom-variant
-    layout.tsx               # Update: wrap with ThemeProvider from next-themes
-    style-guide/
-      page.tsx               # New: dev page showing all tokens and components
-  components/
-    ui/
-      button.tsx             # New: minimal shadcn-style Button (for footer compatibility)
-      input.tsx              # New: minimal shadcn-style Input (for footer compatibility)
-      label.tsx              # New: minimal shadcn-style Label (for footer compatibility)
-    brand/
-      typewriter.tsx         # New: fancycomponents typewriter (copy from fancycomponents.dev)
-      footer.tsx             # New: spectrum-ui stacked circular footer (adapted)
-    theme-provider.tsx       # New: next-themes ThemeProvider wrapper ("use client")
-  lib/
-    utils.ts                 # New: cn() utility function (clsx + tailwind-merge)
+
+**Key points:**
+- Register plugins at module level (once per file), not inside components
+- `useGSAP()` with `{ scope: container }` auto-cleans animations on unmount — prevents React StrictMode double-fire leaks
+- Never use bare `useEffect` with GSAP in React — use `useGSAP` instead
+- `ScrambleTextPlugin` is imported from `gsap/ScrambleTextPlugin` (included in the main `gsap` package)
+
+---
+
+## Two-Panel Workspace Layout — No New Libraries Needed
+
+The AppShell already implements the core structure. The two-panel workspace (form left, results right) on the homepage is a CSS-only concern:
+
+```tsx
+// Homepage two-panel: add inside AppShell's <main>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+  <div className="panel-form overflow-y-auto">{/* prompt form */}</div>
+  <div className="panel-results overflow-y-auto">{/* generated tracks */}</div>
+</div>
 ```
+
+CSS Grid (`grid-cols-2`) with Tailwind responsive prefixes handles the responsive collapse. No library needed.
+
+---
+
+## Persistent Audio Player — No Changes Needed
+
+The architecture is already correct and complete:
+
+1. `AudioPlayerContext` — global state via React Context + `useReducer`
+2. `BottomAudioPlayer` — fixed `position: fixed` at bottom, `AnimatePresence` slide-in
+3. `AppShell` — wraps entire app, provider at root so state survives page navigation
+4. `useWavesurfer` — handles waveform rendering; MediaElement backend used for the global audio
+
+The only remaining work is wiring up library song cards to call `play(track)` from the context — no architectural changes.
+
+---
+
+## Library Page — No New Libraries Needed
+
+The `/library` page requires:
+
+1. **Route**: `src/app/library/page.tsx` — Next.js file-based routing, no new library
+2. **Data fetching**: Drizzle ORM query (already installed) to fetch generated songs from Supabase
+3. **Song cards**: Custom component using existing Tailwind + lucide-react icons
+4. **GSAP scramble text**: `gsap` + `@gsap/react` (the only new npm addition)
+5. **Waveform mini-preview**: `@wavesurfer/react` already installed
 
 ---
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| next-themes | Manual cookie-based theme toggle | When you need SSR-rendered theme without any client-side flash AND want zero dependencies. Significantly more implementation work — not worth it here. |
-| next-themes | `prefers-color-scheme` only (current approach) | When you never want a user toggle. The PROJECT.md specifies light + dark mode support with user control, so media-query-only is insufficient. |
-| CSS custom properties in globals.css (current approach) | Style Dictionary / Token Studio | When you have a dedicated design team managing tokens in Figma and need a build pipeline from design tool → code. Overkill for a solo/small team project — the CSS approach is the correct Tailwind v4 native pattern. |
-| clsx + tailwind-merge (`cn()`) | `classnames` package | classnames is older (lacks TypeScript-first DX), doesn't resolve Tailwind conflicts. tailwind-merge is the correct choice for Tailwind projects. |
-| Copy-paste from fancycomponents.dev | `fancy-components` npm package (v0.0.23) | The npm package is 3 years old and unmaintained. The fancycomponents.dev site (danielpetho's current work) uses a shadcn CLI pattern — copy the source code, own it in your repo. |
-| Minimal hand-rolled shadcn primitives (Button/Input/Label) | Full shadcn/ui init | Full shadcn init would add `components.json`, Radix UI dependencies, and rebuild the entire component system. The spectrum-ui footer only needs 3 trivial components — writing them directly is simpler and keeps the codebase lean. |
-
----
-
-## What NOT to Use
-
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `fancy-components` npm package (npm.js) | Last published 3 years ago (v0.0.23), abandoned. Different from fancycomponents.dev. | Copy from fancycomponents.dev via `pnpm dlx shadcn add @fancy/typewriter` or manual copy |
-| Full `shadcn init` / `components.json` | This project doesn't need the full shadcn system — adds Radix UI, a components.json config, and rebuilds things already working. The only shadcn-style things needed are 3 tiny primitives for the footer. | Hand-roll Button, Input, Label as minimal wrappers using `cn()` |
-| `@apply` for design token classes | Tailwind v4 docs explicitly recommend against `@apply`. It makes CSS harder to debug and doesn't get IDE support. | Use `var(--token-name)` in custom CSS, or Tailwind utility classes directly in JSX |
-| Storybook | Full Storybook setup is ~5 MB of dev dependencies and requires separate server. The `/style-guide` page is a Next.js page — faster to build and zero overhead. | `/style-guide` page in the app itself |
-| CSS Modules for design tokens | Tokens defined in CSS Modules are scoped and can't be reused globally or accessed via `var()` in Tailwind. | CSS custom properties in `globals.css` (current approach — correct) |
+| Recommended | Alternative | Why Not |
+|-------------|-------------|---------|
+| GSAP ScrambleText (via gsap package) | Hand-rolled scramble text with `setInterval` | 30-50 lines of custom JS, harder to coordinate with scroll triggers and entrance animations. GSAP ScrambleText is now free and purpose-built. |
+| GSAP ScrambleText | shadcn scrambled-text component (shadcn.com/text/scrambled-text) | Copy-paste component that uses `useEffect` + `setInterval`. Works but: no GSAP scroll trigger integration, less configurability, doesn't set up GSAP for future animations. If GSAP is being added anyway for library entrance animations, use ScrambleText. |
+| `@gsap/react` (official) | `react-gsap` (community) | react-gsap is 5 years unmaintained. `@gsap/react` is maintained by the original GSAP team at Webflow. |
+| React Context + useReducer (existing) | Zustand | Zustand adds a dependency for a use case that existing Context already handles. At 5-10 user prototype scale, there is no performance argument for Zustand over Context here. Revisit if audio player needs derived state across many subscribers. |
+| CSS Grid (Tailwind) | `react-resizable-panels` | Resizable panels add complexity and interaction burden. Suno doesn't have resizable panels — fixed proportions are the right call. |
 
 ---
 
@@ -170,79 +171,41 @@ src/
 
 | Package | Compatible With | Notes |
 |---------|-----------------|-------|
-| next-themes ^0.4.6 | Next.js 16, App Router, React 19 | Wrap in a "use client" ThemeProvider component — server components cannot use context. FOUC prevention script works in App Router via `suppressHydrationWarning` on `<html>`. |
-| tailwind-merge ^3.x | Tailwind CSS v4 | tailwind-merge v3 adds Tailwind v4 support. Do NOT use tailwind-merge v2 with Tailwind v4 — it doesn't understand v4's CSS variable-based color system and will incorrectly merge/drop classes. |
-| clsx ^2.x | React 19, TypeScript 5 | No compatibility concerns. Pure utility. |
-| fancycomponents typewriter | framer-motion ^12.35.0 (installed) | Framer Motion is already v12.35.0 in this project — no version conflict. Component uses standard motion APIs. |
-| spectrum-ui footer | lucide-react ^0.577.0 (installed) | lucide-react is already installed. Footer imports Facebook, Instagram, Linkedin, Twitter icons — all present in v0.577.0. |
+| gsap ^3.14.2 | React 19, Next.js 16, Tailwind v4 | No framework dependencies — pure JS animation engine |
+| @gsap/react ^2.1.2 | React 19, Next.js 16 App Router | Requires "use client" directive. Uses `useIsomorphicLayoutEffect` internally so SSR-safe. Works with React 19 Strict Mode. |
+| gsap ScrambleTextPlugin | gsap ^3.14.2 | Bundled in main gsap package since all plugins became free. Import from `gsap/ScrambleTextPlugin`. |
 
 ---
 
-## Integration Pattern: next-themes with Tailwind v4
+## File Structure for v2.0 Additions
 
-The current `globals.css` uses `@media (prefers-color-scheme: dark)` for dark mode. next-themes needs a class-based toggle instead. The migration is three steps:
-
-**Step 1 — globals.css:** Replace the media query with a `.dark` class selector, add the Tailwind v4 custom variant.
-
-```css
-@import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
-
-:root {
-  /* light tokens */
-}
-
-.dark {
-  /* dark tokens — same variables, different values */
-}
-
-@theme inline {
-  /* unchanged — this block stays exactly as-is */
-}
+```
+src/
+  app/
+    library/
+      page.tsx               # New: /library route — song browsing
+  components/
+    library/
+      LibraryList.tsx        # New: GSAP-animated song list
+      SongCard.tsx           # New: music player card for library items
 ```
 
-**Step 2 — ThemeProvider wrapper:**
-
-```tsx
-// src/components/theme-provider.tsx
-"use client";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-export function ThemeProvider({ children, ...props }: React.ComponentProps<typeof NextThemesProvider>) {
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
-}
-```
-
-**Step 3 — layout.tsx:**
-
-```tsx
-// Wrap children in ThemeProvider
-<html lang="en" suppressHydrationWarning>
-  <body>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      {children}
-    </ThemeProvider>
-  </body>
-</html>
-```
-
-`suppressHydrationWarning` on `<html>` is required — next-themes modifies the class attribute server-side vs client-side, which causes a React hydration warning without it.
+Everything else (AppShell, Sidebar, BottomAudioPlayer, AudioPlayerContext) is already built.
 
 ---
 
 ## Sources
 
-- Tailwind CSS v4 official docs — `@theme`, `@custom-variant`, dark mode: https://tailwindcss.com/docs/dark-mode (HIGH confidence)
-- Tailwind CSS v4 theme variables — CSS-first token system: https://tailwindcss.com/docs/theme (HIGH confidence)
-- fancycomponents.dev installation guide — CLI method, Motion dependency confirmed: https://www.fancycomponents.dev/docs/installation (HIGH confidence, visited 2026-03-05)
-- fancycomponents.dev typewriter docs — props, usage, copy-paste model: https://www.fancycomponents.dev/docs/components/text/typewriter (HIGH confidence, visited 2026-03-05)
-- spectrum-ui footer docs — source code, lucide-react + shadcn primitives dependencies: https://ui.spectrumhq.in/docs/footer (HIGH confidence, visited 2026-03-05)
-- next-themes npm — v0.4.6 current, App Router compatible: https://www.npmjs.com/package/next-themes (HIGH confidence)
-- next-themes GitHub — suppressHydrationWarning pattern, data attribute vs class: https://github.com/pacocoursey/next-themes (HIGH confidence)
-- tailwind-merge npm — v3 adds Tailwind v4 support: https://www.npmjs.com/package/tailwind-merge (MEDIUM confidence — v3/v4 compatibility confirmed via community sources, not official changelog)
-- shadcn manual installation — cn() utility pattern, clsx + tailwind-merge: https://ui.shadcn.com/docs/installation/manual (HIGH confidence)
-- Tailwind CSS v4 dark mode with next-themes — @custom-variant pattern: https://iifx.dev/en/articles/456423217/solved-enabling-class-based-dark-mode-with-next-15-next-themes-and-tailwind-4 (MEDIUM confidence — community verified)
+- Webflow blog — GSAP all plugins free announcement (confirmed all Club GSAP plugins including ScrambleText now free): https://webflow.com/blog/gsap-becomes-free (HIGH confidence)
+- CSS-Tricks — "GSAP is Now Completely Free, Even for Commercial Use": https://css-tricks.com/gsap-is-now-completely-free-even-for-commercial-use/ (HIGH confidence)
+- gsap npm — version 3.14.2 current, last published ~Jan 2026: https://www.npmjs.com/package/gsap (HIGH confidence)
+- @gsap/react npm — version 2.1.2, official GreenSock React package: https://www.npmjs.com/package/@gsap/react (HIGH confidence)
+- GSAP React docs — useGSAP hook, "use client" requirement, scope pattern: https://gsap.com/resources/React/ (HIGH confidence)
+- GSAP ScrambleText docs — plugin usage, character options: https://gsap.com/docs/v3/Plugins/ScrambleTextPlugin/ (HIGH confidence)
+- wavesurfer.js GitHub discussion #3190 — persistent bottom player with MediaElement pattern: https://github.com/katspaugh/wavesurfer.js/discussions/3190 (MEDIUM confidence — community discussion, pattern matches current codebase)
+- Live codebase inspection — `src/components/layout/BottomAudioPlayer.tsx`, `AppShell.tsx`, `Sidebar.tsx`, `src/contexts/AudioPlayerContext.tsx` — confirmed what's already built (HIGH confidence — direct source read)
 
 ---
 
-*Stack research for: Brand kit, design tokens, new UI components (v1.1 milestone)*
+*Stack research for: Suno-style UX overhaul — persistent audio player, library page, GSAP scramble text, two-panel workspace (v2.0 milestone)*
 *Researched: 2026-03-05*
