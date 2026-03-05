@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Brand & Visual Redesign
-status: in_progress
-stopped_at: Completed 06-02-PLAN.md (HeroSection brand redesign)
-last_updated: "2026-03-05T20:18:00.000Z"
+status: executing
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-05T20:19:38.301Z"
 last_activity: 2026-03-05 — Phase 6 Plan 02 complete (HeroSection Brand Redesign)
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 15
-  completed_plans: 16
+  total_plans: 18
+  completed_plans: 17
   percent: 67
 ---
 
@@ -65,6 +65,8 @@ Recent decisions affecting current work:
 - [Phase 06-02]: CTA uses bg-accent (amber) not bg-primary (sky-blue) — amber = action, sky = info
 - [Phase 06-02]: font-display (Bricolage Grotesque) applied via class on h1 for editorial brand typography
 - [Phase 06-02]: Amber radial glow blob (bg-accent/20 blur-3xl) used for warmth, not full-bleed background color
+- [Phase 06-component-audit-core-redesign]: TDD getCssColorAsHex tests use real jsdom DOM elements — jsdom getComputedStyle requires Element type, plain object mocks fail
+- [Phase 06-component-audit-core-redesign]: Amber locked to CTA backgrounds (bg-accent) — submit button and EQ bars use amber per brand decision from Phase 5
 
 ### Pending Todos
 
@@ -77,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T20:18:00.000Z
-Stopped at: Completed 06-02-PLAN.md (HeroSection Brand Redesign)
-Resume file: .planning/phases/06-component-audit-core-redesign/06-03-PLAN.md
+Last session: 2026-03-05T20:19:30.737Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None
