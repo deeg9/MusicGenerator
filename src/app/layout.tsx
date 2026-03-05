@@ -1,19 +1,19 @@
 import type { Metadata } from 'next';
-import { DM_Sans, Libre_Baskerville, Geist_Mono } from 'next/font/google';
+import { Bricolage_Grotesque, Figtree, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ThemeToggle } from '@/components/theme-toggle';
 
-const dmSans = DM_Sans({
-  variable: '--font-dm-sans',
+const bricolage = Bricolage_Grotesque({
+  variable: '--font-bricolage',
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700', '800'],
 });
 
-const libreBaskerville = Libre_Baskerville({
-  variable: '--font-libre-baskerville',
+const figtree = Figtree({
+  variable: '--font-figtree',
   subsets: ['latin'],
-  weight: ['400', '700'],
+  weight: ['400', '500', '600', '700'],
 });
 
 const geistMono = Geist_Mono({
@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${dmSans.variable} ${libreBaskerville.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${bricolage.variable} ${figtree.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <div className="min-h-screen">
             <header className="flex justify-end p-4">
