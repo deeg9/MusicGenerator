@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Infrastructure Foundation** - Supabase schema, RunPod/ACE-Step validated end-to-end, async polling API (completed 2026-03-04)
 - [ ] **Phase 2: Generation API** - All input options wired through BFF to ACE-Step with async polling
 - [x] **Phase 3: Playback and Download** - In-browser waveform player and MP3/WAV download (completed 2026-03-05)
-- [ ] **Phase 4: UX Polish** - Loading states, mode switching, and landing page
+- [x] **Phase 4: UX Polish** - Loading states, mode switching, and landing page (completed 2026-03-05)
 
 ## Phase Details
 
@@ -82,7 +82,7 @@ Plans:
   1. During generation, an animated loading state with named stage progression (e.g., "Initializing" -> "Generating" -> "Finalizing") replaces the input form — no plain spinner
   2. User can switch between Simple mode (text prompt) and Custom mode (lyrics + style tags) via a visible toggle with each mode displaying the appropriate input fields
   3. A landing page exists with example generations and a call-to-action that leads directly to the generation UI
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 04-01-PLAN.md — Loading state machine, equalizer animation, inline error banners
@@ -101,4 +101,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Infrastructure Foundation | 3/3 | Complete   | 2026-03-04 |
 | 2. Generation API | 3/4 | In Progress|  |
 | 3. Playback and Download | 2/2 | Complete   | 2026-03-05 |
-| 4. UX Polish | 2/3 | In Progress|  |
+| 4. UX Polish | 3/3 | Complete   | 2026-03-05 |

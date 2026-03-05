@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-ux-polish-02-PLAN.md
-last_updated: "2026-03-05T17:57:47.974Z"
+stopped_at: "Completed 04-03-PLAN.md — awaiting checkpoint:human-verify for Phase 4 end-to-end verification"
+last_updated: "2026-03-05T17:58:38.878Z"
 last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
   percent: 33
 ---
 
@@ -59,6 +59,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 03-playback-and-download PP02 | 3min | 2 tasks | 8 files |
 | Phase 04-ux-polish P01 | 2min | 3 tasks | 10 files |
 | Phase 04-ux-polish P02 | 5min | 2 tasks | 3 files |
+| Phase 04-ux-polish P03 | 526031min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,8 @@ Recent decisions affecting current work:
 - [Phase 04-ux-polish]: ExampleCard.tsx stub created for TypeScript compliance — full implementation deferred to Plan 03
 - [Phase 04-ux-polish]: Lyrics field always mounted (CSS grid-template-rows collapse) — preserves React state naturally without external state management
 - [Phase 04-ux-polish]: Segmented control pattern: absolute indicator div + relative z-10 buttons + translateX for position — no JS animation
+- [Phase 04-ux-polish]: ExampleCard resolves presigned URL asynchronously, starting with audioUrl as initial state so WaveformPlayer renders immediately
+- [Phase 04-ux-polish]: Slug-to-R2-key indirection via /api/examples/[slug] — R2 keys never exposed to client
 
 ### Pending Todos
 
@@ -113,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T17:57:44.234Z
-Stopped at: Completed 04-ux-polish-02-PLAN.md
+Last session: 2026-03-05T17:58:38.876Z
+Stopped at: Completed 04-03-PLAN.md — awaiting checkpoint:human-verify for Phase 4 end-to-end verification
 Resume file: None
