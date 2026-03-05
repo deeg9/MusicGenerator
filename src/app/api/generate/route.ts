@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { generations } from '@/db/schema';
-import { submitGenerationJob } from '@/lib/runpod';
+import { submitGenerationJob, callFormatInput } from '@/lib/runpod';
 import { classifyError, toErrorResponse } from '@/lib/errors';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,14 +100,40 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Resolve lyrics: instrumental mode forces [Instrumental] tag
   const resolvedLyrics = instrumental ? '[Instrumental]' : (rawLyrics ?? '');
 
+  // Call format_input to get LLM-enhanced caption with BPM/key/time signature
+  let enhancedCaption = prompt;
+  let bpm: number | undefined;
+  let keyScale: string | undefined;
+  let timeSignature: string | undefined;
+  let enhancedLyrics = resolvedLyrics;
+
+  try {
+    const formatted = await callFormatInput({
+      prompt: genreTags ? `${prompt}, ${genreTags}` : prompt,
+      lyrics: resolvedLyrics,
+    });
+    enhancedCaption = formatted.caption;
+    bpm = typeof formatted.bpm === 'number' ? formatted.bpm : parseInt(String(formatted.bpm), 10) || undefined;
+    keyScale = formatted.keyscale || undefined;
+    timeSignature = formatted.timesignature || undefined;
+    enhancedLyrics = formatted.lyrics || resolvedLyrics;
+  } catch (rawError) {
+    // Fallback: continue with raw prompt if format_input fails (graceful degradation)
+    const classified = classifyError(rawError);
+    console.warn('[generate] format_input failed, falling back to raw prompt:', classified.technicalMessage);
+  }
+
   // Submit the job to ACE-Step (non-blocking — returns immediately with task_id)
   let runpodTaskId: string;
   try {
     const submitResponse = await submitGenerationJob({
-      prompt,
-      lyrics: resolvedLyrics,
+      prompt: enhancedCaption,
+      lyrics: enhancedLyrics,
       audioDuration: duration,
       batchSize: 2, // Always generate 2 variants
+      bpm,
+      keyScale,
+      timeSignature,
     });
     runpodTaskId = submitResponse.task_id;
   } catch (rawError) {
@@ -164,5 +190,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  return NextResponse.json({ jobId: generationId, status: 'pending' }, { status: 201 });
+  return NextResponse.json({ jobId: generationId, status: 'pending', enhancedCaption }, { status: 201 });
 }
