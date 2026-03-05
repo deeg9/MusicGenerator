@@ -31,7 +31,7 @@ export function LoadingAnimation({ stageIndex, elapsedSeconds, showElapsed }: Lo
         {BAR_DELAYS.map((delay, i) => (
           <div
             key={i}
-            className="animate-eq-bar w-2 rounded-full bg-gradient-to-t from-violet-600 to-violet-400 origin-bottom"
+            className="animate-eq-bar w-2 rounded-full bg-gradient-to-t from-accent to-accent/70 origin-bottom"
             style={{ height: '100%', animationDelay: delay }}
           />
         ))}

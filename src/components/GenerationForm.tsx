@@ -150,7 +150,7 @@ export function GenerationForm({ onSubmit, isSubmitting }: GenerationFormProps) 
       <button
         type="submit"
         disabled={!canSubmit}
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-medium py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? 'Generating...' : 'Generate Song'}
       </button>
