@@ -1,75 +1,105 @@
 @import "tailwindcss";
+@import "./tokens/primitives.css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Light mode semantic tokens — map to OKLCH primitives */
 :root {
-  --background: hsl(210 30% 98%);
-  --foreground: hsl(220 20% 20%);
-  --primary: hsl(200 80% 50%);
-  --primary-foreground: hsl(0 0% 100%);
-  --accent: hsl(48 95% 55%);
-  --accent-foreground: hsl(220 20% 20%);
-  --secondary: hsl(45 90% 92%);
-  --secondary-foreground: hsl(220 20% 20%);
-  --muted: hsl(210 20% 94%);
-  --muted-foreground: hsl(220 10% 45%);
-  --destructive: hsl(0 84% 60%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(220 20% 20%);
-  --border: hsl(210 20% 90%);
-  --ring: hsl(200 80% 50%);
-  --input: hsl(210 20% 90%);
+  --background:            var(--cream-50);
+  --foreground:            var(--neutral-900);
+  --card:                  oklch(1 0 0);
+  --card-foreground:       var(--neutral-900);
+  --primary:               var(--sky-600);
+  --primary-foreground:    oklch(1 0 0);
+  --accent:                var(--amber-400);
+  --accent-foreground:     var(--neutral-900);
+  --secondary:             var(--cream-200);
+  --secondary-foreground:  var(--neutral-800);
+  --muted:                 var(--cream-400);
+  --muted-foreground:      var(--neutral-600);
+  --destructive:           oklch(0.55 0.22 25);
+  --border:                var(--cream-400);
+  --input:                 var(--cream-400);
+  --ring:                  var(--sky-400);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: hsl(220 20% 8%);
-    --foreground: hsl(210 20% 95%);
-    --primary: hsl(200 80% 65%);
-    --primary-foreground: hsl(220 20% 8%);
-    --accent: hsl(48 95% 60%);
-    --accent-foreground: hsl(220 20% 8%);
-    --secondary: hsl(220 15% 15%);
-    --secondary-foreground: hsl(210 20% 95%);
-    --muted: hsl(220 15% 18%);
-    --muted-foreground: hsl(220 10% 55%);
-    --destructive: hsl(0 84% 65%);
-    --card: hsl(220 15% 12%);
-    --card-foreground: hsl(210 20% 95%);
-    --border: hsl(220 15% 20%);
-    --ring: hsl(200 80% 65%);
-    --input: hsl(220 15% 20%);
-  }
+/* Dark mode overrides — class-based, not media query */
+:root.dark {
+  --background:            var(--neutral-900);
+  --foreground:            var(--neutral-100);
+  --card:                  var(--neutral-800);
+  --card-foreground:       var(--neutral-100);
+  --primary:               var(--sky-400);
+  --primary-foreground:    var(--neutral-900);
+  --accent:                var(--amber-400);
+  --accent-foreground:     var(--neutral-900);
+  --secondary:             var(--neutral-700);
+  --secondary-foreground:  var(--neutral-100);
+  --muted:                 var(--neutral-700);
+  --muted-foreground:      var(--neutral-400);
+  --destructive:           oklch(0.65 0.20 25);
+  --border:                var(--neutral-700);
+  --input:                 var(--neutral-700);
+  --ring:                  var(--sky-400);
 }
 
+/* Tailwind v4 @theme inline bridge — maps semantic vars to utility class names */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-secondary: var(--secondary);
+  /* Colors */
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --color-card:                 var(--card);
+  --color-card-foreground:      var(--card-foreground);
+  --color-primary:              var(--primary);
+  --color-primary-foreground:   var(--primary-foreground);
+  --color-accent:               var(--accent);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-secondary:            var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-destructive: var(--destructive);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-border: var(--border);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --font-sans: var(--font-dm-sans);
-  --font-serif: var(--font-libre-baskerville);
-  --font-mono: var(--font-geist-mono);
+  --color-muted:                var(--muted);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-destructive:          var(--destructive);
+  --color-border:               var(--border);
+  --color-input:                var(--input);
+  --color-ring:                 var(--ring);
+
+  /* Typography — font vars injected by layout.tsx (Plan 03) */
+  --font-sans:    var(--font-figtree);
+  --font-display: var(--font-bricolage);
+  --font-mono:    var(--font-geist-mono);
+
+  /* Border radius */
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
+
+  /* Shadows (OKLCH-based) */
+  --shadow-subtle:   0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.06);
+  --shadow-medium:   0 4px 6px -1px oklch(0 0 0 / 0.08), 0 2px 4px -2px oklch(0 0 0 / 0.08);
+  --shadow-elevated: 0 10px 15px -3px oklch(0 0 0 / 0.10), 0 4px 6px -4px oklch(0 0 0 / 0.10);
+
+  /* Spacing base (Tailwind v4 default 4px grid) */
+  --spacing: 4px;
+
+  /* Animations — preserved from original */
   --animate-eq-bar: eq-bar 0.9s ease-in-out infinite alternate;
   --animate-wave: wave 4s ease-in-out infinite;
+}
+
+/* Tailwind v4 border regression fix — default border color to --border token */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border, currentColor);
+  }
 }
 
 body {
@@ -79,8 +109,8 @@ body {
   scroll-behavior: smooth;
 }
 
-h1, h2, h3 {
-  font-family: var(--font-serif), ui-serif, Georgia, serif;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 }
 
 @keyframes eq-bar {
