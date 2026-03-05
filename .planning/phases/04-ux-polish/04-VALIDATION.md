@@ -51,12 +51,12 @@ created: 2026-03-05
 
 ## Wave 0 Requirements
 
-Wave 0 is handled by Task 0 in Plan 04-01 (first task to execute). It creates all three test stub files before any implementation tasks run.
+Wave 0 is handled by Task 0 in Plan 04-01 (first task to execute). It creates all four test stub files before any implementation tasks run.
 
 - [ ] `src/components/LoadingAnimation.test.tsx` — stubs for UX-01 stage rendering and progression
 - [ ] `src/components/ModeToggle.test.tsx` — stubs for UX-02 segmented control behavior
 - [ ] `src/components/ExampleCard.test.tsx` — stubs for UX-03 card rendering
-
+- [ ] `src/components/GenerationForm.test.tsx` — stubs for UX-02 form validation (lyrics textarea presence, empty prompt error)
 ---
 
 ## Manual-Only Verifications
