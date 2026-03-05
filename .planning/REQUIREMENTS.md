@@ -12,9 +12,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **GEN-01**: User can generate a song by describing a vibe in plain text
 - [x] **GEN-02**: User can generate a song by providing custom lyrics with structure tags ([Verse], [Chorus], [Bridge])
 - [x] **GEN-03**: User can specify genre/style via freeform tags (e.g., "jazz", "hip-hop", "cinematic")
-- [ ] **GEN-04**: User can choose song duration (Short ~1min, Standard ~2min, Full ~4min)
+- [x] **GEN-04**: User can choose song duration (Short ~1min, Standard ~2min, Full ~4min)
 - [x] **GEN-05**: User can toggle instrumental mode (no vocals)
-- [ ] **GEN-06**: User receives 2 song variants per generation (dual output)
+- [x] **GEN-06**: User receives 2 song variants per generation (dual output)
 
 ### Playback
 
@@ -81,9 +81,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GEN-01 | Phase 2 | Complete |
 | GEN-02 | Phase 2 | Complete |
 | GEN-03 | Phase 2 | Complete |
-| GEN-04 | Phase 2 | Pending |
+| GEN-04 | Phase 2 | Complete |
 | GEN-05 | Phase 2 | Complete |
-| GEN-06 | Phase 2 | Pending |
+| GEN-06 | Phase 2 | Complete |
 | PLAY-01 | Phase 3 | Pending |
 | PLAY-02 | Phase 3 | Pending |
 | PLAY-03 | Phase 3 | Pending |

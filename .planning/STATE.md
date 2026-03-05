@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-02-PLAN.md — Generation Form UI
-last_updated: "2026-03-05T02:20:23.178Z"
+stopped_at: Completed 02-03-PLAN.md — Polling Hook, Results Display, and Page Wiring
+last_updated: "2026-03-05T02:29:55.705Z"
 last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
   percent: 33
 ---
 
@@ -54,6 +54,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01-infrastructure-foundation P03 | 47min | 2 tasks | 4 files |
 | Phase 02-generation-api P01 | 8 | 2 tasks | 2 files |
 | Phase 02-generation-api P02 | 7min | 2 tasks | 5 files |
+| Phase 02-generation-api P03 | 25min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 - [Phase 02-generation-api]: Graceful fallback: format_input failure is non-fatal, generation proceeds with raw prompt
 - [Phase 02-generation-api]: Sub-components are stateless (no 'use client') — all state lives in GenerationForm
 - [Phase 02-generation-api]: Design tokens used throughout (bg-primary, text-muted-foreground, border-border) instead of hardcoded zinc/violet values
+- [Phase 02-generation-api]: useGenerationStatus dual-interval cleanup: single stopPolling() clears both poll and elapsed intervals, preventing timer leaks on unmount or jobId change
+- [Phase 02-generation-api]: setJobId(null) before new submission triggers useEffect cleanup and prevents simultaneous polling loops on regeneration
+- [Phase 02-generation-api]: page.tsx is a Server Component thin shell — only renders GenerationPage; all interactivity lives in client components
 
 ### Pending Todos
 
@@ -93,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T02:20:23.176Z
-Stopped at: Completed 02-02-PLAN.md — Generation Form UI
+Last session: 2026-03-05T02:29:55.703Z
+Stopped at: Completed 02-03-PLAN.md — Polling Hook, Results Display, and Page Wiring
 Resume file: None
