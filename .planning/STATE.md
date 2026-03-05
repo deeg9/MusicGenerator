@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-ux-polish-01-PLAN.md
-last_updated: "2026-03-05T17:54:44.861Z"
+stopped_at: Completed 04-ux-polish-02-PLAN.md
+last_updated: "2026-03-05T17:57:47.974Z"
 last_activity: "2026-03-03 — Completed 01-01: Next.js scaffold + Drizzle schema + lib modules"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
   percent: 33
 ---
 
@@ -58,6 +58,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 03-playback-and-download P01 | 18min | 3 tasks | 13 files |
 | Phase 03-playback-and-download PP02 | 3min | 2 tasks | 8 files |
 | Phase 04-ux-polish P01 | 2min | 3 tasks | 10 files |
+| Phase 04-ux-polish P02 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,8 @@ Recent decisions affecting current work:
 - [Phase 03-playback-and-download]: Suspense fallback=null on page.tsx required by Next.js App Router for useSearchParams
 - [Phase 04-ux-polish]: Phase state machine (idle/submitting/polling/done/error) replaces isSubmitting boolean for clean view swapping in GenerationPage
 - [Phase 04-ux-polish]: ExampleCard.tsx stub created for TypeScript compliance — full implementation deferred to Plan 03
+- [Phase 04-ux-polish]: Lyrics field always mounted (CSS grid-template-rows collapse) — preserves React state naturally without external state management
+- [Phase 04-ux-polish]: Segmented control pattern: absolute indicator div + relative z-10 buttons + translateX for position — no JS animation
 
 ### Pending Todos
 
@@ -110,6 +113,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T17:54:44.859Z
-Stopped at: Completed 04-ux-polish-01-PLAN.md
+Last session: 2026-03-05T17:57:44.234Z
+Stopped at: Completed 04-ux-polish-02-PLAN.md
 Resume file: None

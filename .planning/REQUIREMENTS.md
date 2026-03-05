@@ -31,7 +31,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### UX
 
 - [x] **UX-01**: User sees a clear loading state during song generation (animated placeholder, not just a spinner)
-- [ ] **UX-02**: User can switch between Simple mode (text prompt) and Custom mode (lyrics + style)
+- [x] **UX-02**: User can switch between Simple mode (text prompt) and Custom mode (lyrics + style)
 - [ ] **UX-03**: Landing page with examples and clear call-to-action to generate
 
 ## v2 Requirements
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-02 | Phase 1 | Complete |
 | INFRA-03 | Phase 1 | Complete |
 | UX-01 | Phase 4 | Complete |
-| UX-02 | Phase 4 | Pending |
+| UX-02 | Phase 4 | Complete |
 | UX-03 | Phase 4 | Pending |
 
 **Coverage:**
