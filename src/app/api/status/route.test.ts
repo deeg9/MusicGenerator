@@ -29,7 +29,9 @@ vi.mock('@/lib/r2', () => ({
 }));
 
 vi.mock('@/lib/audio', () => ({
+  convertToMp3: vi.fn(),
   convertWavToMp3: vi.fn(),
+  detectAudioFormat: vi.fn(() => 'mp3'),
 }));
 
 vi.mock('@/lib/errors', () => ({

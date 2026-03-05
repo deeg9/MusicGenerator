@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { generations, outputs } from '@/db/schema';
 import { queryJobStatus, fetchAudioBuffer } from '@/lib/runpod';
 import { uploadAudioToR2, buildR2Key, buildR2Mp3Key, getAudioPresignedUrl } from '@/lib/r2';
-import { convertWavToMp3 } from '@/lib/audio';
+import { convertToMp3, detectAudioFormat } from '@/lib/audio';
 import { buildDownloadFilename } from '@/lib/filename';
 import { classifyError } from '@/lib/errors';
 import type { InferSelectModel } from 'drizzle-orm';
@@ -188,25 +188,27 @@ export async function GET(
 
         try {
           const audioBuffer = await fetchAudioBuffer(audioPath);
+          const detectedFormat = detectAudioFormat(audioBuffer);
 
-          // Upload WAV to R2
-          await uploadAudioToR2(wavR2Key, audioBuffer, 'audio/wav');
+          // Upload original to R2 with correct content type
+          const originalContentType = detectedFormat === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+          await uploadAudioToR2(wavR2Key, audioBuffer, originalContentType);
 
-          // Convert WAV to MP3 (non-fatal — fallback to WAV-only if conversion fails)
-          let mp3Buffer: Buffer | null = null;
+          // Generate MP3 at 320k (re-encode if already MP3, convert if WAV)
           let mp3FileSizeBytes: number | null = null;
           let mp3KeyStored: string | null = null;
 
           try {
-            mp3Buffer = await convertWavToMp3(audioBuffer);
+            const mp3Buffer = await convertToMp3(audioBuffer);
             mp3FileSizeBytes = mp3Buffer.byteLength;
             await uploadAudioToR2(mp3R2Key, mp3Buffer, 'audio/mpeg');
             mp3KeyStored = mp3R2Key;
           } catch (mp3Error) {
             const classified = classifyError(mp3Error);
-            console.error('[status] MP3 conversion failed (WAV-only fallback):', classified.technicalMessage, {
+            console.error('[status] MP3 conversion failed (original-only fallback):', classified.technicalMessage, {
               jobId,
               variantIndex: i,
+              detectedFormat,
             });
           }
 
