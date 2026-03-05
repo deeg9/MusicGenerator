@@ -1,11 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { GenerationForm, type GenerationFormData } from './GenerationForm';
 import { GenerationResults } from './GenerationResults';
 
 export function GenerationPage() {
-  const [jobId, setJobId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const initialJobId = searchParams.get('job');
+  const [jobId, setJobId] = useState<string | null>(initialJobId);
   const [enhancedCaption, setEnhancedCaption] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,8 +35,14 @@ export function GenerationPage() {
       }
 
       const result = await res.json();
-      setJobId(result.jobId);
+      const newJobId: string = result.jobId;
+      setJobId(newJobId);
       setEnhancedCaption(result.enhancedCaption ?? null);
+
+      // Persist jobId to URL so refresh restores results
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('job', newJobId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     } catch {
       alert('Network error. Please check your connection and try again.');
     } finally {

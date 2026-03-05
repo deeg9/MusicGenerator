@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useGenerationStatus } from '@/hooks/useGenerationStatus';
 import { VariantCard } from './VariantCard';
 import { EnhancedCaptionDisplay } from './EnhancedCaptionDisplay';
@@ -18,6 +19,12 @@ function formatElapsed(seconds: number): string {
 
 export function GenerationResults({ jobId, enhancedCaption }: GenerationResultsProps) {
   const { data, isPolling, elapsedSeconds, error } = useGenerationStatus(jobId);
+  const [activeVariantId, setActiveVariantId] = useState<string | null>(null);
+
+  // Reset active variant when jobId changes (new generation)
+  useEffect(() => {
+    setActiveVariantId(null);
+  }, [jobId]);
 
   if (!jobId) return null;
 
@@ -46,8 +53,8 @@ export function GenerationResults({ jobId, enhancedCaption }: GenerationResultsP
               variantIndex={output.variantIndex}
               mp3Url={output.mp3Url}
               wavUrl={output.url}
-              isActive={false}
-              onPlay={() => {}}
+              isActive={activeVariantId === output.id}
+              onPlay={() => setActiveVariantId(output.id)}
               mp3FileSizeBytes={output.mp3FileSizeBytes}
               duration={output.duration}
               promptText={output.promptText}
