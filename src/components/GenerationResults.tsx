@@ -39,12 +39,18 @@ export function GenerationResults({ jobId, enhancedCaption }: GenerationResultsP
 
       {/* Completed — show variant cards */}
       {!isPolling && data?.status === 'completed' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {data.outputs.map((output) => (
             <VariantCard
               key={output.id}
               variantIndex={output.variantIndex}
-              url={output.url}
+              mp3Url={output.mp3Url}
+              wavUrl={output.url}
+              isActive={false}
+              onPlay={() => {}}
+              mp3FileSizeBytes={output.mp3FileSizeBytes}
+              duration={output.duration}
+              promptText={output.promptText}
             />
           ))}
         </div>
