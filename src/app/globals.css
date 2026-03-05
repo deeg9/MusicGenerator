@@ -68,14 +68,27 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
+  --animate-eq-bar: eq-bar 0.9s ease-in-out infinite alternate;
+  --animate-wave: wave 4s ease-in-out infinite;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  scroll-behavior: smooth;
 }
 
 h1, h2, h3 {
   font-family: var(--font-serif), ui-serif, Georgia, serif;
+}
+
+@keyframes eq-bar {
+  0%   { transform: scaleY(0.15); }
+  100% { transform: scaleY(1); }
+}
+
+@keyframes wave {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-5%); }
 }
