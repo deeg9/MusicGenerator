@@ -2,7 +2,9 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useWavesurfer } from '@wavesurfer/react';
+import { useTheme } from 'next-themes';
 import { Play, Pause } from 'lucide-react';
+import { getCssColorAsHex } from '@/lib/colors';
 
 interface WaveformPlayerProps {
   url: string;
@@ -24,12 +26,13 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const { resolvedTheme } = useTheme();
 
   const { wavesurfer } = useWavesurfer({
     container: containerRef,
     url,
-    waveColor: '#3f3f46',
-    progressColor: '#8b5cf6',
+    waveColor: '#888',
+    progressColor: '#0ea5e9',
     barWidth: 3,
     barGap: 1,
     barRadius: 2,
@@ -77,6 +80,18 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
     };
   }, [wavesurfer]);
 
+  // Theme sync: update waveform colors on mount and when resolvedTheme changes.
+  // Uses setOptions() imperatively to avoid destroy/recreate cycle (which would
+  // interrupt playback). getCssColorAsHex reads the live CSS custom property values.
+  useEffect(() => {
+    if (!wavesurfer || !containerRef.current) return;
+    const el = containerRef.current;
+    wavesurfer.setOptions({
+      waveColor: getCssColorAsHex('--muted', el),
+      progressColor: getCssColorAsHex('--primary', el),
+    });
+  }, [wavesurfer, resolvedTheme]);
+
   // Auto-pause when another variant becomes active
   useEffect(() => {
     if (!isActive && isPlaying && wavesurfer) {
@@ -100,7 +115,7 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
           onClick={handlePlayPause}
           disabled={!isReady || hasError}
           aria-label={isPlaying ? 'Pause' : 'Play'}
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-violet-600 text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPlaying ? (
             <Pause className="h-4 w-4" />
@@ -114,7 +129,7 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
           {/* Loading placeholder */}
           {!isReady && (
             <div className="absolute inset-0 flex items-center">
-              <div className="h-10 w-full animate-pulse rounded bg-zinc-800" />
+              <div className="h-10 w-full animate-pulse rounded bg-muted" />
             </div>
           )}
           <div ref={containerRef} className={isReady ? '' : 'opacity-0'} />
@@ -122,9 +137,9 @@ export function WaveformPlayer({ url, isActive, onPlay }: WaveformPlayerProps) {
       </div>
 
       {/* Time display */}
-      <div className="flex justify-end text-xs text-zinc-500">
+      <div className="flex justify-end text-xs text-muted-foreground">
         {hasError ? (
-          <span className="text-red-400">Failed to load audio</span>
+          <span className="text-destructive">Failed to load audio</span>
         ) : (
           <span>
             {formatTime(currentTime)} / {formatTime(duration)}
