@@ -34,6 +34,31 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **UX-02**: User can switch between Simple mode (text prompt) and Custom mode (lyrics + style)
 - [x] **UX-03**: Landing page with examples and clear call-to-action to generate
 
+## v1.1 Requirements
+
+Requirements for brand redesign milestone. Each maps to roadmap phases.
+
+### Brand Tokens
+
+- [ ] **BRAND-01**: Design tokens define a warm color palette (cream, amber, sky-blue) in OKLCH format with light and dark mode variants
+- [ ] **BRAND-02**: Typography uses Bricolage Grotesque for headings and Figtree for body text, loaded via next/font
+- [ ] **BRAND-03**: Spacing, border-radius, and shadow tokens are defined in the Tailwind v4 @theme system
+- [ ] **BRAND-04**: User can toggle between light and dark mode, with preference persisted and no FOUC on reload
+
+### Component Redesign
+
+- [ ] **COMP-01**: Hero section reflects the warm brand with updated colors, typography, and layout
+- [ ] **COMP-02**: Generation form (inputs, buttons, mode toggle, tags) uses brand tokens throughout
+- [ ] **COMP-03**: Loading animation and error banners use brand colors and feel cohesive with the new design
+- [ ] **COMP-04**: Waveform player and result cards use brand accent colors, updating dynamically on theme switch
+- [ ] **COMP-05**: Example cards use brand styling with warm card backgrounds and updated typography
+
+### New Components
+
+- [ ] **NEW-01**: Typewriter component replaced with danielpetho's Framer Motion typewriter (configurable speed, cursor animation)
+- [ ] **NEW-02**: Stacked circular footer with navigation links, social icons, and email subscription form
+- [ ] **NEW-03**: A /style-guide dev page displays all brand colors, typography, spacing, and component variants
+
 ## v2 Requirements
 
 Deferred to future milestone. Tracked but not in current roadmap.
@@ -95,10 +120,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-03 | Phase 4 | Complete |
 
 **Coverage:**
-- v1.0 requirements: 15 total
-- Mapped to phases: 15
-- Unmapped: 0 ✓
+- v1.0 requirements: 15 total (all complete)
+- v1.1 requirements: 12 total
+- Mapped to phases: 15 (v1.0) + 0 (v1.1, pending roadmap)
+- Unmapped: 12 ⚠️
 
 ---
 *Requirements defined: 2026-03-03*
-*Last updated: 2026-03-03 after roadmap creation*
+*Last updated: 2026-03-05 after v1.1 requirements definition*
