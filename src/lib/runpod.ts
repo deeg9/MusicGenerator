@@ -4,6 +4,20 @@ import { env } from '@/env';
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface FormatInputParams {
+  prompt: string;   // user's vibe description (with genre tags pre-concatenated)
+  lyrics: string;   // user's lyrics or "[Instrumental]"
+}
+
+export interface FormatInputResult {
+  caption: string;          // LLM-enhanced caption — becomes the `prompt` for release_task
+  bpm: number | string;     // numeric BPM
+  keyscale: string;         // e.g. "C major"
+  timesignature: string;    // e.g. "4"
+  lyrics: string;           // may be reformatted by LLM
+  language: string;
+}
+
 export interface SubmitJobParams {
   prompt: string;
   lyrics: string;
@@ -166,6 +180,48 @@ export async function queryJobStatus(taskId: string): Promise<QueryJobStatusResp
     error: raw.error,
     timestamp: raw.timestamp,
     code: raw.code,
+  };
+}
+
+/**
+ * Call ACE-Step's /format_input endpoint to get an LLM-enhanced caption with
+ * BPM, key, and time signature metadata derived from the user's prompt.
+ *
+ * This should be called before submitGenerationJob so that the AI model
+ * receives a structured musical description rather than raw user text.
+ *
+ * Endpoint: POST /format_input
+ * Timeout: 30 seconds
+ */
+export async function callFormatInput(params: FormatInputParams): Promise<FormatInputResult> {
+  const response = await fetch(`${env.RUNPOD_URL}/format_input`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: params.prompt, lyrics: params.lyrics }),
+    signal: createTimeoutSignal(30_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`ACE-Step format_input failed: HTTP ${response.status} ${response.statusText}`);
+  }
+
+  const raw = (await response.json()) as { data: Record<string, unknown>; code: number; error: string | null };
+
+  // Log raw response on first call to validate field names from the live API
+  console.log('[runpod] format_input raw response:', JSON.stringify(raw.data));
+
+  if (raw.error) {
+    throw new Error(`ACE-Step format_input error: ${raw.error}`);
+  }
+
+  const data = raw.data;
+  return {
+    caption: data.caption as string,
+    bpm: data.bpm as number | string,
+    keyscale: (data.keyscale ?? data.keyScale ?? '') as string,
+    timesignature: (data.timesignature ?? data.timeSignature ?? '') as string,
+    lyrics: (data.lyrics ?? '') as string,
+    language: (data.language ?? '') as string,
   };
 }
 
