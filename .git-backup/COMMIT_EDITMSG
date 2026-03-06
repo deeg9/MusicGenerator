@@ -1,0 +1,5 @@
+fix(analyze): add --webpack flag to bundle analysis script
+
+Turbopack silently ignores ANALYZE=true; --webpack ensures the analyzer report is generated.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
