@@ -1,61 +1,28 @@
 @import "tailwindcss";
 @import "./tokens/primitives.css";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* Light mode semantic tokens — map to OKLCH primitives */
 :root {
-  --background:            var(--cream-50);
-  --foreground:            var(--neutral-900);
+  --background:            var(--cloud-50);
+  --foreground:            var(--navy-900);
   --card:                  oklch(1 0 0);
-  --card-foreground:       var(--neutral-900);
-  --primary:               var(--sky-600);
+  --card-foreground:       var(--navy-900);
+  --primary:               var(--blue-500);
   --primary-foreground:    oklch(1 0 0);
-  --accent:                var(--amber-400);
-  --accent-foreground:     var(--neutral-900);
-  --secondary:             var(--cream-200);
-  --secondary-foreground:  var(--neutral-800);
-  --muted:                 var(--cream-400);
-  --muted-foreground:      var(--neutral-600);
+  --secondary:             var(--yellow-200);
+  --secondary-foreground:  var(--navy-800);
+  --accent:                var(--yellow-400);
+  --accent-foreground:     var(--navy-900);
+  --muted:                 var(--cloud-200);
+  --muted-foreground:      var(--navy-500);
   --destructive:           oklch(0.55 0.22 25);
-  --border:                var(--cream-400);
-  --input:                 var(--cream-400);
-  --ring:                  var(--sky-400);
+  --border:                var(--cloud-300);
+  --input:                 var(--cloud-300);
+  --ring:                  var(--blue-400);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
-  --sidebar-bg: var(--card);
-  --sidebar-foreground: var(--foreground);
-  --sidebar-width: 60px;
-  --sidebar-expanded: 240px;
-  --player-bar-height: 80px;
-}
-
-@media (max-width: 767px) {
-  :root {
-    --player-bar-height: 56px;
-  }
-}
-
-/* Dark mode overrides — class-based, not media query */
-:root.dark {
-  --background:            var(--neutral-900);
-  --foreground:            var(--neutral-100);
-  --card:                  var(--neutral-800);
-  --card-foreground:       var(--neutral-100);
-  --primary:               var(--sky-400);
-  --primary-foreground:    var(--neutral-900);
-  --accent:                var(--amber-400);
-  --accent-foreground:     var(--neutral-900);
-  --secondary:             var(--neutral-700);
-  --secondary-foreground:  var(--neutral-100);
-  --muted:                 var(--neutral-700);
-  --muted-foreground:      var(--neutral-400);
-  --destructive:           oklch(0.65 0.20 25);
-  --border:                var(--neutral-700);
-  --input:                 var(--neutral-700);
-  --ring:                  var(--sky-400);
 }
 
 /* Tailwind v4 @theme inline bridge — maps semantic vars to utility class names */
@@ -78,9 +45,9 @@
   --color-input:                var(--input);
   --color-ring:                 var(--ring);
 
-  /* Typography — font vars injected by layout.tsx (Plan 03) */
-  --font-sans:    var(--font-figtree);
-  --font-display: var(--font-bricolage);
+  /* Typography — font vars injected by layout.tsx */
+  --font-sans:    var(--font-dm-sans);
+  --font-display: var(--font-libre);
   --font-mono:    var(--font-geist-mono);
 
   /* Border radius */
@@ -96,14 +63,6 @@
 
   /* Spacing base (Tailwind v4 default 4px grid) */
   --spacing: 4px;
-
-  /* Layout */
-  --color-sidebar-bg:              var(--sidebar-bg);
-  --color-sidebar-foreground:      var(--sidebar-foreground);
-
-  /* Animations — preserved from original */
-  --animate-eq-bar: eq-bar 0.9s ease-in-out infinite alternate;
-  --animate-wave: wave 4s ease-in-out infinite;
 }
 
 /* Tailwind v4 border regression fix — default border color to --border token */
@@ -120,27 +79,15 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   scroll-behavior: smooth;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-}
-
-@keyframes eq-bar {
-  0%   { transform: scaleY(0.15); }
-  100% { transform: scaleY(1); }
-}
-
-@keyframes wave {
-  0%, 100% { transform: translateX(0); }
-  50%      { transform: translateX(-5%); }
+  font-family: var(--font-libre), ui-sans-serif, system-ui, sans-serif;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-wave,
-  .animate-eq-bar,
   .animate-pulse {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

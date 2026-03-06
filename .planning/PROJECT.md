@@ -1,99 +1,107 @@
-# MusicGenerator
+# Notevra
 
 ## What This Is
 
-An AI-powered music generation web app where people create personalized songs for loved ones. Users describe a vibe ("happy jazz birthday song for my mom") or write their own lyrics, the ACE-Step 1.5 model generates a full song in seconds, and they preview and download it. Monetized via a freemium credit-based subscription model.
+Notevra — a personalized song gift service where people answer a guided quiz about their loved ones, and instantly receive a unique AI-generated song. Users describe the relationship, pick a genre, share qualities, memories, and a heartfelt message — then get a downloadable song in seconds. The emotional gift they'll never forget.
 
 ## Core Value
 
-Anyone can create a unique, personal song in seconds — no musical skill required.
-
-## Current Milestone: v2.0 — Suno-Style UX Overhaul
-
-**Goal:** Redesign the app to match Suno's proven UX layout — clean homepage with centered headline + prompt box, same-page transformation to two-panel create workspace, separate library page for browsing generated songs, and a persistent bottom audio player.
-
-**Target features:**
-- Homepage: centered headline + prompt input + Create CTA (clean, Suno-inspired)
-- Same-page create workspace: form panel left, results/workspace panel right
-- Separate /library page with GSAP portfolio list + music player cards
-- Persistent bottom audio player bar (Suno/Spotify-style, persists across pages)
-- Sidebar navigation linking Home / Create / Library
-- Music player card component for library browsing
-
-**Design reference:** Suno.com layout as primary inspiration. Keep our warm brand tokens (amber/sky-blue) but adopt Suno's proven UX patterns: centered prompt → workspace → library.
+Anyone can create a deeply personal, one-of-a-kind song for someone they love — in seconds, no musical skill required.
 
 ## Requirements
 
 ### Validated
-
-<!-- Shipped and confirmed valuable. -->
 
 - ✓ Text-to-music generation via ACE-Step 1.5 (text prompt + custom lyrics) — v1.0
 - ✓ Genre/style tags, duration presets, instrumental toggle — v1.0
 - ✓ Dual variant generation (batch_size=2) — v1.0
 - ✓ Waveform playback (wavesurfer.js) + MP3/WAV download — v1.0
 - ✓ Async polling infrastructure (RunPod + ACE-Step API) — v1.0
-- ✓ Landing page with examples and CTA — v1.0
+- ✓ Emotional landing page (hero, video, testimonials, social proof, CTAs) — v3.0
+- ✓ 6-step quiz funnel with Zod validation and animated transitions — v3.0
+- ✓ Quiz-to-prompt conversion (quiz answers → HeartMuLa generation prompt) — v3.0
+- ✓ Instant generation after quiz completion (batch_size=1) — v3.0
+- ✓ Success page with confetti, song playback, download, and sharing prompt — v3.0
+- ✓ Warm baby blue/yellow OKLCH visual identity (DM Sans + Libre Baskerville) — v3.0
+- ✓ Brand rename to Notevra throughout — v3.0
 
 ### Active
 
-<!-- Current scope. Building toward these. -->
+- [ ] End-to-end flow testing (landing → quiz → generation → success)
+- [ ] Backend API verification (HeartMuLa pod connectivity, generation pipeline)
+- [ ] Frontend UI bug fixes (responsive, accessibility, edge cases)
+- [ ] Performance optimization (load times, generation latency, Core Web Vitals)
+- [ ] Error handling hardening (network failures, API errors, timeouts)
+- [ ] Mobile responsiveness verification and fixes
+- [ ] Pod migration validation (A40 pod URL update + connectivity)
 
-- [ ] Suno-style homepage: centered headline + prompt box + Create button
-- [ ] Same-page create workspace: two-panel layout (form left, results right)
-- [ ] Separate /library page with generated songs browsing
-- [ ] Persistent bottom audio player bar across all pages
-- [ ] Music player card component for library items
-- [ ] GSAP portfolio list with scramble text for library browsing
+#### Deferred to future milestone
+- Payment/checkout via Stripe
+- User authentication (Supabase Auth)
+- Email delivery system (order confirmation + song link)
+- Analytics/conversion tracking
+- Admin dashboard for order management
 
 ### Out of Scope
 
-<!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
+- Dark mode — warm light aesthetic is the brand direction
+- Song library / saved songs — songs are one-time gift deliveries
+- Sidebar layout — replaced by simple header nav for gift funnel
+- Two song variants — single song for cleaner gift experience
+- Mobile app — web-first, PWA later
+- Remixing / editing tools — adds complexity, not core to gift service
+- Social features — not core to gift value
 
-- Mobile apps — web-first, mobile later (v2+)
-- ~~Song library / saved songs~~ — now in scope for v2.0
-- Social features (sharing, profiles, explore page) — not core to v1 value
-- Remixing / editing tools — adds complexity, defer to v2
-- Cover generation / style transfer — advanced features for later
-- Admin dashboard — manual management sufficient for 5-10 users
+## Current Milestone: v4.0 Testing & Optimization
+
+**Goal:** Comprehensive end-to-end testing and optimization of the entire Notevra funnel — verify every user flow works, fix all bugs, optimize performance, and harden for production readiness.
+
+**Target features:**
+- Full E2E Playwright testing of all user flows
+- Backend API and generation pipeline verification
+- Bug discovery and fix pass across all pages
+- Performance optimization (load times, CWV, generation speed)
+- Error handling and edge case hardening
+- Mobile responsiveness audit and fixes
+- Pod migration to A40 (new RunPod infrastructure)
 
 ## Context
 
-- **ACE-Step 1.5** is an open-source (MIT) music generation model with hybrid LM-DiT architecture
-- Generates full songs (up to 10 min) in <10 seconds on RTX 3090, <4GB VRAM
-- Ships with built-in REST API (`uv run acestep-api`) and Gradio UI
-- Supports 50+ languages, text-to-music, custom lyrics
-- Model variants: base, sft, turbo (8-step), turbo-rl — turbo recommended for speed
-- LM planner sizes: 0.6B, 1.7B, 4B params (Qwen3-based)
-- Comparable quality to Suno v4.5-v5 per community feedback
-- Business model inspired by Suno: freemium credits, $8-24/mo tiers
-- Prototype target: 5-10 users, RunPod Persistent Pod for GPU
-- Audio storage via Cloudflare R2 (zero egress fees, S3-compatible, presigned URLs for downloads)
-- ACE-Step has a confirmed memory leak (GitHub #142) — workers crash after 2-3 jobs, need restart policy
+- **Shipped v3.0:** Complete pivot from self-service AI tool to Notevra gift funnel
+- **Tech stack:** Next.js App Router, ACE-Step 1.5 on RunPod, Cloudflare R2
+- **Codebase:** 4,526 LOC TypeScript across 17 phases (v1.0–v3.0)
+- **Generation time:** ~7 seconds for 30s tracks — instant delivery vs human-made services
+- **Visual identity:** Baby blue primary + mellow yellow secondary on cloud white. DM Sans body + Libre Baskerville headings.
+- **Current flow:** Landing page → 6-step quiz → instant generation → success page with confetti + playback + download
+- **Pod migration:** Moved from RTX 4090 (zwysa4aou3a8it) to A40 (96y089egxk3xm5)
 
 ## Constraints
 
-- **Tech stack**: Next.js + React frontend, ACE-Step REST API backend
-- **Infrastructure**: RunPod Persistent Pod for GPU, Cloudflare R2 for audio storage
-- **Model**: ACE-Step 1.5 turbo variant for speed
-- **Scale**: Prototype for 5-10 users initially
-- **Budget**: Minimize costs — serverless/pay-per-use GPU where possible
+- **Tech stack**: Next.js App Router, ACE-Step 1.5 REST API on RunPod, Cloudflare R2
+- **Infrastructure**: RunPod A40 Pod (96y089egxk3xm5), existing R2 bucket
+- **No auth yet**: No user accounts — funnel is public
+- **No payments yet**: Free generation — monetize after UX validation
 
 ## Key Decisions
-
-<!-- Decisions that constrain future work. Add throughout project lifecycle. -->
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | ACE-Step 1.5 as generation model | Open source (MIT), commercial-ready, fast, low VRAM, quality comparable to Suno | ✓ Good |
 | Next.js + React frontend | User preference, strong ecosystem, SSR for SEO | ✓ Good |
-| Freemium credit model | Proven by Suno, low barrier to entry, recurring revenue | — Pending |
-| RunPod Persistent Pod (not Serverless) | Serverless cold starts 20-60s break UX; Persistent Pod has zero cold start, stop when not in use | ✓ Good |
-| Cloudflare R2 for audio storage | Zero egress fees on audio files; S3-compatible API; 10GB free tier sufficient for prototype | ✓ Good |
-| Warmer brand vs Suno dark aesthetic | Differentiate as creative playground, not pro studio. Suno = dark/sterile, MusicGenerator = warm/inviting | — Pending |
-| Adopt Suno UX layout patterns | Suno's layout is proven: centered prompt → workspace → library. Use their UX structure with our brand tokens. | — Pending |
-| Same-page create transformation | User stays on homepage, page transforms to workspace on Create click. No separate /create route. | — Pending |
-| Persistent bottom audio player | Like Suno/Spotify — audio plays across page navigation. Needed for library browsing. | — Pending |
+| RunPod Persistent Pod | Zero cold start for instant generation UX | ✓ Good |
+| Cloudflare R2 for audio storage | Zero egress fees, S3-compatible, presigned URLs | ✓ Good |
+| Product pivot to gift funnel | Self-service → personalized gift service. Clearer value proposition. | ✓ Good — full funnel shipped |
+| Instant AI delivery | Generate in seconds, not days. Speed differentiator. | ✓ Good — ~7s end-to-end |
+| Warm light visual identity | Baby blue + yellow, friendly/emotional. Fits gift positioning. | ✓ Good — cohesive brand |
+| Brand rename to Notevra | Distinctive name for the gift service brand | ✓ Good |
+| Free generation first | Validate funnel UX before adding monetization complexity | ✓ Good — funnel complete |
+| Single song (batch_size=1) | Cleaner gift experience, no decision paralysis | ✓ Good |
+| OKLCH color tokens | Future-proof, wide gamut, perceptually uniform | ✓ Good |
+| Zod co-located schemas | Per-step validation co-located with step components | ✓ Good |
+| localStorage quiz persistence | Versioned key (notevra_quiz_v1), SSR-safe try/catch | ✓ Good |
+| Native audio over wavesurfer | Simpler, lighter for single-song success page playback | ✓ Good |
+| canvas-confetti | Appends own canvas to body, zero-config celebration effect | ✓ Good |
+| A40 pod migration | Migrated from RTX 4090 to A40 for v4.0 testing | — Pending |
 
 ---
-*Last updated: 2026-03-05 after v1.1 completion, starting v2.0 Suno-style UX overhaul*
+*Last updated: 2026-03-06 after v4.0 milestone start*

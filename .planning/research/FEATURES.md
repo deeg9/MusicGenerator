@@ -1,34 +1,32 @@
 # Feature Research
 
-**Domain:** Suno-Style UX Overhaul — AI Music Generation App (v2.0)
-**Researched:** 2026-03-05
-**Confidence:** HIGH (codebase audited directly; patterns verified against live products Suno/Spotify/SoundCloud; implementation approach confirmed via Next.js App Router docs)
+**Domain:** Testing & Optimization — Next.js gift funnel (E2E, performance, error handling, mobile)
+**Researched:** 2026-03-06
+**Confidence:** HIGH (Playwright + Next.js official docs verified; RunPod retry patterns MEDIUM)
 
 ---
 
 ## Scope Note
 
-This file covers the **UX feature landscape** for milestone v2.0 (Suno-style UX overhaul). The prior FEATURES.md (v1.1) covered brand/design tokens — that work is complete. This research answers: what does a persistent audio player, music library page, two-panel create workspace, and same-page view transformation look like in practice, and what already exists vs. what needs to be built?
+This file covers the **v4.0 Testing & Optimization milestone** feature landscape. v3.0 shipped the complete Notevra gift funnel (landing page, 6-step quiz, generation, success page). v4.0 adds no new user-facing features — it validates, hardens, and optimizes the existing funnel for production readiness.
+
+The question being answered: what testing and optimization work is table stakes vs. differentiating, what is scope creep, and in what order should it be done?
 
 ---
 
 ## What Is Already Built (Do Not Rebuild)
 
-Audited from codebase as of 2026-03-05:
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `AppShell` + `AudioPlayerProvider` | BUILT | Layout shell with sidebar + persistent player slot wired |
-| `BottomAudioPlayer` | BUILT | Wavesurfer-based bottom bar, AnimatePresence slide-in, desktop+mobile layouts |
-| `AudioPlayerContext` | BUILT | React Context + useReducer, `play/pause/resume/stop` actions, `AudioTrack` type |
-| `Sidebar` | BUILT | Collapsible hover-to-expand desktop sidebar, mobile overlay; nav items: Home, Create, Library, Search |
-| `GenerationPage` | BUILT | Full generation flow: idle → submitting → polling → done → error; AnimatePresence phase transitions |
-| `HeroSection` | BUILT | Centered headline + Typewriter + CTA button scrolling to `#create`; example cards |
-| `VariantCard` | BUILT | Per-variant waveform player with play/download |
-| `GenerationResults` | BUILT | Fetches job results, renders VariantCards |
-| Drizzle schema | BUILT | `generations` + `outputs` tables; `outputs.r2Key`, `mp3R2Key` for audio storage |
-
-**The persistent bottom player, sidebar, and audio context are already functional.** The v2.0 work is completing the UX patterns that these lay the foundation for.
+| Component | Status | Relevance to v4.0 |
+|-----------|--------|-------------------|
+| Emotional landing page | BUILT | Needs CWV audit (LCP, INP, CLS) + mobile test |
+| 6-step quiz funnel with Zod validation | BUILT | Needs E2E test per step + validation regression tests |
+| Quiz-to-HeartMuLa prompt conversion | BUILT | Needs unit test for pure function |
+| Instant generation (POST /api/quiz-generate) | BUILT | Needs E2E happy-path + error path testing |
+| Poll loop (GET /api/poll-job) | BUILT | Needs resilience testing (flaky network, FAILED status) |
+| Success page (confetti + audio + download) | BUILT | Needs E2E assertion: confetti fired, audio src set, download link present |
+| Error classification library (`/lib/errors.ts`) | BUILT | Needs error boundary (error.tsx) to surface errors in UI |
+| Native audio player (SongPlayer) | BUILT | Needs mobile audio playback test |
+| A40 pod migration | PENDING | Must verify connectivity before any E2E can pass |
 
 ---
 
@@ -36,123 +34,138 @@ Audited from codebase as of 2026-03-05:
 
 ### Table Stakes (Users Expect These)
 
-Features users expect in any Suno-style music creation app. Missing these = product feels incomplete or inconsistent with the mental model established by the existing infrastructure.
+Work that any production-quality testing/optimization milestone must deliver. Missing these means the milestone fails its stated goal.
 
 | Feature | Why Expected | Complexity | Dependencies on Existing |
 |---------|--------------|------------|--------------------------|
-| **Suno-style homepage** — centered headline, large prompt input, single Create CTA, minimal chrome | Users coming from Suno expect a clean "type and go" entry point; current hero + generation form are separate sections requiring a scroll | MEDIUM | Replaces/merges current `HeroSection` + `GenerationPage` idle state into a single centered unit |
-| **Two-panel create workspace** — form left, results/loading right, same page | After hitting Create, the layout expands to show input context alongside output; users should not lose their prompt while reviewing results | MEDIUM | Uses existing `GenerationPage` phase logic; layout change only, not logic change |
-| **Same-page view transformation** — homepage morphs into workspace on Create click, no route change | Suno/Midjourney pattern: the prompt box is the entry point AND the workspace anchor; page navigation feels heavy for a creation loop | HIGH | Existing `navigate-create` event + scroll pattern is the v1 version; needs to become an animated layout transform instead of scroll |
-| **`/library` route** — separate page for browsing all generated songs | Users who have generated multiple songs need a place to revisit them; the sidebar "Library" link currently goes to `#` | HIGH | Needs new Next.js route, DB query (generations + outputs), and new MusicPlayerCard component |
-| **Music player card component** — compact card showing song title, prompt snippet, waveform preview, play/download | Library page needs a scannable card format; VariantCard is the generation results version but library cards are simpler (no inline generation state) | MEDIUM | Can reuse `useAudioPlayer` context; VariantCard is too generation-result-specific to reuse directly |
-| **Sidebar Library link wired to `/library`** — currently placeholder `#` | Sidebar already renders Library nav item; it goes nowhere | LOW | Sidebar is built; just change `href: '#'` to `href: '/library'` and convert to Next.js `<Link>` |
-| **Bottom audio player persists across `/library` navigation** | Core reason for building the persistent player; users tap play in library, navigate to create, music keeps playing | ALREADY BUILT | `BottomAudioPlayer` in `AppShell` — already persists; only missing: library cards need to call `useAudioPlayer().play()` |
-| **Library page DB query** — fetch completed generations with their outputs from Supabase | Library data must come from the existing `generations`/`outputs` tables; no new tables needed | MEDIUM | Drizzle schema has everything needed; need a server component or API route to query `status = 'completed'` |
+| **Full happy-path E2E test** — landing → all 6 quiz steps → generation → success page | This is the entire product flow; if it does not work end-to-end under Playwright, nothing else matters | MEDIUM | Requires A40 pod to be online and URL configured in env; hits the real API |
+| **A40 pod connectivity verification** | The pod migration (RTX 4090 → A40, ID 96y089egxk3xm5) is unvalidated; all generation tests will silently fail against a dead endpoint | LOW | New .env variable; single connectivity smoke test |
+| **Generation API error handling** — pod offline, FAILED status, polling timeout | RunPod pods can stop; users must see a retry UI, not a blank screen or infinite spinner | HIGH | Requires error.tsx boundaries to exist before error path tests make sense |
+| **Error boundaries (error.tsx)** — at /quiz and /quiz/success route levels | Next.js App Router does not provide default error boundaries for route segments; without error.tsx, unhandled client errors crash the full page | MEDIUM | New files only; no existing code changes |
+| **Per-step quiz validation tests** — all 6 Zod schemas enforce correctly | Each step has co-located validation; empty submits, under-length inputs, and missing selections must all show the correct error state | MEDIUM | Tests depend on existing step components and schemas |
+| **Mobile viewport tests** — iPhone 15 Pro and Pixel 8 at minimum | Gift funnel users skew mobile; competitor Songfinch reports majority mobile traffic; unresponsive UI at 375px = no conversion | MEDIUM | Playwright `devices` emulation; same test flows reused at mobile viewport |
+| **Core Web Vitals audit** — LCP, INP, CLS measured on landing page and quiz | LCP >2.5s is a Google ranking penalty; INP >200ms fails 43% of sites in 2026; CLS on quiz card transitions is a real risk with Framer Motion | MEDIUM | Lighthouse CLI or PageSpeed Insights; `next/image priority` fix likely needed for hero |
 
-### Differentiators (Competitive Advantage)
+### Differentiators (Beyond Baseline Testing)
 
-Features that elevate the experience above functional parity.
+Work that elevates confidence beyond a basic test pass and leaves the codebase in better shape.
 
 | Feature | Value Proposition | Complexity | Dependencies on Existing |
 |---------|-------------------|------------|--------------------------|
-| **GSAP scramble text on library list** — song titles animate with letter scramble on page load/reveal | Retro-futuristic brand moment; Suno uses static lists; scramble text signals "generative" and aligns with the musical/creative brand | MEDIUM | Requires GSAP `@gsap/react` (not yet in stack); `useGSAP` hook for SSR safety; apply to `MusicPlayerCard` title on mount or scroll-into-view |
-| **Animated same-page expansion** — prompt box expands/splits into two-panel workspace using Framer Motion `layout` prop | No page flash, no scroll jump; the creation feels continuous and spatial; Framer Motion `layoutId` connects the prompt across homepage → workspace states | HIGH | Framer Motion already in stack; `layoutId` for the prompt textarea is the key primitive; `LayoutGroup` wraps both states; known App Router caveat: wrap in `<LayoutGroup>` at page level |
-| **Waveform peaks pre-generation in library** — store decoded peaks at generation time, pass to WaveSurfer in library cards | Library with many cards would stall decoding all audio simultaneously; pre-computed peaks load instantly; Suno shows waveforms immediately | HIGH | Requires schema change: add `peaksJson` column to `outputs`; generate peaks server-side after audio upload; passed as `peaks` option to WaveSurfer |
-| **Play from library into bottom player** — tapping play on any library card hands off to the global player without leaving the page | Users can browse library like a music streaming app (Spotify-parity UX); the bottom player becomes a fully-functional mini-player for the library | LOW | `AudioPlayerContext.play()` already accepts `AudioTrack`; library card just needs to call it with the R2 presigned URL |
-| **Hover-reveal play button on library cards** — card shows waveform preview image, play button overlays on hover | Reduces UI noise for browsed items; Spotify/SoundCloud use this pattern; makes the library feel like a gallery not a list | LOW | Pure CSS/Tailwind hover state on `MusicPlayerCard` |
-| **Empty library state with CTA** — when no songs exist, show branded empty state with "Create your first song" button | Users landing on `/library` before generating get direction not confusion; empty states are table stakes for production apps | LOW | New component; uses existing brand tokens and CTA pattern |
+| **Polling resilience test** — simulate 2-3 failed poll responses before eventual success | Generation hangs and network blips are the #1 user-visible failure mode for an async generation product; proving recovery works is more valuable than testing the happy path twice | HIGH | Playwright `route()` interception to mock /api/poll-job responses; existing GeneratingOverlay needs to handle intermediate failures gracefully |
+| **Page Object Model (POM) architecture** — QuizPage, LandingPage, SuccessPage classes | 6-step quiz has unique selectors per step; without POM, selector changes break every test file individually; a POM makes the suite maintainable as the product evolves | MEDIUM | Playwright fixtures; creates `tests/pages/` directory with encapsulated locators |
+| **Unit test for quiz-to-prompt conversion** — `quizToPrompt()` pure function | This function determines song quality; it is a pure TypeScript function with no dependencies — unit testing it is high value at low cost; covers edge cases (empty qualities, single-word memories) | LOW | Vitest or Jest; no mocking needed; pure input/output function |
+| **localStorage quiz persistence test** — fill steps 1-3, reload, confirm state restored | The `notevra_quiz_v1` key is already implemented; testing it prevents regression on a feature that directly affects abandonment rate (users who accidentally refresh) | LOW | Playwright `page.reload()` with state assertions |
+| **Reduced-motion accessibility test** — verify quiz slide animations disable under `prefers-reduced-motion: reduce` | `useReducedMotion` hook already exists in the codebase; test that it actually suppresses the Framer Motion `AnimatePresence` transitions; costs almost nothing to add | LOW | `page.emulateMedia({ reducedMotion: 'reduce' })` |
+| **Smoke test tag set (@smoke)** — 5-6 critical tests tagged for CI use | Subset of tests that run in under 2 minutes; can be wired to a pre-deploy CI check without running the full suite (which includes live API calls) | LOW | Playwright `--grep @smoke` filter; tag applied to existing tests |
+| **Bundle size analysis** — one-time audit with @next/bundle-analyzer | Framer Motion, lucide-react, and wavesurfer.js are all potential bundle weight contributors; a single audit identifies if lazy loading is needed before the CWV work starts | LOW | `@next/bundle-analyzer`; one-time script in package.json; not CI enforcement |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
+Work that seems like good testing practice but creates scope creep or more problems than it solves for this milestone.
+
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **Route-based create page (`/create` route)** | Feels "normal" — one route per screen | Breaks the same-page transformation UX goal; adds a navigation step between hero and workspace; existing `navigate-create` event + scroll would be thrown away | Keep generation on `/` (homepage); use same-page animated layout transformation |
-| **Infinite scroll in library** | "Feels modern"; Spotify/SoundCloud do it | For 5-10 prototype users, infinite scroll adds complexity (intersection observer, cursor pagination, race conditions) with no user benefit; paginated list is simpler and sufficient | Simple offset pagination with page numbers; upgrade to infinite scroll only if library grows to 50+ items per user |
-| **Autoplay next track in library** | Queue-based playback like Spotify | Requires a playback queue data structure, shuffle logic, skip controls — significant scope expansion; not in Suno's core UX either | Single-track play only; "next" is just tapping the next card |
-| **Search within library** | Quickly find a specific song | Prototype has too few songs for search to add value; client-side filter over 10 items is more confusing than scrolling | Sidebar "Search" item already exists as placeholder; wire to `/library` with filter later, after user base grows |
-| **Waveform on every library card simultaneously** | Rich visual library experience | Decoding audio for 10+ WaveSurfer instances simultaneously crashes browsers; even with lazy loading, 10 instances = high memory pressure | Static waveform thumbnail image (generated server-side at upload time) or simplified bar-chart SVG from pre-computed peaks; full WaveSurfer only in bottom player |
-| **Real-time library updates (WebSocket/SSE)** | New generations appear in library without refresh | Complex infrastructure (Supabase Realtime or custom SSE), adds latency edge cases; not needed for prototype | After generation completes, redirect or add a "View in Library" button; library page refresh is acceptable |
-| **Social sharing from library** | "Share my song" | Requires public URLs, share metadata (OG tags), and potentially user accounts — full feature in itself; out of scope per PROJECT.md | Download button is sufficient for now; sharing via file is the v1 pattern |
+| **Unit tests for all quiz step components** | "Thorough coverage" | Quiz step components are primarily form UI wired to Zod schemas; unit tests here mock the validation and DOM behavior that E2E already covers end-to-end; adds maintenance burden without catching integration failures | Unit test only `quizToPrompt()` (pure function); let Playwright cover the form UI |
+| **Visual regression screenshot comparison** | Catches accidental style changes | Screenshot diffs are flaky across CI environments (font rendering, anti-aliasing, pixel density differences); establishing and maintaining a baseline adds overhead; false positives block deploys | Manual visual audit during development + Playwright mobile viewport tests catch real breakage; defer visual regression to a milestone with a stable design system |
+| **Mock all RunPod calls in E2E tests** | "Tests should be deterministic; no real API calls" | Mocking the entire generation pipeline means you never verify the A40 pod migration worked; the most critical unknown for this milestone is live pod connectivity | Keep one live integration test (happy path); mock only the error paths (pod offline, FAILED status) using route interception |
+| **Lighthouse CI score gates (blocking)** | "Enforce performance budgets" | Score gates block deploys and require weeks of threshold tuning after optimizations are made; premature before a baseline is even established | Run Lighthouse as an audit only in this milestone; document baseline scores; add score gates in v5.0 after optimization work stabilizes |
+| **Full accessibility audit (axe-core integration)** | "Compliance and inclusivity" | A full a11y audit is its own milestone with its own remediation backlog; bolting it onto a testing/performance milestone dilutes focus and generates a large issue list with no time to fix it | Fix specific a11y issues discovered during mobile viewport testing (focus rings, tap target sizes); defer systematic axe-core audit |
+| **Load / stress testing** | "What happens under traffic?" | No auth, no payments, no real user traffic yet; RunPod A40 has fixed pod capacity that load testing cannot change; premature before monetization creates real concurrent users | Defer to post-monetization; when Stripe goes live, measure actual concurrency needs |
+| **Vitest component unit tests for landing page sections** | "Test everything" | Landing page sections are mostly static content (hero text, testimonial cards, "how it works" steps); Playwright already asserts they render and scroll correctly in the E2E suite; duplicating with unit tests adds cost, not confidence | E2E assertions for "hero headline visible, CTA button renders" covers what matters for a static content section |
 
 ---
 
 ## Feature Dependencies
 
 ```
-/library route
-    └──requires──> DB query: completed generations + outputs (server component or API route)
-    └──requires──> MusicPlayerCard component
-                       └──requires──> AudioPlayerContext.play() (already built)
-                       └──requires──> R2 presigned URL generation (already built in /api/audio route)
-    └──requires──> Sidebar Library link → Next.js <Link href="/library"> (low complexity fix)
+[Full Happy-Path E2E Test]
+    └──requires──> [A40 Pod Connectivity Verification]
+                       └──requires──> [NEXT_PUBLIC_RUNPOD_URL updated in .env]
 
-Same-page view transformation (homepage → workspace)
-    └──requires──> Layout state: 'hero' | 'workspace' (useState at page level)
-    └──requires──> Framer Motion layout + layoutId on prompt textarea
-    └──requires──> LayoutGroup wrapping both hero and workspace sections
-    └──conflicts-with──> Current scroll-to-#create pattern (must be replaced, not coexisted)
+[Generation API Error Handling]
+    └──requires──> [Error Boundary (error.tsx at /quiz and /quiz/success)]
+    └──enhanced-by──> [Polling Resilience Test]
 
-Two-panel workspace
-    └──requires──> Same-page view transformation trigger
-    └──requires──> GenerationPage phase logic (already built — reused, not replaced)
-    └──enhances──> VariantCard / GenerationResults (already built — rendered in right panel)
+[Per-Step Quiz Validation Tests]
+    └──enhanced-by──> [Page Object Model Architecture]
+                          └──enables──> [Mobile Viewport Tests reuse same POM]
 
-GSAP scramble text (library cards)
-    └──requires──> GSAP + @gsap/react installed (not yet in stack)
-    └──requires──> MusicPlayerCard component (built as part of /library work)
-    └──requires──> 'use client' directive + useGSAP() hook
+[Core Web Vitals Audit]
+    └──enhanced-by──> [Bundle Size Analysis]
+                          └──informs──> [Which components need lazy loading]
 
-Waveform peaks pre-computation (differentiator)
-    └──requires──> Schema migration: add peaksJson to outputs table
-    └──requires──> Server-side peak generation after R2 upload (modify /api/generate route)
-    └──requires──> MusicPlayerCard to pass peaks option to WaveSurfer (avoids decode cost)
-    └──optional──> Library cards with instant waveforms (without this, cards use placeholder)
+[Smoke Test Tags]
+    └──requires──> [Full Happy-Path E2E Test exists]
+    └──requires──> [Per-Step Quiz Validation Tests exist]
 
-Bottom audio player persists across pages
-    └──already-built──> AppShell places BottomAudioPlayer outside <main> in layout.tsx
-    └──already-built──> Next.js App Router: layouts don't remount on navigation
-    └──requires──> Library cards to call useAudioPlayer().play() with correct AudioTrack
+[localStorage Quiz Persistence Test]
+    └──depends-on──> [existing notevra_quiz_v1 implementation — already built]
+
+[Reduced-Motion Accessibility Test]
+    └──depends-on──> [existing useReducedMotion hook — already built]
+
+[Unit Test: quizToPrompt()]
+    └──depends-on──> [existing /lib/quiz-prompt.ts — already built]
+    └──standalone──> No browser or API dependencies
 ```
 
 ### Dependency Notes
 
-- **Library route depends on DB query, not a new table.** The `generations` + `outputs` tables already have everything: prompt text (for display), `r2Key` (for audio URL), `completedAt` (for sorting). No schema migration needed for the basic library page — only needed for the peaks pre-computation differentiator.
-- **Bottom player already works across pages.** The architecture is correct. The only gap is that library cards don't yet call `useAudioPlayer().play()` because they don't exist yet.
-- **Same-page transformation replaces the current scroll pattern.** The existing `navigate-create` event + `scrollIntoView` must be removed and replaced by a layout state toggle. The `GenerationPage` component logic (form/loading/done phases) is preserved — only the layout container changes.
-- **GSAP must not conflict with Framer Motion.** Both can coexist (GSAP for text effects, Framer Motion for layout transitions) but they should not animate the same elements. Assign GSAP to text-only effects (scramble on titles); Framer Motion to layout/positional transitions.
+- **Pod verification must happen first.** The full E2E happy path hits the real RunPod API. If the A40 pod URL is wrong or the pod is stopped, every generation-related test will fail with a misleading error (network timeout vs. assertion failure). Verifying pod connectivity before writing E2E tests saves significant debugging time.
+- **Error boundaries are a prerequisite for error handling tests.** Playwright can only assert a graceful error UI if the error.tsx files exist. Testing error paths before boundaries are in place just verifies the app crashes, which is not useful coverage.
+- **POM enables mobile test reuse.** The 6-step quiz has unique selectors per step. Building the POM before writing mobile viewport tests means the same Page Objects are exercised at both desktop and mobile viewports — no code duplication.
+- **Bundle analysis informs CWV optimization order.** If bundle analysis reveals framer-motion is 140KB of the JS bundle, that tells you where to spend CWV optimization effort (lazy loading the quiz page) vs. image optimization on the landing page. Do the analysis before deciding which CWV fixes to make.
+
+---
+
+## Test Category Breakdown
+
+The expected test categories for a gift funnel E2E suite and what each covers:
+
+| Category | What It Tests | Playwright Approach | Live API? |
+|----------|--------------|---------------------|-----------|
+| Navigation / routing | Landing CTA navigates to /quiz; success page route resolves; back button returns from quiz | `goto`, `waitForURL`, `click` | No |
+| Form validation | Each of 6 quiz steps: empty submit shows error messages, valid input enables Continue, invalid input blocked | `fill`, `click`, `expect(locator).toBeVisible()` | No |
+| Generation happy path | POST /api/quiz-generate → poll /api/poll-job → redirect to /quiz/success/[jobId] | `waitForResponse`, `waitForURL` with 45s timeout | YES — real A40 |
+| Success page assertions | Confetti canvas appended to DOM; native audio `src` attribute set to R2 URL; download link href valid | `waitForSelector`, `evaluate(() => document.querySelector('audio').src)` | No (uses result from happy path) |
+| Error states | Pod offline (mock 503) → retry UI shown; FAILED status (mock) → error message shown; polling timeout → fallback shown | `route()` interception; mock API responses | No (mocked) |
+| Mobile responsiveness | Same navigation + quiz flows at iPhone 15 Pro and Pixel 8 viewports; no horizontal scroll; buttons tappable (48px min) | `use: devices['iPhone 15 Pro']` in playwright.config | No |
+| Accessibility | Reduced-motion preference suppresses quiz slide transitions; keyboard navigation works through quiz steps | `page.emulateMedia({ reducedMotion: 'reduce' })` | No |
+| State persistence | Fill quiz steps 1-3; reload page; confirm quiz state restored from localStorage | `page.reload()` + field value assertions | No |
 
 ---
 
 ## MVP Definition
 
-### Launch With (v2.0)
+### This Milestone Is (Ship These)
 
-Minimum feature set to deliver the Suno-style UX goal:
+Minimum work to declare the v4.0 milestone complete. Every item directly validates or hardens the existing funnel.
 
-- [ ] **Suno-style homepage** — prompt-first centered layout with single "Create" CTA; hero section simplified to headline + subtitle + prompt box
-- [ ] **Same-page transformation** — clicking Create expands homepage into two-panel workspace using Framer Motion layout animation; no route change
-- [ ] **Two-panel workspace** — form panel (left, ~40% width) + results panel (right, ~60% width); both visible simultaneously after Create; GenerationPage phases render in right panel
-- [ ] **`/library` route** — page listing all completed generations; server component queries Supabase; shows `MusicPlayerCard` per output
-- [ ] **`MusicPlayerCard` component** — compact card: song title (from prompt), timestamp, duration, play button (hands off to bottom player), download link
-- [ ] **Sidebar Library link wired** — `href: '/library'` with `next/link`; active state indicator for current route
-- [ ] **Empty library state** — branded empty state with "Create your first song" CTA when no completed generations exist
+- [ ] **A40 pod connectivity verification** — unblocks everything else
+- [ ] **Error boundaries (error.tsx)** — /quiz and /quiz/success segments; prerequisite for error testing
+- [ ] **Full happy-path E2E test** — landing → 6-step quiz → generation → success page; the product's complete flow
+- [ ] **Generation API error handling** — pod offline (503), FAILED status, polling timeout; each shows a retry UI
+- [ ] **Per-step quiz validation E2E** — all 6 Zod schemas enforce correctly; empty submit shows errors
+- [ ] **Mobile viewport tests** — iPhone 15 Pro and Pixel 8; no overflow, buttons tappable, inputs usable
+- [ ] **Core Web Vitals audit** — Lighthouse on landing page and quiz; document LCP, INP, CLS baseline scores; fix any P1 issues found (likely: hero image missing `priority`, layout shift on quiz card mount)
 
-### Add After Validation (v2.x)
+### Add Within This Milestone (After Core Tests Pass)
 
-Features to add once v2.0 core is working and used:
+- [ ] **Polling resilience test** — add after happy-path is green; simulates network blips during generation polling
+- [ ] **POM architecture** — refactor selectors into Page Object classes once test count exceeds ~10
+- [ ] **Unit test: quizToPrompt()** — pure function; add to Vitest; covers edge case inputs
+- [ ] **Bundle size analysis** — run @next/bundle-analyzer; document findings; inform lazy loading decisions
+- [ ] **localStorage persistence test** — low-risk regression test for quiz state on page reload
+- [ ] **Smoke test tags (@smoke)** — tag 5-6 critical tests; documents the "quick confidence check" subset
 
-- [ ] **GSAP scramble text on library cards** — title scramble on mount/scroll reveal; add `gsap` + `@gsap/react` to deps; trigger: `IntersectionObserver` entry
-- [ ] **Hover-reveal play button on cards** — play button overlays on card hover; currently visible, refine to show-on-hover for cleaner browsing UX
-- [ ] **Waveform peaks pre-computation** — store peaks JSON at generation time; instant waveforms in library without audio decode; requires schema migration + route change
-- [ ] **Library sort/filter** — sort by date, duration; filter by genre tag; simple client-side filter over loaded records
+### Future Consideration (v5.0+)
 
-### Future Consideration (v2+)
-
-Defer until product-market fit is clear:
-
-- [ ] **Infinite scroll in library** — meaningful only after 50+ songs per user; add with TanStack Query `useInfiniteQuery` + Supabase cursor pagination
-- [ ] **Playback queue** — queue multiple library songs for sequential play; requires queue state in AudioPlayerContext + skip controls in BottomAudioPlayer
-- [ ] **Search** — full-text search over prompt text; Supabase `textsearch` or client-side fuse.js; meaningful at 20+ songs
+- [ ] **Lighthouse CI score gates** — enforce performance budgets after optimization work stabilizes
+- [ ] **Full accessibility audit** (axe-core) — own milestone; systematic remediation backlog
+- [ ] **Load / stress testing** — post-monetization, when real concurrent traffic exists
+- [ ] **Visual regression** — after design system stabilizes; requires baseline management strategy
+- [ ] **Analytics/conversion tracking** — funnel drop-off per step; A/B testing quiz copy
 
 ---
 
@@ -160,106 +173,42 @@ Defer until product-market fit is clear:
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Suno-style homepage (prompt-first) | HIGH | MEDIUM | P1 |
-| Same-page transformation (hero → workspace) | HIGH | HIGH | P1 |
-| Two-panel workspace layout | HIGH | MEDIUM | P1 |
-| `/library` route with DB query | HIGH | MEDIUM | P1 |
-| `MusicPlayerCard` component | HIGH | LOW | P1 |
-| Sidebar Library link wired | HIGH | LOW | P1 |
-| Empty library state | MEDIUM | LOW | P1 |
-| GSAP scramble text | MEDIUM | MEDIUM | P2 |
-| Hover-reveal play button | LOW | LOW | P2 |
-| Waveform peaks pre-computation | MEDIUM | HIGH | P2 |
-| Library sort/filter | LOW | LOW | P2 |
-| Infinite scroll | LOW | HIGH | P3 |
-| Playback queue | LOW | HIGH | P3 |
-| Search | LOW | MEDIUM | P3 |
+| A40 pod connectivity verification | HIGH | LOW | P1 |
+| Error boundaries (error.tsx) | HIGH | LOW | P1 |
+| Full happy-path E2E test | HIGH | MEDIUM | P1 |
+| Generation API error handling | HIGH | HIGH | P1 |
+| Per-step quiz validation tests | HIGH | MEDIUM | P1 |
+| Mobile viewport tests | HIGH | MEDIUM | P1 |
+| Core Web Vitals audit + P1 fixes | MEDIUM | MEDIUM | P1 |
+| Polling resilience test | HIGH | HIGH | P2 |
+| POM architecture | MEDIUM | MEDIUM | P2 |
+| Unit test: quizToPrompt() | MEDIUM | LOW | P2 |
+| Bundle size analysis | MEDIUM | LOW | P2 |
+| localStorage persistence test | LOW | LOW | P2 |
+| Smoke test tags | MEDIUM | LOW | P2 |
+| Lighthouse CI score gates | LOW | MEDIUM | P3 |
+| Full a11y audit | MEDIUM | HIGH | P3 |
+| Load testing | LOW | HIGH | P3 |
+| Visual regression | LOW | HIGH | P3 |
 
 **Priority key:**
-- P1: Required for v2.0 milestone to feel complete
-- P2: Adds polish/differentiation; add in v2.x
-- P3: Future — defer until scale justifies
-
----
-
-## Competitor Feature Analysis
-
-| Feature | Suno | Spotify Web | SoundCloud | Our Approach |
-|---------|------|-------------|------------|--------------|
-| Homepage entry point | Centered prompt box only; no marketing content on create page | Search-first (different product type) | Discovery feed | Simplified hero (headline + subtitle) + large prompt box; minimal chrome |
-| View transformation | Prompt → results in same panel; no route change | N/A | N/A | Framer Motion `layout` animation: hero collapses, workspace panels expand |
-| Two-panel create | Single panel (prompt on top, results below) | N/A | N/A | Left panel (form/controls) + Right panel (loading/results) split |
-| Library/history | Songs page with grid; persistent generation access | Full library with albums/playlists | Profile page with tracks | `/library` route with compact list; sorted newest-first |
-| Persistent player | Fixed bottom bar; track info + waveform + controls + volume | Fixed bottom bar; album art + controls + progress bar + volume + queue | Fixed bottom bar; waveform only | Already built; adds: library card integration |
-| Library card UX | Click card → opens player; waveform thumbnail visible | Album art grid; hover reveals play | Waveform visible in list; hover reveals controls | `MusicPlayerCard`: play button hands off to bottom player; inline waveform thumbnail (peaks-based or simplified) |
-| Navigation | Left sidebar: Home, Create, Library, Explore | Left sidebar: Home, Search, Library | Top navigation | Left sidebar already built: Home, Create, Library, Search |
-| Library data | All user's songs; filter by workspace | Albums, playlists, liked songs, podcasts | Uploaded + liked tracks | Query `generations` table where `status = 'completed'`, join `outputs`; show all variants or just one per generation |
-
----
-
-## Implementation Pattern Notes
-
-### Same-Page View Transformation
-
-The current pattern (scroll to `#create` section) is the v1 approach. The v2 approach:
-
-1. Page-level state: `type PageView = 'landing' | 'workspace'`
-2. `HeroSection` renders when `pageView === 'landing'`; hides when `workspace`
-3. `GenerationPage` in `workspace` view fills the two-panel layout
-4. Framer Motion `layoutId="prompt-input"` on the prompt textarea connects the hero prompt (centered, large) to the workspace form panel prompt (left panel, standard size)
-5. `LayoutGroup` wraps the entire page so `layoutId` transitions work across conditional renders
-6. Trigger: clicking "Create" CTA sets `pageView = 'workspace'` AND starts generation submit
-7. Back button or "New Song" resets `pageView = 'landing'`
-
-**Known caveat (MEDIUM confidence):** Framer Motion `layoutId` with Next.js App Router has a documented issue (GitHub #49279) where `AnimatePresence` at the layout level can conflict. Mitigation: avoid AnimatePresence at the `RootLayout` level; use it only within client components at the page level.
-
-### Persistent Bottom Player Architecture
-
-Already correct — confirmed by Next.js App Router docs: "On navigation, layouts preserve state, remain interactive, and do not rerender." The `BottomAudioPlayer` is in `AppShell` which is in `layout.tsx`, so it survives navigation to `/library`. The only work remaining is library cards calling `useAudioPlayer().play()`.
-
-### Library Page DB Query
-
-Server component pattern (avoid API route — server component is simpler):
-
-```typescript
-// src/app/library/page.tsx (Server Component)
-import { db } from '@/db';
-import { generations, outputs } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
-
-const songs = await db
-  .select()
-  .from(generations)
-  .innerJoin(outputs, eq(outputs.generationId, generations.id))
-  .where(eq(generations.status, 'completed'))
-  .orderBy(desc(generations.completedAt))
-  .limit(50);
-```
-
-Drizzle client must remain server-side only (confirmed — Drizzle clients fail in client components). The `MusicPlayerCard` components receive presigned URL props; the presigned URL generation happens in the server component or a separate `/api/audio/[key]` route (already built per codebase memory).
-
-### GSAP + Next.js
-
-GSAP is now fully free including all plugins (Webflow sponsorship, 2024). Integration with Next.js App Router requires:
-1. `npm install gsap @gsap/react`
-2. `useGSAP()` hook from `@gsap/react` (SSR-safe; replaces manual `useEffect` + `gsap.context`)
-3. All GSAP animation code in `'use client'` components
-4. For scramble text: `gsap.to(element, { duration: 1, scrambleText: { text: title, chars: "abcdef..." } })`
+- P1: Must have — directly validates or hardens the gift funnel for production
+- P2: Should have — improves suite quality and maintainability; add within this milestone after P1s pass
+- P3: Defer — future milestone; premature before product-market fit or revenue
 
 ---
 
 ## Sources
 
-- Suno interface review: [Suno v4.5 Interface Guide](https://www.0580rc.com/ai-chat/suno-v45-interface-guide-2025/), [Suno Workspaces announcement](https://x.com/SunoMusic/status/1879269631854088490), [Jack Righteous Suno guides](https://jackrighteous.com/en-us/blogs/guides-using-suno-ai-music-creation/suno-ai-v4-5-plus-create-page-guide)
-- Next.js App Router layout persistence: [Next.js Layouts and Pages docs](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts), [LogRocket Next.js layouts guide](https://blog.logrocket.com/guide-next-js-layouts-nested-layouts/), [Next.js persistent player discussion](https://github.com/vercel/next.js/discussions/22220)
-- Framer Motion layout animations: [Motion layout animations docs](https://motion.dev/docs/react-layout-animations), [LayoutGroup docs](https://www.framer.com/motion/layout-group/), [App Router + Framer Motion issue](https://github.com/vercel/next.js/issues/49279)
-- Persistent audio state in React: [BBC Sounds persistent player prototype (Medium)](https://medium.com/bbc-product-technology/sounds-web-next-a-persistent-player-prototype-for-bbc-sounds-bf996ef0c332), [Global Music Player in NextJS (Medium)](https://medium.com/@tejnav1808/music-player-in-nextjs-376714c70cb2)
-- WaveSurfer mini-player + peaks pattern: [wavesurfer-react-player (GitHub)](https://github.com/TheDecipherist/wavesurfer-react-player)
-- Supabase + Drizzle + infinite scroll: [Supabase infinite scroll + Framer Motion](https://supabase.com/blog/infinite-scroll-with-nextjs-framer-motion), [React Query + Supabase pagination (Medium)](https://medium.com/@ctrlaltmonique/how-to-implement-infinite-scroll-with-react-query-supabase-pagination-in-next-js-6db8ed4f664c)
-- GSAP + Next.js: [GSAP React integration docs](https://gsap.com/resources/React/), [Setting Up GSAP with Next.js 2025 (Medium)](https://javascript.plainenglish.io/setting-up-gsap-with-next-js-2025-edition-bcb86e48eab6), [GSAP scramble text + React (Medium)](https://medium.com/@moraromerojuan8/creating-an-advanced-text-scramble-with-gsap-react-and-nextjs-48b86b0e9767)
-- State management for audio context: [Context API vs Zustand 2025 (DEV)](https://dev.to/cristiansifuentes/react-state-management-in-2025-context-api-vs-zustand-385m)
-- Codebase audit: `/src/components/layout/`, `/src/contexts/AudioPlayerContext.tsx`, `/src/db/schema.ts`, `/src/app/layout.tsx`, `/src/components/GenerationPage.tsx`
+- [Next.js Playwright testing guide (official)](https://nextjs.org/docs/app/guides/testing/playwright) — HIGH confidence
+- [Next.js error handling docs (official)](https://nextjs.org/docs/app/getting-started/error-handling) — HIGH confidence
+- [Core Web Vitals 2026 targets and INP guidance](https://www.digitalapplied.com/blog/core-web-vitals-2026-inp-lcp-cls-optimization-guide) — MEDIUM confidence
+- [Playwright mobile automation guide (BrowserStack)](https://www.browserstack.com/guide/playwright-mobile-automation) — HIGH confidence
+- [RunPod error handling documentation](https://docs.runpod.io/serverless/workers/handlers/handler-error-handling) — MEDIUM confidence (serverless docs; persistent pod behavior differs)
+- [Next.js bundle analyzer patterns](https://foundations.significa.co/guides/performance-tracking) — MEDIUM confidence
+- [Playwright checkout flow testing patterns (Checkly)](https://www.checklyhq.com/docs/learn/playwright/checkout-testing-guide/) — HIGH confidence
+- Codebase inspection: `/src/app/api/quiz-generate/route.ts`, `/src/app/quiz/page.tsx`, `/src/app/quiz/_components/` — HIGH confidence
 
 ---
-*Feature research for: Suno-Style UX Overhaul — MusicGenerator v2.0*
-*Researched: 2026-03-05*
+*Feature research for: Notevra v4.0 Testing & Optimization milestone*
+*Researched: 2026-03-06*

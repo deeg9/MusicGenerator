@@ -1,19 +1,22 @@
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque, Figtree, Geist_Mono } from 'next/font/google';
+import { DM_Sans, Libre_Baskerville, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
-import { AppShell } from '@/components/layout/AppShell';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
-const bricolage = Bricolage_Grotesque({
-  variable: '--font-bricolage',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-});
-
-const figtree = Figtree({
-  variable: '--font-figtree',
+const dmSans = DM_Sans({
+  variable: '--font-dm-sans',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+
+const libreBaskerville = Libre_Baskerville({
+  variable: '--font-libre',
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
@@ -22,8 +25,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Notera',
-  description: 'AI-powered music generation',
+  title: 'Notevra',
+  description: 'Turn your feelings into a song. Personalized AI music gifts in seconds.',
 };
 
 export default function RootLayout({
@@ -32,11 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${bricolage.variable} ${figtree.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          <AppShell>{children}</AppShell>
-        </ThemeProvider>
+    <html lang="en">
+      <body className={`${dmSans.variable} ${libreBaskerville.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
+        <Header />
+        <main className="flex-1">{children}</main>
+        <Footer />
       </body>
     </html>
   );

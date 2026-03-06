@@ -1,34 +1,25 @@
 /* Raw OKLCH palette — reference only via semantic tokens in globals.css */
+/* Source: derived from notera-main reference palette, converted to OKLCH */
 
 :root {
-  /* Cream scale (warm white, H ~80-85) */
-  --cream-50:  oklch(0.99 0.010 85);
-  --cream-200: oklch(0.95 0.030 80);
-  --cream-400: oklch(0.88 0.050 75);
-  --cream-600: oklch(0.78 0.060 72);
-  --cream-800: oklch(0.65 0.070 70);
+  /* Cloud White scale (warm light background, H ~240) */
+  --cloud-50:  oklch(0.99 0.008 240);
+  --cloud-200: oklch(0.96 0.010 240);
+  --cloud-300: oklch(0.92 0.012 240);
 
-  /* Amber scale (golden yellow — backgrounds/CTAs only, never foreground text) */
-  --amber-50:  oklch(0.98 0.040 95);
-  --amber-200: oklch(0.92 0.100 85);
-  --amber-400: oklch(0.82 0.170 80);
-  --amber-600: oklch(0.70 0.180 65);
-  --amber-800: oklch(0.55 0.150 55);
+  /* Baby Blue scale (primary — H ~220) */
+  --blue-300: oklch(0.85 0.08 220);
+  --blue-400: oklch(0.78 0.10 220);
+  --blue-500: oklch(0.72 0.12 220);
+  --blue-700: oklch(0.55 0.14 225);
 
-  /* Sky-blue scale (cool blue, H ~220-235) */
-  --sky-50:  oklch(0.97 0.030 220);
-  --sky-200: oklch(0.90 0.080 220);
-  --sky-400: oklch(0.75 0.150 225);
-  --sky-600: oklch(0.58 0.180 230);
-  --sky-800: oklch(0.42 0.150 235);
+  /* Mellow Yellow scale (secondary/accent — H ~90-95) */
+  --yellow-200: oklch(0.91 0.10 95);
+  --yellow-400: oklch(0.82 0.17 88);
+  --yellow-600: oklch(0.70 0.18 82);
 
-  /* Neutral scale (for dark mode foregrounds/cards) */
-  --neutral-50:  oklch(0.97 0.005 240);
-  --neutral-100: oklch(0.94 0.010 240);
-  --neutral-200: oklch(0.85 0.010 240);
-  --neutral-400: oklch(0.58 0.010 240);
-  --neutral-600: oklch(0.40 0.010 240);
-  --neutral-700: oklch(0.30 0.010 240);
-  --neutral-800: oklch(0.22 0.010 240);
-  --neutral-900: oklch(0.18 0.010 240);
+  /* Soft Navy scale (foreground text — H ~250) */
+  --navy-500: oklch(0.52 0.02 250);
+  --navy-800: oklch(0.30 0.02 250);
+  --navy-900: oklch(0.25 0.02 250);
 }

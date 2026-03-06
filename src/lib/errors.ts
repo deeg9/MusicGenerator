@@ -38,7 +38,8 @@ function isAbortError(error: unknown): boolean {
       error.name === 'AbortError' ||
       error.name === 'TimeoutError' ||
       error.message.toLowerCase().includes('aborted') ||
-      error.message.toLowerCase().includes('timeout')
+      error.message.toLowerCase().includes('timeout') ||
+      error.message.toLowerCase().includes('timed out')
     );
   }
   return false;
@@ -191,7 +192,8 @@ export function toErrorResponse(error: GenerationError): ErrorResponse {
       userMessage: error.userMessage,
     },
     debug: {
-      technicalMessage: error.technicalMessage,
+      technicalMessage:
+        process.env.NODE_ENV === 'production' ? '[redacted]' : error.technicalMessage,
     },
   };
 }

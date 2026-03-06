@@ -128,7 +128,7 @@ export async function queryJobStatus(jobId: string): Promise<JobStatusResponse> 
   const data = (await response.json()) as Record<string, unknown>;
 
   return {
-    status: (data.status as HeartMuLaStatus) ?? 'QUEUED',
+    status: ((data.status as string)?.toUpperCase() as HeartMuLaStatus) ?? 'QUEUED',
     audio_path: data.audio_path as string | undefined,
     error_msg: data.error_msg as string | undefined,
   };
