@@ -9,14 +9,14 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 
 ### Authentication
 
-- [ ] **AUTH-01**: User can sign up with email and password
-- [ ] **AUTH-02**: User receives email confirmation after sign-up (via Resend SMTP)
-- [ ] **AUTH-03**: User can log in with email and password
-- [ ] **AUTH-04**: User can reset password via email link
+- [x] **AUTH-01**: User can sign up with email and password
+- [x] **AUTH-02**: User receives email confirmation after sign-up (via Resend SMTP)
+- [x] **AUTH-03**: User can log in with email and password
+- [x] **AUTH-04**: User can reset password via email link
 - [x] **AUTH-05**: User session persists across browser refresh (cookie-based via @supabase/ssr)
-- [ ] **AUTH-06**: User can sign out
-- [ ] **AUTH-07**: Auth callback route handles email confirmation and password reset tokens
-- [ ] **AUTH-08**: Auth error page shows graceful message for expired/invalid links
+- [x] **AUTH-06**: User can sign out
+- [x] **AUTH-07**: Auth callback route handles email confirmation and password reset tokens
+- [x] **AUTH-08**: Auth error page shows graceful message for expired/invalid links
 - [ ] **AUTH-09**: Header nav shows auth state (Sign up/Login when anonymous, My Songs when authenticated)
 
 ### Song Persistence
@@ -151,14 +151,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 28 | Pending |
-| AUTH-02 | Phase 28 | Pending |
-| AUTH-03 | Phase 28 | Pending |
-| AUTH-04 | Phase 28 | Pending |
+| AUTH-01 | Phase 28 | Complete |
+| AUTH-02 | Phase 28 | Complete |
+| AUTH-03 | Phase 28 | Complete |
+| AUTH-04 | Phase 28 | Complete |
 | AUTH-05 | Phase 28 | Complete |
-| AUTH-06 | Phase 28 | Pending |
-| AUTH-07 | Phase 28 | Pending |
-| AUTH-08 | Phase 28 | Pending |
+| AUTH-06 | Phase 28 | Complete |
+| AUTH-07 | Phase 28 | Complete |
+| AUTH-08 | Phase 28 | Complete |
 | AUTH-09 | Phase 28 | Pending |
 | SONG-01 | Phase 29 | Pending |
 | SONG-02 | Phase 29 | Pending |

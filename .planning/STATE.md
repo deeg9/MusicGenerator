@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Completed 28-01-PLAN.md
-last_updated: "2026-03-07T03:12:03.240Z"
+stopped_at: Completed 28-02-PLAN.md
+last_updated: "2026-03-07T03:16:28.363Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 15
   percent: 0
 ---
 
@@ -50,6 +50,8 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 
 *Updated after each plan completion*
 | Phase 28-auth-infrastructure P01 | 10m | 3 tasks | 13 files |
+| Phase 28-auth-infrastructure P02 | 2m | 2 tasks | 10 files |
+| Phase 28-auth-infrastructure P03 | ~2 minutes | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -67,6 +69,9 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 - [Phase 28-01]: Use NEXT_PUBLIC_SUPABASE_ANON_KEY consistently across all three Supabase client files (project pre-dates Nov 2025 publishable key change)
 - [Phase 28-01]: Use getAll/setAll cookie methods (not deprecated get/set/remove) to prevent silent session failures
 - [Phase 28-01]: Wave 0 test stubs use it.todo() so Wave 2 plans inherit a passing test suite baseline
+- [Phase 28-02]: signOut exported from login/actions.ts as canonical location for HeaderClient (Plan 03) consumption
+- [Phase 28-02]: Forgot-password shows inline success state (no /sent route) — simpler UX
+- [Phase 28-02]: useTransition used for server action calls — non-blocking, no useActionState complexity
 
 ### Pending Todos
 
@@ -81,7 +86,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07T03:12:03.238Z
-Stopped at: Completed 28-01-PLAN.md
+Last session: 2026-03-07T03:16:19.043Z
+Stopped at: Completed 28-02-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 28`
