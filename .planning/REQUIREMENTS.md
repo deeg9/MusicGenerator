@@ -13,7 +13,7 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 - [ ] **AUTH-02**: User receives email confirmation after sign-up (via Resend SMTP)
 - [ ] **AUTH-03**: User can log in with email and password
 - [ ] **AUTH-04**: User can reset password via email link
-- [ ] **AUTH-05**: User session persists across browser refresh (cookie-based via @supabase/ssr)
+- [x] **AUTH-05**: User session persists across browser refresh (cookie-based via @supabase/ssr)
 - [ ] **AUTH-06**: User can sign out
 - [ ] **AUTH-07**: Auth callback route handles email confirmation and password reset tokens
 - [ ] **AUTH-08**: Auth error page shows graceful message for expired/invalid links
@@ -155,7 +155,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-02 | Phase 28 | Pending |
 | AUTH-03 | Phase 28 | Pending |
 | AUTH-04 | Phase 28 | Pending |
-| AUTH-05 | Phase 28 | Pending |
+| AUTH-05 | Phase 28 | Complete |
 | AUTH-06 | Phase 28 | Pending |
 | AUTH-07 | Phase 28 | Pending |
 | AUTH-08 | Phase 28 | Pending |

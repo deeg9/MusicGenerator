@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Phase 28 context gathered
-last_updated: "2026-03-07T02:41:10.972Z"
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-03-07T03:12:03.240Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
   completed_phases: 6
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 15
+  completed_plans: 13
   percent: 0
 ---
 
@@ -49,6 +49,7 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 | 31. Success Page + Dashboard UI | TBD | - | - |
 
 *Updated after each plan completion*
+| Phase 28-auth-infrastructure P01 | 10m | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,9 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 - [v4.2 research]: Auth upsell on success page is non-blocking inline nudge — never a modal gate, never before COMPLETED state
 - [v4.1]: Legal pages use TSX over MDX — simpler, no new dependencies
 - [v4.1]: No `@tailwindcss/typography` — write `.prose-legal` manually using existing OKLCH tokens
+- [Phase 28-01]: Use NEXT_PUBLIC_SUPABASE_ANON_KEY consistently across all three Supabase client files (project pre-dates Nov 2025 publishable key change)
+- [Phase 28-01]: Use getAll/setAll cookie methods (not deprecated get/set/remove) to prevent silent session failures
+- [Phase 28-01]: Wave 0 test stubs use it.todo() so Wave 2 plans inherit a passing test suite baseline
 
 ### Pending Todos
 
@@ -77,7 +81,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07T02:41:10.970Z
-Stopped at: Phase 28 context gathered
-Resume file: .planning/phases/28-auth-infrastructure/28-CONTEXT.md
+Last session: 2026-03-07T03:12:03.238Z
+Stopped at: Completed 28-01-PLAN.md
+Resume file: None
 Next action: `/gsd:plan-phase 28`
