@@ -52,18 +52,14 @@ Anyone can create a deeply personal, one-of-a-kind song for someone they love �
 - Remixing / editing tools — adds complexity, not core to gift service
 - Social features — not core to gift value
 
-## Current Milestone: v4.0 Testing & Optimization
+## Current Milestone: v4.1 Legal & Info Pages
 
-**Goal:** Comprehensive end-to-end testing and optimization of the entire Notevra funnel — verify every user flow works, fix all bugs, optimize performance, and harden for production readiness.
+**Goal:** Add essential legal and informational pages — Contact, Privacy Policy, and Terms of Service — tailored to Notevra as an AI music generation gift service.
 
 **Target features:**
-- Full E2E Playwright testing of all user flows
-- Backend API and generation pipeline verification
-- Bug discovery and fix pass across all pages
-- Performance optimization (load times, CWV, generation speed)
-- Error handling and edge case hardening
-- Mobile responsiveness audit and fixes
-- Pod migration to A40 (new RunPod infrastructure)
+- Contact page with email/social info display
+- Privacy Policy page covering AI-generated content, audio storage, quiz data collection
+- Terms of Service page covering usage rights, AI-generated music ownership, acceptable use
 
 ## Context
 
@@ -104,4 +100,4 @@ Anyone can create a deeply personal, one-of-a-kind song for someone they love �
 | A40 pod migration | Migrated from RTX 4090 to A40 for v4.0 testing | — Pending |
 
 ---
-*Last updated: 2026-03-06 after v4.0 milestone start*
+*Last updated: 2026-03-06 after v4.1 milestone start*
