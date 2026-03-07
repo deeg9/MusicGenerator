@@ -1,259 +1,215 @@
 # Project Research Summary
 
-**Project:** Notevra v4.1 — Legal and Informational Pages
-**Domain:** Legal compliance, trust infrastructure, and informational pages for an AI music gift service
+**Project:** Notevra v4.2 — Supabase Auth, Resend Email Delivery, Song Dashboard
+**Domain:** Authentication + transactional email + user data persistence added to an existing anonymous gift song funnel
 **Researched:** 2026-03-06
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Notevra v4.1 adds three pages — Contact, Privacy Policy, and Terms of Service — to an existing product that already works. This is not a product feature milestone; it is a trust and legal compliance milestone. The research is unambiguous: these pages must be accurate to Notevra's actual data flows, not copy-pasted from templates. The quiz collects emotionally sensitive personal information (recipient names, relationship details, personal memories), and any Privacy Policy that fails to name this data explicitly is non-compliant with CCPA 2026 (effective January 1, 2026) and GDPR. The standard "contact, privacy, terms" milestone that looks simple from the outside has meaningful legal risk concentrated in the content, not the code.
+Notevra v4.2 adds user accounts, song persistence, and gift email delivery on top of an already-shipped anonymous quiz funnel. The established pattern for this type of addition to a Next.js App Router project is: Supabase Auth with the `@supabase/ssr` package for cookie-based SSR sessions, Resend for transactional email, Drizzle ORM for the new songs table (linked to `auth.users` via a nullable `user_id` FK), and React Email for branded email templates. These choices are directly aligned with the existing stack — no new infrastructure categories are introduced. The entire addition is six new packages, six new files, and modifications to five existing files.
 
-The recommended technical approach is minimal and correct for the scope: three static Server Components using the existing Next.js App Router, a single shared `LegalLayout` prose wrapper, a custom `.prose-legal` CSS block in `globals.css` (no new typography plugin), and optionally MDX via `@next/mdx` if legal content needs to live as editable Markdown files. The Contact page should launch as a display-only page (email or social links + response time expectation + brand warmth) with no inline form — a form adds spam protection complexity and email infrastructure dependency that is not justified by current support volume. The existing Footer already has links wired to `/contact`, `/privacy`, and `/terms` — the routes just need to exist.
+The recommended approach keeps the quiz funnel entirely public and anonymous, adding auth as an opt-in upsell on the success page after the song is ready. This sequencing is critical: auth presented before generation kills funnel conversion, while auth offered after generation catches users at peak emotional investment ("post-purchase euphoria" window). The song claim mechanism — anonymous generation followed by sign-up with the song linked to the new account — is the highest-complexity integration point and must be designed into the database schema from day one. Resend domain verification must begin before any other email work since DNS propagation takes up to 48 hours.
 
-The highest-risk item in this milestone is not a line of code: it is the DMCA designated agent registration with the US Copyright Office ($6 one-time fee) that must be completed before the Terms of Service goes live. Without this registration, Notevra loses DMCA Section 512 safe harbor protection for any hosted content. The second-highest-risk item is ownership language in the ToS: AI-generated works lack copyright protection under US law as of a 2025 US Court of Appeals ruling, and any ToS that says "you own your song" without qualification is a misleading representation. Both are write-once-correctly problems, not refactor problems.
+The biggest risks are infrastructure ordering failures: starting auth implementation with the wrong Supabase package (`@supabase/auth-helpers-nextjs` instead of `@supabase/ssr`), creating the songs table without RLS enabled, and storing R2 presigned URLs in the database instead of object keys. All three produce working code at development time but broken production behavior hours or weeks later. These risks are fully mitigated by the build order documented in ARCHITECTURE.md: auth infrastructure first, database schema second, email infrastructure third, UI integration last.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The v4.1 milestone requires minimal net-new dependencies. The existing stack (Next.js 16.1.6, React 19.2.3, Tailwind CSS v4, DM Sans + Libre Baskerville, Framer Motion, Zod, lucide-react) covers everything needed for a display-only Contact page and TSX-based Privacy Policy and Terms of Service.
+The net-new packages for v4.2 are minimal: `@supabase/supabase-js` + `@supabase/ssr` for auth, `resend` + `@react-email/components` + `@react-email/render` for email. All other capabilities (Zod validation, Framer Motion, Tailwind, Drizzle, native `<form>`) are already installed. The stack is chosen for zero new infrastructure categories — Supabase is already the database provider, Resend was already selected in v4.1 for the contact form. One required config addition: `serverExternalPackages: ['@react-email/render']` in `next.config.ts` to prevent webpack bundling errors.
 
-See `.planning/research/STACK.md` for full version compatibility matrix and configuration code examples.
+See `.planning/research/STACK.md` for full version compatibility matrix, configuration code examples, and alternatives considered.
 
-**Core technologies (net-new, conditional):**
-- `@next/mdx@16.1.6` + `@mdx-js/loader@3.1.1` + `@mdx-js/react@3.1.1` + `@types/mdx`: MDX support for legal pages — compiles at build time, zero runtime cost, legal content stays in git as editable Markdown. Add only if MDX is chosen over TSX for legal content.
-- `resend@6.9.3`: Contact form email delivery — add only after Stripe payments create enough support volume to justify a form. Deferred from v4.1.
-- Native `<form>` + `useActionState` + Zod: Sufficient for a future 3-field contact form — no `react-hook-form` needed.
+**Core technologies (net-new):**
+- `@supabase/ssr` (^0.9.0): Cookie-based SSR auth sessions for Next.js App Router — the only supported package; `@supabase/auth-helpers-nextjs` is deprecated and must not be installed
+- `@supabase/supabase-js` (^2.98.0): Supabase JS client for auth API calls (`signUp`, `signInWithPassword`, `getUser`, `signOut`) — required peer dependency of `@supabase/ssr`
+- `resend` (^6.9.3): Transactional email API — same SDK already selected for contact form in v4.1; free tier covers 3,000 emails/month, 100/day
+- `@react-email/components` + `@react-email/render` (^0.0.36 / ^1.1.3): React components for branded email templates — handles cross-client HTML rendering so Notevra's gift emails render correctly in Outlook, Gmail, and Apple Mail without manual inline CSS
 
 **Do not add:**
-- `next-mdx-remote` — runtime MDX, overkill for static local files; sends MDX runtime to the client bundle
-- `contentlayer` / `contentlayer2` — effectively unmaintained since 2023
-- `@tailwindcss/typography` — fights the existing OKLCH token system; write `.prose-legal` manually in `globals.css`
-- `@react-email/components` — full email template library; a contact notification needs only a plain-text string
+- `@supabase/auth-helpers-nextjs` — officially deprecated, maintenance-only, causes silent session failures when mixed with `@supabase/ssr`
+- `next-auth` / `auth.js` — adds a second auth layer on top of Supabase Auth; unnecessary when Supabase Auth is already integrated
+- `react-hook-form` (net-new) — auth forms are 2-3 fields; Zod + `useActionState` is sufficient
+- `nodemailer` — Resend API-based approach is simpler with better deliverability
 
 ### Expected Features
 
-The feature research is high-confidence, grounded in CCPA 2026, GDPR, DMCA Section 512, and direct analysis of competitor ToS and Privacy Policies (Suno, AIVA, Boomy).
+The feature scope divides cleanly into three dependency layers: auth infrastructure (foundation), song persistence (depends on auth), and email delivery (depends on domain verification). Gift email delivery to the song recipient is Notevra's primary differentiator — no AI music competitor currently sends a personalized gift email to the person the song was made for. The auth upsell being a non-blocking inline nudge (not a modal gate) is a hard requirement driven by conversion research and the "generate first, commit second" positioning.
 
-See `.planning/research/FEATURES.md` for the full feature dependency graph, competitor analysis, and section-by-section content requirements for each page.
+See `.planning/research/FEATURES.md` for the full feature dependency graph, competitor analysis, database schema, and route table.
 
 **Must have (table stakes — P1):**
-- Contact page with email address, response time expectation ("We aim to reply within 2 business days"), and brand-warm copy
-- Privacy Policy: quiz data explicitly named as personal information, AI transparency statement, specific retention timeframes (not "as long as necessary"), named third-party processors (Vercel, RunPod, Cloudflare R2), user rights section with deletion contact mechanism
-- Terms of Service: usage license (not ownership claim), honest AI copyright disclosure, acceptable use policy, DMCA agent designation, minimum age (13+), warranty disclaimer, liability cap, "Changes to Terms" clause with Last Updated date
-- DMCA agent registered with US Copyright Office ($6 one-time action — must complete before ToS goes live)
-- Footer links to all three pages (Footer component already wired — routes just need to exist)
+- Email + password sign up and login — `signUp()` / `signInWithPassword()`; Supabase SMTP via Resend required before any auth email is reliable
+- Auth callback route at `/auth/confirm` — exchanges one-time token for session cookie; required for email confirmation and password reset
+- Password reset flow — `/auth/forgot-password`, `/auth/update-password`, confirm callback, error page
+- Middleware session refresh — non-optional for SSR; without it tokens expire and users are silently logged out
+- `songs` table with `user_id` FK and RLS policies — database foundation for all persistence features
+- Song-to-user association at generation time — `user_id` written to songs row if user is signed in; null otherwise
+- Auth upsell on success page — non-blocking inline nudge after song is ready, never before, never as a modal gate
+- Song claim on sign-up — user generates anonymously, signs up, song appears in their dashboard; requires `session_token` column on songs table from the start
+- Creator song-ready email via Resend — fires after HeartBula job completes; requires verified sending domain
+- Recipient gift delivery email via Resend — branded React Email template; creator explicitly triggers send (never auto-sent)
+- Song dashboard at `/dashboard` — protected route; lists songs with context (recipient name, relationship, date) plus playback and re-download via fresh R2 presigned URLs
+- Header auth-aware nav — "My Songs" link when signed in, "Sign up / Log in" when anonymous
 
 **Should have (differentiators — P2):**
-- Plain-language Privacy Policy under 1,000 words (vs. competitor boilerplate from Termly or iubenda)
-- Proactive AI transparency statement naming ACE-Step 1.5 and explicitly stating user data is not used for training
-- Warm, brand-aligned Contact page copy in Libre Baskerville
-- Social links on Contact page if Notevra brand accounts exist
+- Warm brand-consistent React Email templates — baby blue + yellow brand treatment; emotionally significant touchpoint for recipients
+- Gift email includes quiz message — Step 5 message from the quiz in the recipient email body; high emotional impact at no additional engineering cost
+- Dashboard song context (recipient name, relationship, date) — turns dashboard from file list into meaningful gift archive
+- Recipient email field with privacy framing — "We'll send them a private link — no marketing, ever." One sentence of microcopy; critical for conversion
 
-**Defer (v4.x or later):**
-- Contact form with backend — add when Resend is integrated for order delivery (post-Stripe payments)
-- Cookie consent banner — add only when analytics are introduced; not needed for v4.1 (no analytics cookies, localStorage is not a cookie)
-- Commercial use tier in ToS — add with Stripe payments and commercial licensing
-- Binding arbitration clause — add with payments; requires a click-through acceptance mechanism to be enforceable
-- Automated data deletion tooling — add with Supabase Auth and user accounts
+**Defer (v4.x+):**
+- Google/GitHub OAuth — add after email+password is validated; social login adds OAuth provider complexity and account-linking edge cases
+- Public song sharing URLs — requires permanent R2 storage, CDN, and URL management; gift email IS the sharing mechanism for v4.2
+- In-dashboard song regeneration — quiz is public; link back to quiz instead
+- Gift scheduling ("send on her birthday") — requires queued email infrastructure
 
 ### Architecture Approach
 
-All three pages are static Server Components with zero client-side JavaScript for page content. They inherit the root layout's Header and Footer automatically — no layout changes required. The only new shared component is `LegalLayout`, a prose wrapper that takes `title` and `lastUpdated` props and applies a `.prose-legal` CSS class. This CSS block is defined once in `globals.css` under `@layer components` using existing OKLCH design tokens — no typography plugin, no override configuration.
+The architecture adds auth as a cross-cutting concern via middleware that runs on every non-static request, using cookie-based sessions managed by `@supabase/ssr`. Two Supabase client factories — `src/lib/supabase/server.ts` and `src/lib/supabase/client.ts` — serve server and browser contexts respectively. The songs table lives in Supabase's `public` schema with a nullable `user_id` FK to `auth.users` (declared via Drizzle's `pgSchema('auth')` proxy). RLS policies are written in raw SQL migrations, not managed by Drizzle. Email sends originate from the client-side success page via POST to two dedicated API routes — fire-and-forget, never blocking song playback. The dashboard is a pure Server Component auth guard pattern.
 
-See `.planning/research/ARCHITECTURE.md` for full directory structure, annotated code examples for LegalLayout, `.prose-legal`, and the static metadata export pattern, plus anti-pattern documentation.
+See `.planning/research/ARCHITECTURE.md` for full directory structure, data flow diagrams, annotated code examples for all six patterns, and build order.
 
 **Major components:**
-1. `src/components/LegalLayout.tsx` — Shared prose wrapper: max-width container (`max-w-3xl`), page `<h1>` rendered from `title` prop, `lastUpdated` date in header, `.prose-legal` children slot. Server Component, no state, no hooks.
-2. `src/app/contact/page.tsx` — Contact page: display-only Server Component, `mailto:` link or social links + response time copy + brand-warm headline
-3. `src/app/privacy/page.tsx` — Privacy Policy: Server Component, `<article>` outer wrapper, `<section aria-labelledby>` per major section, `id` attributes on all `<h2>` elements for anchor navigation
-4. `src/app/terms/page.tsx` — Terms of Service: same semantic structure as Privacy Policy; cross-references Privacy Policy
-5. `.prose-legal` CSS block in `globals.css` — Styles `h2`, `h3`, `p`, `ul`, `ol`, `a` inside legal prose using `var(--font-libre)`, `var(--foreground)`, `var(--navy-800)`, `var(--blue-500)` (all confirmed present in `src/app/tokens/primitives.css`)
-
-**Build order (dependency-ordered):** `.prose-legal` in `globals.css` → `LegalLayout.tsx` → `contact/page.tsx` → `privacy/page.tsx` → `terms/page.tsx`. Each step depends on the previous. Validate Footer link resolution after Contact page (the first new route).
+1. `src/middleware.ts` (NEW) — Supabase session refresh on every non-static request; protects `/dashboard` only using a protect-list pattern; quiz funnel stays entirely public
+2. `src/lib/supabase/client.ts` + `server.ts` (NEW) — split Supabase client factories; server client for Server Components + API routes; browser client for Client Components
+3. `src/db/schema.ts` (MODIFY) — `songs` table with `user_id`, `session_token`, `recipient_name`, `relationship`, `genre`, `audio_r2_key`, `expires_at`; `user_id` nullable for pre-signup generation; FK via `pgSchema('auth')` proxy
+4. `src/lib/emails/` (NEW) — React Email templates `SongReadyEmail.tsx` and `GiftDeliveryEmail.tsx` with Notevra brand OKLCH tokens
+5. `/auth/*` routes (NEW) — sign-up, login, forgot-password, update-password, confirm callback (Route Handler), error page
+6. `src/app/dashboard/` (NEW) — protected Server Component; reads songs via Drizzle; generates fresh R2 presigned URLs at load time; `SongCard` co-located in `_components/`
+7. `/api/send-creator-email/` + `/api/send-recipient-email/` (NEW) — Resend API routes; fire-and-forget from success page client
+8. Success page additions (MODIFY) — `AuthPrompt` (inline, non-blocking) + `RecipientEmailForm` + email trigger calls after song is in `COMPLETED` state
 
 **Key anti-patterns to avoid:**
-- `'use client'` on legal pages — breaks `metadata` export, forces content into JS bundle, eliminates static rendering
-- Per-route `layout.tsx` for prose wrapper — introduces unnecessary route group complexity; import `LegalLayout` directly in each page instead
-- `@tailwindcss/typography` — requires extensive overrides to match OKLCH tokens; `.prose-legal` block is 20 lines and uses existing variables directly
+- `getSession()` in server code — reads cookie without revalidating JWT; can be spoofed; always use `getUser()`
+- Middleware without the `config.matcher` — runs on static assets, produces 400 errors, inflates Supabase quota
+- Middleware that redirects unauthenticated users from all routes — destroys the anonymous quiz funnel; use a protect-list targeting `/dashboard` only
+- Storing R2 presigned URLs in the database — they expire; store object keys and generate URLs on demand
+- `middleware.ts` placed inside `src/app/` — silently ignored by Next.js; must be at `src/middleware.ts`
 
 ### Critical Pitfalls
 
-See `.planning/research/PITFALLS.md` for all 11 pitfalls with warning signs, "Looks Done But Isn't" checklist, and recovery strategies.
+See `.planning/research/PITFALLS.md` for all 13 pitfalls with warning signs, "Looks Done But Isn't" checklist, recovery strategies, and phase-to-pitfall mapping.
 
-**Top pitfalls requiring immediate attention during content writing:**
+**Top pitfalls requiring prevention from the first commit:**
 
-1. **Privacy Policy omits quiz data as personal information** — Relationship details, recipient names, personal memories, and heartfelt messages are personal information under CCPA and GDPR. The policy must name them explicitly and describe their emotional sensitivity. Avoid: treating quiz answers as "anonymous session data." The policy must also explicitly state quiz data is NOT used for AI training.
+1. **Installing `@supabase/auth-helpers-nextjs`** — that package is deprecated. Install only `@supabase/ssr`. Mixing both causes silent session failures that are difficult to diagnose. Verify `package.json` on first commit.
 
-2. **ToS claims "you own your song" without qualification** — US law as of March 2025 does not grant copyright protection to AI-generated works. "You own your song" is a misleading representation that creates liability if users rely on it commercially. Use: "Notevra grants you a worldwide, royalty-free license to use, share, and download your song. We do not claim ownership. Because songs are AI-generated, they may not qualify for copyright protection under current US law." Do not copy Suno's ToS — they updated it in November 2025 after a Warner Music Group settlement.
+2. **Using `getSession()` in server code** — reads the session cookie without revalidating the JWT; any page protected with `getSession()` can be bypassed by a crafted cookie. Use `getUser()` exclusively in middleware and Server Components.
 
-3. **DMCA agent not registered before ToS goes live** — DMCA Section 512 safe harbor requires a registered designated agent at copyright.gov ($6). Without this, Notevra is exposed to full DMCA liability. This is a one-time action and a hard dependency for ToS publication — it must happen before the page ships.
+3. **Middleware runs on static assets** — without `config.matcher`, auth runs on every image and JS asset, producing 400 errors and inflating Supabase Auth request quotas. Add the matcher before any other middleware logic.
 
-4. **Vague data retention language ("as long as necessary")** — CPRA (active enforcement 2025-2026) requires specific retention periods for each data category. State concrete timeframes: generated audio deleted after 30 days (or chosen number); quiz answers not stored server-side beyond generation; Vercel logs per Vercel's standard policy.
+4. **Middleware redirects the quiz funnel** — a blanket "redirect if not authenticated" breaks Notevra's core value proposition. Only protect `/dashboard` explicitly.
 
-5. **Contact page exposes founder email in plain HTML source** — `href="mailto:hello@notevra.com"` in plain text is harvested by scrapers within weeks of launch. For v4.1, the recommended approach is social-links-only contact (if accounts exist) or a displayed email with HTML entity encoding as a minimum partial mitigation. A Resend-based form that abstracts the real address is the proper solution but is deferred.
+5. **RLS disabled on songs table** — Supabase tables default to RLS off. Enable RLS and write policies in the same migration that creates the table. Never as a separate step.
+
+6. **R2 presigned URLs stored instead of object keys** — works at development time; produces 403 errors days later when URLs expire. Store `audio_r2_key` (object path); presign at read time.
+
+7. **Anonymous song not claimable after sign-up** — the primary acquisition path fails if there is no claim mechanism. Requires `session_token` column in songs table from schema design. Add it before writing any migration.
+
+8. **Resend domain verification not started early** — DNS propagation takes 24-48 hours. Start verification before writing any email code.
 
 ## Implications for Roadmap
 
-Based on combined research, the milestone maps naturally to six sequential phases ordered by dependency chain. Legal content and non-code decisions must be made before implementation begins. Non-code actions (DMCA registration, email address decision, retention period decision) are blocking dependencies for specific phases.
+Based on combined research, the milestone sequences into four phases driven by strict dependency ordering. Auth infrastructure is a prerequisite for everything. Database schema is a prerequisite for song persistence and the dashboard. Email domain verification is a prerequisite for all email features. Success page surgery — the most complex existing-file change — comes last after all its dependencies are verified working.
 
-### Phase 1: Content Decisions and Non-Code Prerequisites
+### Phase 1: Auth Infrastructure
 
-**Rationale:** Non-code decisions and legal content must be locked before implementation begins. Writing legal text after building the page structure leads to rework if the content drives layout changes. DMCA registration must happen before the ToS route is deployed. This phase is short (2-4 hours of work) but unlocks everything downstream.
+**Rationale:** Foundation for all v4.2 features. No other phase can proceed without a working auth layer. Establishes the correct `@supabase/ssr` package from the first commit. All new files, one env change — no modifications to existing production paths.
+**Delivers:** Working email+password sign-up, login, password reset, session middleware with correct protect-list, auth callback route handler, error page. Full auth round-trip verified before any UI is built on top. Email confirmation disabled for v4.2 (re-enable procedure documented for the payments milestone).
+**Addresses:** Sign up, login, email confirmation flow, password reset, session persistence, protected route infrastructure, auth error page, header auth state.
+**Avoids:** Deprecated package pitfall (Pitfall 1), `getSession()` pitfall (Pitfall 2), static asset matcher pitfall (Pitfall 3), quiz funnel breakage (Pitfall 4), email confirmation UX conversion loss (Pitfall 7), PKCE signout bug (Pitfall 8).
+**Research flag:** No additional research needed. Supabase Auth SSR patterns are thoroughly documented in official docs and verified in this research with working code samples.
 
-**Delivers:** DMCA designated agent registered at copyright.gov ($6), contact email address decided and monitored, audio retention period decided (concrete number for R2 lifecycle rule and Privacy Policy), contact mechanism decided (display-only vs. form with Resend), social media account status confirmed, final legal text drafted for all three pages.
+### Phase 2: Database Schema + Song Persistence
 
-**Addresses:** DMCA registration (hard dependency for ToS launch), data retention period decision, contact mechanism decision (affects Contact page implementation approach), email address operational decision.
+**Rationale:** Songs table design is the second-hardest decision in the milestone. Must be decided before any UI that reads or writes songs. Schema is a prerequisite for the dashboard, the generation pipeline modification, and the song claim feature.
+**Delivers:** `songs` table with all required columns including `session_token` for the claim flow, RLS policies, Drizzle schema update with `pgSchema('auth')` proxy, raw SQL migration, `user_id` index. Generation pipeline (`quiz-generate` route) modified to insert a songs row on successful job creation.
+**Addresses:** Song-to-user association, song claim on sign-up (via `session_token` column), secure schema (RLS enabled, correct FK to `auth.users` with `ON DELETE CASCADE`, nullable `user_id` for anonymous generation, R2 key storage not presigned URLs).
+**Avoids:** RLS disabled pitfall (Pitfall 6), wrong FK schema pitfall (Pitfall 11), presigned URL storage pitfall (Pitfall 12), unclaimed songs pitfall (Pitfall 5).
+**Research flag:** No additional research needed. Drizzle `pgSchema('auth')` pattern, RLS policy syntax, FK constraint format, and schema field list are all confirmed and fully specified in FEATURES.md and ARCHITECTURE.md.
 
-**Avoids:** Pitfall 3 (DMCA agent missing at launch), Pitfall 5 (vague retention language — must decide the number before writing the policy), Pitfall 7 (contact form spam — decide static vs. form before building anything).
+### Phase 3: Email Infrastructure + Resend Integration
 
-**Research flag:** No additional code research needed. Content writing guidance is fully documented in FEATURES.md (section-by-section requirements for all three pages). The legal text itself requires thoughtful writing against actual Notevra data flows — not code research.
+**Rationale:** Resend domain verification must start as early as possible due to DNS propagation time. Separating email infrastructure from the success page UI phase allows email to be built and tested independently before it is wired into the primary user journey.
+**Delivers:** Verified sending domain in Resend, Resend configured as Supabase SMTP provider (required for all auth emails including confirmation and password reset), `SongReadyEmail` + `GiftDeliveryEmail` React Email templates with Notevra brand tokens, `/api/send-creator-email` and `/api/send-recipient-email` route handlers, `serverExternalPackages` config addition to `next.config.ts`.
+**Addresses:** Creator song-ready email, recipient gift delivery email, Resend SMTP as Supabase auth email provider, branded email templates.
+**Avoids:** Unverified domain pitfall (Pitfall 9), silent Resend error drops (Pitfall 10 — every `resend.emails.send()` must destructure `{ data, error }`), Supabase built-in SMTP rate limit (2 emails/hour — inadequate for production).
+**Research flag:** No additional research needed. Resend + React Email integration is confirmed in official docs. Domain setup procedure and DNS record format are fully specified in PITFALLS.md.
 
----
+### Phase 4: Success Page + Dashboard UI
 
-### Phase 2: Shared Infrastructure
-
-**Rationale:** CSS and shared component must exist before any page can be built. Two files, zero page routes, validates the design system works for prose content at the typography level.
-
-**Delivers:** `.prose-legal` CSS block added to `globals.css` under `@layer components`, `src/components/LegalLayout.tsx` Server Component with `title`, `lastUpdated` props and semantic `<article>` wrapper.
-
-**Uses:** Existing OKLCH design tokens (`var(--font-libre)`, `var(--foreground)`, `var(--navy-800)`, `var(--blue-500)`) — all confirmed present in `src/app/tokens/primitives.css`.
-
-**Implements:** Architecture Pattern 2 (LegalLayout) and Pattern 3 (.prose-legal). Validates prose typography in isolation before any page ships.
-
-**Avoids:** Anti-Pattern 3 (adding `@tailwindcss/typography`), Anti-Pattern 1 (`'use client'` on the wrapper component).
-
-**Research flag:** Standard patterns. All code examples are documented in ARCHITECTURE.md. No additional research needed.
-
----
-
-### Phase 3: Contact Page
-
-**Rationale:** Contact page is the shortest-content page and the first to validate that new routes resolve, Footer links work, and LegalLayout renders correctly end-to-end. Ship this first to test the integration before committing to long-form legal page content. Contact mechanism decision (from Phase 1) drives implementation approach.
-
-**Delivers:** `/contact` route, Footer link resolution confirmed, brand-warm contact display (email or social links + response time expectation in Libre Baskerville heading).
-
-**Uses:** `LegalLayout`, lucide-react icons (already installed), `mailto:` link or social media links per Phase 1 decision.
-
-**Avoids:** Pitfall 7 (spam vector — display-only, no form), Pitfall 10 (email exposed in plain HTML — use social links or entity encoding).
-
-**Research flag:** Standard patterns. Display-only Server Component, zero complexity. No additional research needed.
-
----
-
-### Phase 4: Privacy Policy Page
-
-**Rationale:** Privacy Policy is the longest page with the most legal risk. It depends on Phase 1 content decisions (data inventory, retention periods, third-party processor list). Building it after Contact validates the prose rendering at scale and confirms LegalLayout handles long-form content correctly.
-
-**Delivers:** `/privacy` route with complete CCPA 2026 and GDPR-compliant content: quiz data named as personal information, AI transparency statement, concrete retention periods, named third-party processors, user rights section with deletion contact mechanism, children's privacy section.
-
-**Uses:** `LegalLayout`, `<section aria-labelledby="...">` per major section, `id` attributes on `<h2>` headings for anchor navigation, `<article>` outer wrapper.
-
-**Avoids:** Pitfall 1 (quiz data omitted), Pitfall 5 (vague retention), Pitfall 6 (emotional sensitivity of memory/message data not acknowledged), Pitfall 9 (accessibility — heading hierarchy + contrast requirements).
-
-**Research flag:** No code research needed. Content requirements are fully specified in FEATURES.md ("Privacy Policy — Sections Required"). Architecture patterns are identical to Contact Page.
-
----
-
-### Phase 5: Terms of Service Page
-
-**Rationale:** ToS depends on the ownership/license position finalized in Phase 1 and the DMCA agent registered (also Phase 1). It cross-references the Privacy Policy. Building it after Privacy Policy ensures Privacy Policy is final before ToS points to it.
-
-**Delivers:** `/terms` route with complete ToS: usage license (not ownership claim), honest AI copyright disclosure with ACE-Step model reference, acceptable use policy, DMCA agent designation (with registered agent name and email), minimum age (13+), warranty disclaimer, liability cap, "Changes to Terms" clause with Last Updated date, indemnification clause.
-
-**Uses:** `LegalLayout`, same semantic HTML structure as Privacy Policy.
-
-**Avoids:** Pitfall 2 (unsupportable ownership claim), Pitfall 3 (ACE-Step training data indemnification gap), Pitfall 4 (COPPA age clause missing), Pitfall 11 ("Changes to Terms" clause omitted).
-
-**Research flag:** No code research needed. Content requirements fully specified in FEATURES.md ("Terms of Service — Sections Required"). The DMCA agent registration from Phase 1 provides the designated agent contact to include.
-
----
-
-### Phase 6: SEO, Sitemap, and Accessibility Verification
-
-**Rationale:** Verification phase, not a build phase. Easy to ship legal pages and discover weeks later they are de-indexed or fail accessibility audits. Making verification explicit prevents the "looks done but isn't" failure modes documented in PITFALLS.md.
-
-**Delivers:** All three routes added to `sitemap.ts` with `priority: 0.3` and `changeFrequency: 'monthly'`, `robots.ts` confirmed to not block any legal page path, `curl -I` verification that no `X-Robots-Tag: noindex` header is returned for each page in production, Lighthouse accessibility audit >= 90 on each page, heading hierarchy verified with axe or browser DevTools.
-
-**Avoids:** Pitfall 8 (legal pages accidentally noindexed or excluded from sitemap), Pitfall 9 (accessibility failures — heading order violations, contrast below 4.5:1).
-
-**Research flag:** Standard patterns. If `sitemap.ts` does not already exist in the codebase, check current state before writing new patterns — ARCHITECTURE.md assumes it exists; verify during Phase 6 execution. No pre-planning research needed.
-
----
+**Rationale:** Comes last because it depends on all prior phases: auth routes (for sign-up flow), songs table (for persistence), and email API routes (to wire triggers). The success page is the most complex existing-file change — it touches the primary user journey. The dashboard is the user-facing payoff for having an account.
+**Delivers:** Non-blocking inline `AuthPrompt` on success page (below audio player, after song is in COMPLETED state, never a modal gate), song claim flow wired to sign-up via `session_token` in localStorage, `RecipientEmailForm` with privacy microcopy, email send triggers for both API routes, `/dashboard` page with song list + playback + re-download (fresh R2 presigned URLs), `SongCard` component with recipient context, header updated with auth-aware nav, sign-out server action.
+**Addresses:** Auth upsell (non-blocking inline), song claim on sign-up, recipient email capture + gift send (creator-triggered), song dashboard (playback, re-download, song context), header auth state.
+**Avoids:** Auth prompt as blocking modal (Pitfall 13), auth prompt shown before song is ready (UX pitfall), gift email auto-sent before creator review (UX pitfall), dashboard redirect without explanation (UX pitfall).
+**Research flag:** No additional research needed. All patterns are established. One minor implementation decision for Header auth state (keep as `'use client'` with `useEffect` vs. extract server `UserNav` wrapper) — both options are documented in ARCHITECTURE.md; resolve during Phase 4 planning.
 
 ### Phase Ordering Rationale
 
-- **Content before code:** Legal content drives implementation details (section structure, anchor IDs, cross-references between Privacy Policy and ToS). Writing content first avoids rework.
-- **Non-code actions are blocking dependencies:** DMCA registration, email address decision, and retention period decision are all Phase 1 blocking items. Phases 4 and 5 cannot be completed accurately without them.
-- **Contact page before legal pages:** Shortest content, fastest validation of route + LegalLayout + Footer integration. Any structural issue with LegalLayout surfaces on the simplest page first.
-- **Privacy Policy before ToS:** ToS cross-references Privacy Policy. ToS also depends on the data inventory finalized during Privacy Policy writing.
-- **Verification as its own phase:** SEO and accessibility checks are consistently skipped when embedded in page-build phases. Making them an explicit phase prevents the "looks done but isn't" failure mode.
+- Auth must come first because `auth.uid()` is required by every other feature: RLS policies, songs FK, session-gated dashboard.
+- Schema must come second because it references `auth.users` and the generation pipeline must insert songs rows before the success page expects them to exist.
+- Email infrastructure is a separate phase from UI because DNS propagation is calendar-time, not engineering-time. Starting it in Phase 3 allows one full planning cycle for propagation before Phase 4 wires up the email triggers.
+- The success page is last because it is the highest-risk existing-file modification, and all its dependencies should be verified independently before surgery is performed on the primary user journey.
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **None identified.** This milestone is well-documented. Code patterns are established (Next.js App Router static Server Components). Legal content requirements are specified in detail in FEATURES.md. The only unknowns are operational decisions (email address, retention period, DMCA agent identity) that belong to Phase 1 planning, not code research.
-
-Phases with standard patterns (skip research-phase):
-- **All phases (2-6):** Next.js static Server Components, `export const metadata`, `@layer components` CSS, and Playwright sitemap/robots verification are all officially documented patterns. ARCHITECTURE.md provides ready-to-use code examples for every component.
+Phases with standard patterns (no additional research needed during planning):
+- **Phase 1 (Auth Infrastructure):** All patterns (middleware, client factories, callback handler, PKCE, email confirmation toggle) are verified in this research with code samples ready to use.
+- **Phase 2 (Database Schema):** Drizzle + Supabase FK pattern confirmed. RLS policy syntax confirmed. Schema design is complete in FEATURES.md.
+- **Phase 3 (Email):** Resend + React Email integration confirmed in official docs. No unresolved questions.
+- **Phase 4 (Success Page + Dashboard):** All patterns established. Header architecture decision is documented with both options in ARCHITECTURE.md.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Versions verified against live npm registry. `@next/mdx` version-locked to Next.js 16.1.6. Resend free tier pricing cited from official blog — verify current limits at resend.com/pricing before use. |
-| Features | HIGH | CCPA 2026, GDPR, DMCA Section 512, COPPA 2025 all verified against official regulatory sources. US copyright ruling (March 2025) confirmed via multiple sources including US Copyright Office guidance. Competitor ToS/Privacy analysis direct from live Suno and AIVA documents. |
-| Architecture | HIGH | Verified directly against codebase: `layout.tsx`, `Footer.tsx`, `globals.css`, `tokens/primitives.css` all inspected. Footer links confirmed already wired to `/contact`, `/privacy`, `/terms`. OKLCH tokens confirmed available for `.prose-legal`. |
-| Pitfalls | HIGH | Legal compliance pitfalls grounded in FTC, CPRA, US Copyright Office guidance, and active 2025-2026 enforcement precedents (Suno Warner settlement Nov 2025, CPRA enforcement ramp-up). Technical pitfalls grounded in actual codebase inspection. |
+| Stack | HIGH | All package versions verified against npm registry on 2026-03-06. Official Supabase docs confirmed updated for Next.js 16. React Email webpack config requirement confirmed independently via official GitHub issues and multiple community sources. |
+| Features | HIGH | All features verified against official Supabase UI docs (complete route list for password-based auth), Resend SMTP docs, and Supabase RLS docs. UX recommendations (post-conversion auth upsell, non-blocking prompt) supported by multiple conversion research sources. |
+| Architecture | HIGH | Architecture research includes direct inspection of the existing codebase. All patterns include working code samples from official docs. Build order is informed by actual file dependency analysis of the current project structure. |
+| Pitfalls | HIGH | All 13 critical pitfalls verified against official Supabase docs, GitHub issue tracker (specific issue numbers cited for known bugs), and npm package status. RLS default-off behavior and deprecated-package pitfalls are documented in Supabase's own troubleshooting guide. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Contact email address:** The actual support email (`hello@notevra.com` or `support@notevra.com`) is an operational decision that must be made in Phase 1. It appears in three places — Privacy Policy (user rights section), Terms of Service (DMCA agent contact), and Contact page — and must be consistent. The inbox must be actively monitored before any page goes live.
+- **Header component implementation decision:** `Header.tsx` is currently `'use client'` due to mobile menu state. Two approaches for adding server-side auth state are documented in ARCHITECTURE.md — resolve during Phase 4 planning, not research.
 
-- **Audio retention period:** "30 days" is suggested in research as a reasonable default for generated audio in Cloudflare R2. The actual decision must be made in Phase 1 and implemented as an R2 lifecycle rule. The Privacy Policy must state the exact same number that the lifecycle rule enforces. Mismatch between stated and actual retention is a compliance risk.
+- **Email confirmation toggle:** Disabling email confirmation for v4.2 is the correct call per PITFALLS.md (Pitfall 7). The procedure to re-enable it when payments are added (v5+) should be documented during Phase 1 so it is not forgotten.
 
-- **DMCA agent identity:** The designated agent can be the founder's name and email. This must be decided and registered at copyright.gov before Phase 5 (ToS). The agent's name and contact email are required content in the ToS DMCA section.
+- **PKCE password reset cross-device UX:** PKCE reset links are browser-session-bound. The UI must warn users to click the reset link on the same device. Copy for this warning should be decided during Phase 1 planning.
 
-- **Social media accounts for Contact page:** If Notevra brand accounts (Instagram, X/Twitter) exist, include them on the Contact page. If they do not exist, the Contact page falls back to email-only or uses HTML entity encoding as a partial spam mitigation. Confirm account status in Phase 1.
+- **R2 presigned URL expiration in gift emails:** Gift emails are forwarded and opened days later. URL expiration in email must be set to 7-30 days — but must not exceed the 30-day R2 object lifetime (current Notevra policy). Enforce this constraint during Phase 3 template implementation.
 
-- **MDX vs. TSX decision:** Research recommends `@next/mdx` if legal content needs to be editable without touching React code. If only a developer will edit these files, plain TSX avoids the MDX configuration step. This is a preference call — make it before Phase 2 to avoid mid-milestone dependency installation.
-
-- **Resend free tier limits (if form is ever added):** Research cites 3,000 emails/month, 100/day from an official blog post. Verify current limits at resend.com/pricing before adding `resend` to a future milestone.
+- **Resend free tier rate limits:** 100 emails/day hard limit on free plan. If launch volume exceeds this, upgrade to Resend Pro (~$20/month for 50k emails). Not a code change — operational decision to track post-launch.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-
-- Next.js App Router documentation — https://nextjs.org/docs/app — Server Components, metadata export, static rendering
-- Next.js metadata API reference — https://nextjs.org/docs/app/api-reference/functions/generate-metadata
-- Next.js MDX guide — https://nextjs.org/docs/app/guides/mdx — `@next/mdx` App Router setup, `pageExtensions`, `mdx-components.tsx`
-- npm registry — `@next/mdx` 16.1.6, `@mdx-js/loader` 3.1.1, `@mdx-js/react` 3.1.1, `resend` 6.9.3 (live registry, 2026-03-06)
-- Resend docs — https://resend.com/docs/send-with-nextjs — Server Actions integration
-- CCPA 2026 / CPRA requirements — SecurePrivacy, DLA Piper — specific retention disclosure requirements effective January 1, 2026
-- DMCA Section 512 — https://www.copyright.gov/512/ — safe harbor, designated agent registration
-- US Copyright Office AI and Copyright — https://www.copyright.gov/ai/ — human authorship requirement
-- US Court of Appeals AI copyright ruling (March 2025) — confirmed via Soundverse report and US Copyright Office 2025 report
-- COPPA 2025 rule update — FTC official rule, Federal Register (effective 2025-04-22)
-- Cloudflare R2 Data Security — https://developers.cloudflare.com/r2/reference/data-security/ — customer data isolation confirmation
-- Suno Terms of Service — https://suno.com/terms — direct analysis (post-Warner settlement version)
-- Suno Privacy Policy — https://suno.com/privacy — direct analysis
-- Codebase inspection — `src/app/layout.tsx`, `src/components/Footer.tsx`, `src/app/globals.css`, `src/app/tokens/primitives.css` — all inspected directly
+- https://supabase.com/docs/guides/auth/server-side/nextjs — `@supabase/ssr` setup, middleware pattern, `getUser()` vs `getSession()` security distinction
+- https://supabase.com/docs/guides/auth/server-side/creating-a-client — `createServerClient`, `createBrowserClient` factory patterns with cookie handling
+- https://supabase.com/docs/guides/auth/quickstarts/nextjs — env var names including new `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` format
+- https://supabase.com/ui/docs/nextjs/password-based-auth — complete route list: sign-up, login, forgot-password, update-password, confirm, error
+- https://supabase.com/docs/guides/database/postgres/row-level-security — RLS policy syntax, `WITH CHECK`, testing methodology
+- https://supabase.com/docs/guides/auth/managing-user-data — `auth.users` FK pattern, `ON DELETE CASCADE`
+- https://resend.com/docs/send-with-nextjs — Server Actions pattern, `{ data, error }` response handling
+- https://resend.com/docs/send-with-supabase-smtp — SMTP integration for Supabase Auth email delivery (host, port, credentials)
+- https://resend.com/docs/knowledge-base/account-quotas-and-limits — rate limits (2 req/s), daily quota (100/day), monthly quota (3,000/month)
+- npm registry: `@supabase/ssr@0.9.0`, `@supabase/supabase-js@2.98.0`, `resend@6.9.3`, `@react-email/components@0.0.36`, `@react-email/render@1.1.3` — all verified 2026-03-06
 
 ### Secondary (MEDIUM confidence)
-
-- Suno ToS analysis post-Warner settlement (Nov 2025) — Medium article; confirms updated ownership language; use as cautionary reference, not template
-- AIVA licensing terms helpdesk — free vs. paid copyright ownership tiers
-- Resend pricing blog — 3,000 emails/month free tier; date of blog post not confirmed current
-- WebSearch — contentlayer maintenance status — consistent community consensus on abandonment since 2023
-- Contact page best practices — SaasFrame, Prosper Marketing; form field count and conversion benchmarks
-- WCAG 2.1 Level AA — accessibility baseline for legal long-form text
+- https://orm.drizzle.team/docs/tutorials/drizzle-with-supabase — `pgSchema('auth')` proxy for FK to `auth.users`
+- https://github.com/orgs/supabase/discussions/27426 — Drizzle + `auth.users` FK without `.references()` in schema definition
+- https://github.com/orgs/supabase/discussions/29260 — publishable key vs anon key transition, backward compatibility
+- https://github.com/resend/react-email/issues/977 — `serverExternalPackages` requirement for `@react-email/render` with Next.js webpack
+- https://github.com/supabase/ssr/issues/55 — PKCE code verifier cookie lost after `signOut()` (known bug, documented workaround)
+- https://github.com/orgs/supabase/discussions/22377 — anonymous-to-authenticated data linking patterns
+- https://github.com/orgs/supabase/discussions/28655 — PKCE password reset same-browser limitation
+- https://passionates.com/one-click-post-purchase-upsell-landing-page/ — post-conversion auth upsell timing ("post-purchase euphoria" window)
 
 ### Tertiary (LOW confidence)
-
-- ACE-Step training data provenance ("professionally licensed tracks, public domain music, MIDI-to-audio synthetic data") — from ACE-Step GitHub and HuggingFace model card; sufficient basis for ToS disclaimer language, not independently verified against original dataset documentation
+- Community sources confirming `@react-email/render` + Next.js 15-16 `serverExternalPackages` fix — consistent across multiple community posts; underlying cause confirmed in official issue tracker
 
 ---
 *Research completed: 2026-03-06*

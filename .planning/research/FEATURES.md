@@ -1,16 +1,24 @@
 # Feature Research
 
-**Domain:** Legal and informational pages for an AI music generation gift service (Contact, Privacy Policy, Terms of Service)
+**Domain:** Auth, email delivery, and song dashboard for an AI-generated song gift service (Next.js App Router)
 **Researched:** 2026-03-06
-**Confidence:** HIGH (Privacy/ToS requirements verified against official CCPA/GDPR sources, Suno ToS/Privacy analysis, US Copyright Office guidance, and Cloudflare R2 documentation. Contact page patterns from SaaS industry data and competitor analysis.)
+**Confidence:** HIGH (Supabase Auth patterns verified against official docs and Supabase UI docs. Resend SMTP integration confirmed via official Resend documentation. RLS patterns confirmed against Supabase official docs. UX patterns informed by multiple SaaS auth conversion studies and gift/delivery service analysis.)
 
 ---
 
 ## Context: What Already Exists
 
-Notevra v3.0 ships with: landing page, 6-step quiz funnel, AI generation pipeline (ACE-Step 1.5 on RunPod A40), success page with confetti + audio playback + download, header + footer navigation. No auth, no payments. This milestone (v4.1) adds three legal/informational pages.
+Notevra v3.0 ships: landing page, 6-step quiz funnel with Zod validation, quiz-to-prompt conversion, HeartBula generation on RunPod A40, Cloudflare R2 audio storage, and a success page with confetti + native audio playback + MP3 download. No auth, no email, no server-side user data. v4.1 shipped legal pages (Contact, Privacy Policy, ToS).
 
-**New pages:** Contact, Privacy Policy, Terms of Service.
+**This milestone (v4.2)** adds: Supabase Auth (email+password), auth upsell on success page, song-to-user association, Resend transactional emails (creator + recipient), and a user song dashboard.
+
+**Existing flow:** Landing page → 6-step quiz → HeartBula generation (~7s) → Success page (confetti + playback + download)
+
+**New flow additions:**
+- Success page gains auth upsell ("Sign up to save your song + send it as a gift")
+- Auth upsell triggers sign-up modal or redirect → email confirmation → song saved to account
+- Success page also gains recipient email capture → triggers gift delivery email via Resend
+- Authenticated users can access `/dashboard` to see past songs with playback + re-download
 
 ---
 
@@ -18,113 +26,165 @@ Notevra v3.0 ships with: landing page, 6-step quiz funnel, AI generation pipelin
 
 ### Table Stakes (Users Expect These)
 
-Features that users and legal compliance require. Missing these = product feels incomplete or legally exposed.
+Features users assume exist in any authenticated gift service. Missing these makes the product feel broken or untrustworthy.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Contact page with support email | Users need a channel to report issues or ask questions. 51% of website visitors leave if contact info is hard to find (HubSpot industry data). Gift service users may have emotional stakes — support access builds trust. | LOW | Display `hello@notevra.com` or similar as a mailto link. No backend form required for v4.1 given zero auth and low traffic volume. |
-| Privacy Policy page | Required by GDPR (EU users), CCPA (California users), and standard practice for any web app collecting personal data. Quiz answers constitute personal data — emotional details about third parties (loved ones) are collected. | LOW | Static page. Content must be accurate to actual Notevra data flows — not copy-pasted from a template. |
-| Privacy Policy: what data is collected | CCPA 2026 (effective Jan 1 2026) and GDPR both require explicit categorical disclosure of data types collected. Quiz answers contain personal/emotional content (relationship details, memories about a third party). | LOW | Categories: quiz responses (browser localStorage only — not persisted server-side in raw form), generation prompts (sent to RunPod), generated audio files (stored in Cloudflare R2), Vercel server logs (IP, User-Agent, timestamp). |
-| Privacy Policy: how data is used | Legally required. Must state purpose of each data type: quiz answers → construct generation prompt → generate song. Audio → user download and delivery. Logs → security and debugging. | LOW | Critical differentiator: Notevra does NOT train AI on user data. ACE-Step 1.5 is a fixed open-source model. State this explicitly — it is both legally accurate and a trust signal. Cloudflare confirms R2 customer data is never used to train Cloudflare AI models. |
-| Privacy Policy: data retention timeframes | CCPA 2026 updated regulations now require specific retention periods, not vague "as long as necessary" language. | LOW | Define clearly: quiz answers (browser localStorage only — never stored on Notevra servers in raw form), generated audio (stored in R2 for 30 days, then auto-deleted), Vercel edge logs (per Vercel's standard retention policy). |
-| Privacy Policy: third-party data sharing | CCPA requires disclosure of all service providers and contractors that receive personal data. GDPR requires legal basis for each processor. | LOW | Third parties: Vercel (hosting — receives server logs), Cloudflare R2 (audio storage), RunPod (AI compute — receives the generation prompt text derived from quiz answers). No ad networks, no analytics platforms, no payment processors in v4.1. |
-| Privacy Policy: user rights section | GDPR (right to erasure, right of access, right to portability) and CCPA (right to delete, right to opt-out) require a statement of user rights and a mechanism to exercise them. | LOW | Simple: "Email us at [address] to request deletion of any data associated with your session." No automated tooling needed in v4.1 — no user accounts means data is not indexed to an identity. |
-| Terms of Service page | Required to establish acceptable use terms, disclaim warranties, limit liability, and set governing law. All AI music services have this: Suno, Udio, AIVA, Boomy, Mubert. | LOW | Static page. Omitting this = no legal basis for terminating abusive use or limiting Notevra's liability for generation quality. |
-| ToS: usage license for generated songs | The central legal question of any AI music service. What can the user do with their generated song? | MEDIUM | Grant: non-exclusive, personal, non-commercial license for personal gifting use. Be explicit that Notevra does not claim ownership of user outputs. Do not overpromise copyright — AI-generated works have no US copyright protection (US Court of Appeals, March 2025 ruling confirmed this, aligning with long-standing human-authorship requirement). |
-| ToS: AI-generated music ownership reality | US courts (March 2025) confirmed AI-generated works lack copyright protection without meaningful human authorship. Suno's own support documentation acknowledges this. AIVA's free tier retains copyright; paid tier grants it. Notevra must set honest expectations. | MEDIUM | Honest framing: "Your song is AI-generated. Under current US law, AI-generated works cannot be copyrighted. The song is yours to use for personal gifting — download it, share it, gift it — but Notevra cannot grant you copyright ownership." This is more transparent than competitors and avoids overpromising. |
-| ToS: acceptable use policy | Prevent misuse: generation of illegal/harmful content, impersonation, using outputs to train competing AI models. Standard across all AI services. | LOW | Prohibit: illegal content, impersonation, CSAM, harassment, commercial resale of outputs without a commercial license, using outputs to train competing AI systems. |
-| ToS: disclaimer of warranties | Standard legal protection. Service provided "as is" with no guarantees of output quality, uptime, or fitness for any purpose. | LOW | Boilerplate "AS IS" language. |
-| ToS: limitation of liability | Standard. Protects against consequential damages claims. Currently the service is free — cap at amount paid ($0). | LOW | Straightforward: cap at $0 or $100 (whichever is higher). Add a higher cap when Stripe payments are introduced. |
-| ToS: DMCA/copyright section | DMCA Section 512 safe harbor requires a designated copyright agent and takedown procedure for any online service that generates or hosts content. Requires registration with the US Copyright Office. | LOW-MEDIUM | This is the one non-copy action required: register a designated agent at copyright.gov/dmca-agent ($6 fee, one-time). Then include agent contact email in ToS. Failure to register means losing DMCA safe harbor protection. |
-| ToS: minimum age requirement | COPPA prohibits collecting data from users under 13 without parental consent. CCPA has separate rules for minors. | LOW | State minimum age 13. Parental consent required for under-18 users. Standard language. |
-| Footer links to all three pages | Users expect Privacy Policy and Terms links in every website footer. Standard web convention — their absence signals an untrustworthy product. | LOW | Notevra footer already exists. Add three nav links. |
+| Email + password sign up | Standard credential type; users do not want OAuth-only for a personal gift service with emotional content | LOW | `supabase.auth.signUp()` with email+password. Email confirmation required (Supabase default). Configure Resend as SMTP provider so confirmation emails arrive reliably — Supabase's built-in SMTP is rate-limited to 2/hour and unsuitable for production. |
+| Email + password login | Required pair to sign up | LOW | `supabase.auth.signInWithPassword()`. Standard login page at `/auth/login`. |
+| Email confirmation flow | Supabase requires it by default; confirms email ownership before granting account access. Skipping increases abuse surface and invalidates email delivery for later features. | LOW | Route handler at `/auth/confirm` exchanges token from email link for a session cookie. Must configure Supabase email template to point to this callback. |
+| Password reset / forgot password | Users forget passwords; no recovery = lost account + lost songs | LOW | Three-step flow: (1) `/auth/forgot-password` collects email, calls `supabase.auth.resetPasswordForEmail()`. (2) Supabase sends reset email (via Resend SMTP). (3) `/auth/update-password` page verifies token via `/auth/confirm` callback, then shows new password form. PKCE flow required — token must be verified in the same browser session. |
+| Session persistence via cookies | Next.js App Router requires cookies for server-side session access. localStorage-only sessions break SSR. | LOW | `@supabase/ssr` package handles this. Middleware proxy required to refresh tokens and write cookies between Server Component renders. Use `supabase.auth.getUser()` (not `getSession()`) in server code — `getUser()` validates against Supabase auth server on every call; `getSession()` trusts the cookie blindly and is a security risk. |
+| Auth callback route handler | Email link clicks (confirmation, password reset) return a token that must be exchanged server-side | LOW | `app/auth/confirm/route.ts` (GET handler). Calls `supabase.auth.verifyOtp({ token_hash, type })`, redirects to appropriate page on success or `/auth/error` on failure. Required for both signup confirmation and password reset. |
+| Auth error page | Email links that fail (expired token, wrong device for PKCE) need a graceful landing | LOW | `/auth/error` — simple page with "Link expired or invalid" message and CTA to retry action. |
+| Protected dashboard route | `/dashboard` must redirect unauthenticated users to login | LOW | Next.js middleware checks session cookie. Redirect to `/auth/login?redirect=/dashboard` so user lands on dashboard after login. |
+| Song-to-user association | Generated songs must be linked to the authenticated user who created them | MEDIUM | Supabase `songs` table with `user_id UUID REFERENCES auth.users(id)`. RLS policy: `auth.uid() = user_id` for SELECT, INSERT, UPDATE. Songs are written at the moment of successful HeartBula generation — either anonymously (no user_id) or with user_id if the user is signed in. Songs generated before sign-up can be claimed via a session token match (see differentiators). |
+| Song dashboard — list past songs | Users with accounts expect to see their song history | MEDIUM | `/dashboard` page (Server Component) fetches songs for `auth.uid()` from Supabase. Renders song cards: recipient name, relationship, date created, playback status. |
+| Song playback in dashboard | Users want to re-listen without re-downloading | MEDIUM | Reuse native `<audio>` element from success page. Audio served from Cloudflare R2 presigned GET URLs (HEAD returns 403 — known R2 quirk; use GET presigned). Generate presigned URL server-side at dashboard render time. |
+| Re-download from dashboard | Users want access to their song file again | LOW | "Download" button generates a presigned GET URL and triggers browser download. Same R2 presign logic as success page. |
+| Sign out | Standard auth expectation | LOW | Server Action calls `supabase.auth.signOut()`, clears cookies, redirects to home. |
+| Auth state in header nav | Header must reflect signed-in state (show "My Songs" link, hide "Sign Up") | LOW | Header already exists (v3.0). Extend to check auth state server-side. Show "My Songs" → `/dashboard` when authenticated. Show "Sign up / Log in" when anonymous. |
+| Creator song-ready email | After generation completes, creator should receive a confirmation email with a link to their song | LOW | Resend API call in `/api/quiz-generate` route (or a dedicated route handler) after HeartBula job completes. Only sends if user provides email (either signed-in or entered on success page). Template: song title, "Your song is ready — listen and download", link to success page or dashboard. |
+| Recipient gift delivery email | The gift giver wants to send the song to the person it was made for | MEDIUM | Recipient email capture field on success page. On submit, server action calls Resend with a gift email template: "Someone made you a song — listen here", embedded audio player link, download CTA. Requires R2 presigned URL in the email (shareable link) or a redirect through Notevra's domain. |
 
 ### Differentiators (Competitive Advantage)
 
-Features that make Notevra's legal/info pages warmer and more aligned with brand than generic legalese.
+Features that exceed the baseline and reinforce Notevra's gift service positioning.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Contact page with brand warmth | Most AI services use cold support portals (Suno redirects to Intercom; Udio uses a form). A warm, human contact page with personality fits the gift service brand and builds trust at a critical moment — users who reach out to contact a gift service are often emotionally invested. | LOW | Headline like "We'd love to hear from you" in Libre Baskerville. Brief context: "Questions about your song? Feedback? We're here." Email + social links alongside response time expectation. |
-| Response time expectation on Contact page | Setting "We aim to reply within 2 business days" manages expectations. Gift buyers may be on a deadline (birthday, anniversary). Stating a response time reduces anxiety. | LOW | One sentence. No technical work. |
-| Plain-language Privacy Policy | Most AI music privacy policies are unreadable legal boilerplate generated by Termly or iubenda. A clearly written, short policy signals trust — especially important for a gift service where users share personal memories and details about loved ones. | LOW | Write in plain English. Bold summary lines before each legal section. Avoid legal jargon. Short total length (under 1,000 words). Reference model: Basecamp's plain-language privacy approach. |
-| Proactive AI transparency statement | In 2026, AI disclosure is increasingly expected by users and becoming mandatory under the EU AI Act for large providers. Proactively disclosing what AI Notevra uses, what it does with inputs, and that user data is NOT used to train the model differentiates from sketchy services. | LOW | One paragraph in Privacy Policy: "Notevra uses ACE-Step 1.5, an open-source AI model, to generate your song. Your quiz answers are transformed into a music generation prompt. We do not train any AI model on your data." |
-| Honest "your song is yours" framing in ToS | Rather than hiding ownership ambiguity in legalese, address it directly and warmly. Framing this as a user-friendly disclosure rather than a limitation builds trust vs generating anxiety. Competitors either hedge (Suno) or bury it (Boomy). | LOW | Specific language: "The song we generate for you belongs to you in every practical sense — download it, share it, gift it. As an AI-generated work, it does not qualify for copyright protection under current US law, but that doesn't change what it means to you and the person you're giving it to." |
+| Auth upsell on success page (not a gate) | Quiz stays public — no auth wall before generation. Upsell appears *after* the song is created, when the user's emotional investment is highest ("post-purchase euphoria" window). Asking for auth before generation adds friction and kills conversion. | LOW | Render a soft CTA below the audio player: "Love your song? Sign up to save it, access it anytime, and send it as a gift." No blocking modal — an inline section with sign-up form or "I'll skip for now" option. This pattern is established in e-commerce (guest checkout → account upsell post-conversion). |
+| Song claim on sign-up | If a user generates a song anonymously, then signs up immediately after, the song should be linked to their new account | MEDIUM | Store a session token in localStorage at generation time (`notevra_session_token`). On sign-up, pass this token to a server action that claims all songs with matching session token, setting `user_id = auth.uid()`. Requires `session_token` column on `songs` table. Adds ~1 plan of work but dramatically improves onboarding quality — user doesn't lose the song they just made. |
+| Warm, brand-consistent email templates | Transactional emails from most AI services are cold and generic. A warm Notevra email — baby blue header, Libre Baskerville headline, clear gift framing — reinforces the brand at the moment of maximum emotional impact. | LOW-MEDIUM | React Email components reusing Notevra brand tokens (OKLCH color values, font stack). Two templates: (1) Creator song-ready, (2) Recipient gift delivery. Both render in plain HTML with inline CSS (React Email handles this for email client compatibility). |
+| Gift email with embedded song preview | Instead of just a link, the gift email includes the song title, what the creator wrote (the Step 5 message), and a prominent "Listen to your song" CTA. The recipient knows who sent it and why before they click. | LOW | Include `quiz_data.message` (Step 5) in the email body. Requires storing relevant quiz fields on the `songs` table (recipient name, relationship, message, genre). Do not embed the audio file itself — attach a presigned URL or Notevra redirect URL. Audio embedding in email has near-zero client support. |
+| Dashboard with song context (not just audio files) | Rather than showing a bare list of audio files, show who each song was made for: "Birthday song for Mom — Created March 5, 2026". This turns the dashboard into a meaningful archive of gifts. | LOW | Store `recipient_name`, `relationship`, `genre`, `created_at` on `songs` table. Dashboard renders these as context below each audio player. |
+| Recipient email field with privacy framing | The recipient email capture is a sensitive moment — users are sharing someone else's contact info. Framing this clearly ("We'll send them a private link — no marketing, ever.") builds trust. | LOW | One sentence of microcopy below the recipient email input. No technical work — copy only. But critical for conversion. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Contact form with backend | "Forms look more professional than a mailto link" | Requires server-side handling, spam protection (reCAPTCHA or Cloudflare Turnstile), email delivery infrastructure, and adds a new third-party to disclose in the Privacy Policy — significant complexity for v4.1 when email volume is near zero and no payments mean no urgent support volume. | Display email address as a mailto link. Add a form only after payment launch creates support volume that warrants it. |
-| Live chat widget (Intercom, Crisp) | "Users expect instant help" | Adds third-party JS loaded on every page, triggers GDPR consent requirements for the chat vendor, and creates operational overhead (someone must monitor and respond in real time). Suno uses this because they have a paid user base and staff. Notevra has neither yet. | Email contact + clear response time expectation covers the need at current scale. |
-| Cookie consent banner | "GDPR requires it" | A consent banner is required only if you use non-essential cookies (analytics, advertising, personalization). Notevra v4.1 has no analytics, no ad cookies, and uses only browser localStorage (not cookies). A banner adds conversion friction on a gift funnel unnecessarily. | Accurately disclose cookie/localStorage use in Privacy Policy. If no non-essential cookies — no consent banner is legally required. Add banner only when analytics are introduced. |
-| Auto-generated legal text (Termly, iubenda, PrivacyPolicies.com) | "Faster than writing custom policy" | Auto-generated policies contain clauses that do not match actual data practices — sections about advertising networks, social login data, payment processors, and marketing platforms that Notevra does not use. Mismatch between stated practices and actual practices is a legal risk greater than having a shorter, accurate policy. | Write policy manually based on actual Notevra data flows. Short. Accurate. Reviewable. Takes 2-3 hours for a competent writer — worth it. |
-| Separate ToS tiers for different user types | "Some users might want commercial use" | Premature complexity. No payments, no accounts, one user type (gift giver). Multi-tier ToS adds legal surface area and confusion at a stage where the goal is funnel validation. | Single ToS, personal non-commercial use only. Commercial tier added to ToS when Stripe payments and commercial licensing are introduced. |
-| Mandatory binding arbitration clause | "Standard in consumer-facing ToS" | Binding arbitration with class action waiver is aggressive for a free gift service with no paying customers. Legally, it requires a clear acceptance mechanism (click-through checkbox on ToS) to be enforceable — not just a posted page. May deter users without providing meaningful protection at this stage. | Omit for v4.1. Add a proper arbitration clause with click-through acceptance when payments are introduced and real financial disputes become possible. |
-| GDPR Data Processing Agreement (DPA) | "Required for EU users" | A full DPA is required when acting as a data processor for business customers. Notevra processes data for individual consumers, not businesses. A standard privacy policy covers individual consumer rights under GDPR. | Privacy Policy with a GDPR rights section covers individual users. Full DPA deferred until enterprise/business customers appear. |
+| Social login (Google/GitHub OAuth) | "Users prefer one-click sign-in" | Adds OAuth provider configuration, callback URL management, and account-linking complexity when a user who signed up with email later tries Google. For a personal gift service with sensitive content (memories, loved ones), social login also reduces user trust that their data stays private. No competitor in the gift space requires or benefits from OAuth at this stage. | Email+password only for v4.2. Add OAuth after email flow is validated and user demand exists. |
+| Mandatory auth before generation | "We need an account to save songs" | Forces auth wall before the user has experienced value — kills the quiz funnel's conversion rate. The gift service emotional hook is "generate first, feel the magic, then commit." Auth before generation is the most common mistake in quiz funnel apps. | Auth prompt *after* successful generation, on the success page. Quiz stays public. |
+| Email verification as a hard gate | "Users should verify before doing anything" | Even with an unconfirmed email, a user should be able to see their generated song and dashboard in a limited state. Hard-gating on email verification before showing the dashboard adds friction at the worst moment (right after sign-up excitement). | Allow signed-in but unconfirmed users to see a banner: "Check your email to confirm your account." Dashboard accessible but song claiming finalizes on confirmation. |
+| Passwordless / magic link only | "Passwordless is more modern UX" | Magic link auth requires email to arrive before the user can log in — introduces a wait and inbox-checking step that breaks the immediate "I just made a song, let me save it" momentum. Also, Supabase's built-in magic link rate limits apply. | Email+password as primary. Magic link can be added later as an additional option. |
+| Song sharing feature (public URLs) | "Let me share my song publicly" | Public audio URLs require permanent R2 storage or a CDN layer, URL management, social preview metadata, and expiration logic. Songs are currently deleted from R2 after 30 days. Scope exceeds v4.2. | Gift delivery email IS the sharing mechanism. Recipient gets a private link. Public sharing deferred to v5+. |
+| In-dashboard song regeneration | "I want to try again with the same quiz" | Regeneration re-runs HeartBula on RunPod, adds API costs, and requires re-testing the full generation pipeline from a new entry point. Scope creep for v4.2. | Quiz funnel is public — user can simply start a new quiz. Link to quiz from dashboard ("Make another song?"). |
+| Batch email sending to multiple recipients | "I want to send to several people" | Multiple recipients = multiple song variants (each gift is personal), or a bulk-send UX that doesn't match the "one emotional gift" positioning. Delivery quality degrades with bulk. | Single recipient per generation — one song, one gift, one email. The emotional positioning of Notevra depends on singularity. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-Contact Page
-    └──requires──> Email address decision (hello@notevra.com or support@notevra.com)
-    └──requires──> Social media accounts exist (Instagram, X/Twitter)
-    └──enhances──> Footer links (adds "Contact" to nav)
+Supabase Auth (email + password)
+    └──requires──> @supabase/ssr package installed
+    └──requires──> Middleware proxy for cookie-based session refresh
+    └──requires──> /auth/confirm route handler (email link exchange)
+    └──requires──> Resend SMTP configured as Supabase email provider
+                       └──requires──> Notevra domain verified in Resend
+                       └──requires──> SMTP credentials set in Supabase Auth settings
 
-Privacy Policy
-    └──requires──> Data inventory audit (what does Notevra actually collect and where is it stored?)
-    └──requires──> Third-party list finalized (Vercel, RunPod, Cloudflare R2)
-    └──enhances──> ToS (cross-reference: "See our Privacy Policy")
-    └──enhances──> Contact page (user rights exercise goes to contact email)
+Song-to-User Association
+    └──requires──> Supabase Auth (auth.uid() exists)
+    └──requires──> songs table with user_id + session_token columns
+    └──requires──> RLS policies (user can read/write own songs)
+    └──enhances──> Song Claim on Sign-up (session_token column)
 
-Terms of Service
-    └──requires──> DMCA agent registration ($6 US Copyright Office fee — one-time action, must happen before launch)
-    └──requires──> Ownership/license position decision (personal use only, non-commercial)
-    └──enhances──> Privacy Policy (cross-reference: "See our Terms of Service")
+Song Dashboard
+    └──requires──> Supabase Auth (protected route)
+    └──requires──> Song-to-User Association (songs must have user_id)
+    └──requires──> R2 presigned URL generation (audio playback + download)
+    └──depends-on──> Existing HeartBula/R2 integration (audio already in R2)
 
-Footer Links
-    └──requires──> All three pages deployed
-    └──depends-on──> Existing Footer component (already built in v3.0 — add 3 link items)
+Creator Song-Ready Email
+    └──requires──> Resend API key configured
+    └──requires──> Notevra domain verified in Resend
+    └──requires──> Generation pipeline completes successfully
+    └──optional-dependency──> Supabase Auth (email known if signed in; fallback to input on success page)
+
+Recipient Gift Delivery Email
+    └──requires──> Resend API key configured
+    └──requires──> Recipient email capture on success page (new field)
+    └──requires──> R2 presigned URL (shareable song link in email)
+    └──enhances──> Creator Song-Ready Email (both use same Resend setup)
+
+Auth Upsell on Success Page
+    └──requires──> Supabase Auth (sign-up form must exist)
+    └──enhances──> Song Claim on Sign-up (song is claimable if session_token stored)
+    └──depends-on──> Existing success page (add new section below audio player)
+
+Protected Dashboard Route
+    └──requires──> Middleware (session check + redirect)
+    └──requires──> Song Dashboard feature
+    └──depends-on──> Existing Header component (add "My Songs" nav link)
+
+Password Reset Flow
+    └──requires──> Supabase Auth (core auth active)
+    └──requires──> /auth/confirm route handler (token exchange)
+    └──requires──> /auth/update-password page
+    └──requires──> Resend SMTP (reset email must be deliverable)
 ```
 
 ### Dependency Notes
 
-- **Privacy Policy requires a data inventory first.** Before writing, confirm exactly what Notevra stores server-side vs. what stays in the browser. Quiz answers are localStorage-only (`notevra_quiz_v1` key per PROJECT.md) — they are never persisted on Notevra servers in raw form. The generation prompt derived from quiz answers IS sent to RunPod. Generated audio IS stored in Cloudflare R2. Vercel edge logs capture IP and User-Agent. This inventory shapes every disclosure in the policy.
-- **ToS requires DMCA agent registration before going live.** This is not just copy-writing — it is a legal filing with the US Copyright Office. The service costs $6. The registration must be completed before the ToS is published. The designated agent can be the founder's email address. Without this, Notevra loses DMCA safe harbor protection for any hosted content.
-- **Contact page requires email address decision.** The chosen support email must be actively monitored. Simple operational dependency, not technical. The email address must match what appears in the Privacy Policy (user rights section) and the ToS (DMCA contact).
-- **All three pages must be live before footer links can point to them.** Ship all three pages in the same deploy.
+- **Resend SMTP must be configured before any auth email works.** Supabase's built-in email provider is rate-limited to 2 emails per hour and unsuitable for production. Set up Resend SMTP integration first (before any auth-dependent testing). Steps: verify domain in Resend → copy SMTP credentials → paste into Supabase Auth → Authentication → SMTP Settings. Host: `smtp.resend.com`, Port: `465`, User: `resend`, Password: API key.
+
+- **Middleware is non-optional for App Router.** Next.js Server Components cannot write cookies. Without the `@supabase/ssr` middleware proxy, auth tokens go stale during navigation and users get logged out unexpectedly. The middleware must run on every request that accesses protected state.
+
+- **`getUser()` not `getSession()` in server code.** `getSession()` reads the cookie blindly without revalidating the JWT. `getUser()` hits the Supabase auth server to verify the token. Use `getUser()` for any server-side auth check that gates access to user data.
+
+- **Song claim requires session_token column.** The claim mechanism (anonymous generation → sign-up → song linked to account) needs a `session_token` stored on the songs row at generation time. This must be planned in the database schema alongside `user_id`.
+
+- **R2 presigned URLs in emails require careful expiration.** Gift emails are forwarded, opened days later, etc. Set presigned URL expiration long enough to be useful (7-30 days). But R2 objects themselves expire after 30 days (current Notevra policy) — URL expiration must not exceed object lifetime.
+
+- **PKCE password reset must happen in the same browser.** The PKCE flow for password reset links the token to the browser session. If the user clicks the reset link in a different browser (e.g., desktop vs mobile), `verifyOtp()` will fail. This is a known Supabase PKCE limitation — document it in the UI ("Click this link on the same device where you requested the reset") and add a graceful `/auth/error` fallback.
 
 ---
 
 ## MVP Definition
 
-### Launch With (this milestone, v4.1)
+### Launch With (v4.2)
 
-Minimum viable legal/info pages for a publicly accessible AI gift service.
+Minimum to validate authenticated gift delivery with song persistence.
 
-- [ ] Contact page — email address (mailto link), optional social links, brand-warm headline and brief copy, expected response time
-- [ ] Privacy Policy — data inventory disclosure, AI transparency statement, retention periods, third-party list, user rights section
-- [ ] Terms of Service — usage license, ownership reality disclosure, acceptable use, DMCA agent designation, age requirement, warranty disclaimer, liability cap
-- [ ] DMCA agent registered with US Copyright Office ($6 — one-time action before launch)
-- [ ] Footer updated — add links to all three pages
+- [ ] Supabase SMTP via Resend configured — all auth emails delivered reliably
+- [ ] Sign up page (`/auth/sign-up`) — email + password
+- [ ] Login page (`/auth/login`) — email + password
+- [ ] Auth callback route handler (`/auth/confirm`) — token exchange for signup confirmation and password reset
+- [ ] Forgot password page (`/auth/forgot-password`) — email input, triggers Supabase reset email
+- [ ] Update password page (`/auth/update-password`) — post-reset new password form
+- [ ] Auth error page (`/auth/error`) — graceful fallback for expired/invalid links
+- [ ] Middleware — session cookie refresh on every request, redirect unauthenticated users from `/dashboard` to `/auth/login`
+- [ ] `songs` table in Supabase — with `user_id`, `session_token`, `recipient_name`, `relationship`, `genre`, `message_preview`, `audio_r2_key`, `created_at`
+- [ ] RLS policies — users can SELECT/INSERT/UPDATE their own songs (auth.uid() = user_id)
+- [ ] Song-to-user association — write user_id to songs row at generation if signed in
+- [ ] Auth upsell section on success page — inline CTA below audio player ("Save your song + send as gift")
+- [ ] Song claim on sign-up — session_token in localStorage claimed on account creation
+- [ ] Creator song-ready email via Resend — fires after generation completes, if email known
+- [ ] Recipient email capture on success page — new input field with privacy microcopy
+- [ ] Recipient gift delivery email via Resend — branded React Email template with song link
+- [ ] Song dashboard (`/dashboard`) — list past songs with context (recipient, relationship, date)
+- [ ] Song playback in dashboard — native `<audio>` with R2 presigned GET URL
+- [ ] Re-download from dashboard — presigned GET URL for browser download
+- [ ] Header updated — "My Songs" link when authenticated, "Sign up / Log in" when anonymous
+- [ ] Sign out — server action, cookie clear, redirect to home
 
-### Add After Validation (v4.x / post-payment launch)
+### Add After Validation (v4.x)
 
-- [ ] Contact form with backend — when email volume grows after Stripe payments launch; requires spam protection decision
-- [ ] Cookie consent banner — when analytics are added (Google Analytics, Mixpanel, etc.)
-- [ ] Commercial use tier in ToS — when Stripe payments and commercial licensing are introduced
-- [ ] Arbitration clause with click-through acceptance — when payments create real financial dispute risk
-- [ ] Updated liability cap — raise from $0 to amount paid when Stripe payments are live
+- [ ] Email confirmation as soft gate — "Confirm your email to finalize saving" banner, not a hard block on dashboard access
+- [ ] Resend SMTP → Supabase Auth hook for fully custom auth email templates — when brand consistency of auth emails becomes a priority
+- [ ] Song title / name field — let users name their song at generation or from dashboard
+- [ ] Dashboard "Make another song" CTA — link back to quiz with context ("You've made 3 songs — make another one")
+- [ ] Song deletion from dashboard — users can delete songs they no longer want stored
 
-### Future Consideration (v5+ / post-product-market-fit)
+### Future Consideration (v5+)
 
-- [ ] Automated data deletion tooling — when Supabase Auth introduces user accounts and data indexed to identity
-- [ ] Full GDPR Data Processing Agreement — if enterprise/business customers emerge
-- [ ] Accessibility statement page — good practice, not urgent for v4.1
-- [ ] Trust center / security page — relevant after payments and auth are live
-- [ ] Live chat support — after paid user base reaches scale that justifies operational overhead
+- [ ] Google/GitHub OAuth — after email+password flow is validated and users request social login
+- [ ] Public song sharing — permanent public URL, social preview (og:image, og:audio), requires CDN and storage policy changes
+- [ ] In-email audio player — HTML5 audio in email (very low email client support today; revisit when standards improve)
+- [ ] Dashboard analytics view — generation count, most-used genres, gift recipient history
+- [ ] Gift scheduling — "Send this song on March 15 (her birthday)" — requires queued email job infrastructure
 
 ---
 
@@ -132,105 +192,119 @@ Minimum viable legal/info pages for a publicly accessible AI gift service.
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Contact page (email + response time + brand warmth) | HIGH — trust signal, support channel | LOW | P1 |
-| Privacy Policy (accurate, plain-language, complete) | HIGH — legal compliance + user trust | LOW | P1 |
-| Terms of Service (license, DMCA, acceptable use, disclaimer) | HIGH — legal protection | LOW | P1 |
-| DMCA agent registration (non-copy action) | HIGH — legal safe harbor | LOW ($6 + 15 min) | P1 |
-| Footer links to all three pages | HIGH — discoverability, convention | LOW | P1 |
-| AI transparency statement in Privacy Policy | MEDIUM — trust differentiator | LOW | P2 |
-| Plain-language writing style throughout | MEDIUM — trust differentiator | LOW | P2 |
-| Social links on Contact page | LOW — nice to have | LOW | P2 |
-| Contact form with backend | LOW (now) | MEDIUM | P3 |
-| Cookie consent banner | LOW (no analytics yet) | MEDIUM | P3 |
-| Live chat widget | LOW (now) | HIGH | P3 |
+| Resend SMTP → Supabase SMTP config | HIGH — all auth emails depend on it | LOW (config only) | P1 — must be first |
+| Sign up + login + session | HIGH — foundation for all auth features | LOW | P1 |
+| Auth callback + error route | HIGH — without this, email confirmation breaks silently | LOW | P1 |
+| Password reset flow | HIGH — no recovery = lost songs | LOW | P1 |
+| Middleware (session + redirect) | HIGH — without this, SSR session handling is broken | LOW | P1 |
+| songs table + RLS policies | HIGH — song persistence requires this | LOW (schema work) | P1 |
+| Song-to-user association at generation | HIGH — this is the core "save my song" feature | LOW | P1 |
+| Auth upsell on success page | HIGH — primary conversion point for sign-ups | LOW | P1 |
+| Session token claim on sign-up | HIGH — prevents "I just made a song and now I lost it" | MEDIUM | P1 |
+| Creator song-ready email | HIGH — confirms generation, gives creator a persistent link | LOW | P1 |
+| Recipient email capture + gift email | HIGH — gift delivery is the core emotional feature | MEDIUM | P1 |
+| Song dashboard (list + playback + download) | HIGH — payoff for creating an account | MEDIUM | P1 |
+| Header auth state | MEDIUM — UX polish, navigation clarity | LOW | P1 (trivial) |
+| Sign out | MEDIUM — expected, but low-stakes | LOW | P1 (trivial) |
+| Warm React Email templates | MEDIUM — brand differentiation in email | LOW-MEDIUM | P2 |
+| Gift email with quiz message included | MEDIUM — emotional resonance in delivery | LOW | P2 |
+| Dashboard song context (recipient/relationship) | MEDIUM — makes dashboard meaningful, not just a file list | LOW | P2 (schema planning only) |
+| Email confirmation soft gate (banner) | LOW (v4.2) — full email confirmation UX polish | LOW | P3 |
+| Song deletion | LOW | LOW | P3 |
+| Social login (OAuth) | LOW now | MEDIUM | Defer |
+| Public sharing URLs | LOW now | HIGH | Defer |
 
 **Priority key:**
-- P1: Must have for this milestone
-- P2: Should have — include if it takes under an hour; these are LOW cost and MEDIUM value
-- P3: Defer to future milestone
+- P1: Must have for v4.2 launch
+- P2: Include if time allows; adds meaningful value at low cost
+- P3: Defer to v4.x post-validation
 
 ---
 
 ## Competitor Feature Analysis
 
-| Feature | Suno | AIVA | Boomy/Mubert | Notevra Approach |
-|---------|------|------|--------------|-----------------|
-| Contact method | Email (support@suno.com) + Discord community | Help center + email | Email only | Email mailto link + optional social links. No form for v4.1. |
-| Privacy Policy length | Long, multi-section, CCPA/GDPR compliant | Standard length | Standard | Short, plain-language, accurate to actual data flows. Under 1,000 words target. |
-| AI disclosure in Privacy Policy | "Training and enhance the models" clause — vague | Minimal disclosure | Minimal | Proactive: explicitly state which AI model, that user data is NOT used for training. |
-| Data training disclosure | Suno uses inputs for model improvement | Unclear | Unclear | Clear NO: "We do not train any AI model on your quiz answers or generated songs." |
-| ToS: music ownership | Paid tiers get assignment; free = personal non-commercial with attribution | Free = AIVA owns; paid = user gets copyright | Royalty-free license, platform retains partial rights | Personal use license for all users. Honest disclosure that AI-generated music lacks copyright protection under US law. |
-| Ownership honesty | Suno hedges; own support docs admit no copyright protection | Free users have no copyright | Not explicit | Direct, warm honesty: "The song is yours in every practical sense. It cannot be copyrighted — that's a US law reality, not a Notevra limitation." |
-| DMCA agent | Registered: copyright@suno.com | Registered | Yes | Must register before ToS goes live ($6, one-time). |
-| Arbitration clause | Yes — mandatory binding arbitration | No | No | No — omit for free service. Add when payments introduce real disputes. |
-| Cookie banner | Yes (analytics cookies present) | Yes | Yes | No — skip until analytics are added. |
-| Age minimum | 13 | Unspecified | Unspecified | 13, parental consent for under-18. |
+| Feature | Suno | Soundful | Boomy | Notevra Approach |
+|---------|------|----------|-------|-----------------|
+| Auth gate on creation | No — listen/share free, sign up to publish | Yes — sign up before generating | No — generate first, save with account | No gate — generate first, upsell auth after success page. Emotional investment highest after generation. |
+| Email + password auth | Yes | Yes | Yes | Yes — primary and only auth method for v4.2 |
+| Social auth | Google, Apple | Google | Google, Facebook | Defer to v4.x — email only first |
+| Email confirmation required | Yes (Supabase default behavior) | Yes | Yes | Yes — configure Resend SMTP so confirmation emails are reliable |
+| Song history/library | Yes — "Your Library" | Yes | Yes | Yes — `/dashboard` with gift context (not just files) |
+| Transactional email on generation | Notification email for longer jobs | None (instant) | None | Creator song-ready email via Resend (even for ~7s jobs — confirms delivery, provides persistent link) |
+| Gift/recipient delivery | No | No | No | Yes — differentiated feature. Recipient email field on success page + branded gift email. No competitor does this in the AI music space. |
+| Dashboard song context | Title, genre, duration | Title, style | Title | Recipient name + relationship + date — turns archive into meaningful gift history |
 
 ---
 
-## Key Research Findings: Content Required in Each Page
+## Routes Required for v4.2
 
-### Contact Page — What to Show
+| Route | Type | Auth State | Purpose |
+|-------|------|------------|---------|
+| `/auth/sign-up` | Page | Anonymous | Sign up form (email + password) |
+| `/auth/login` | Page | Anonymous | Login form |
+| `/auth/forgot-password` | Page | Anonymous | Request password reset email |
+| `/auth/update-password` | Page | Signed in (via reset token) | New password form after reset |
+| `/auth/confirm` | Route Handler (GET) | Any | Token exchange for confirmation + password reset |
+| `/auth/error` | Page | Any | Graceful fallback for invalid/expired auth links |
+| `/dashboard` | Page | Protected | Song history with playback + download |
+| `/api/send-gift-email` | Route Handler (POST) | Any | Trigger recipient gift delivery email via Resend |
 
-1. **Warm headline** — "We'd love to hear from you" (Libre Baskerville; fits gift service emotional register)
-2. **Brief context** — "Questions about your song? Ideas? Feedback? Reach out — we read every message."
-3. **Email address** — primary contact method; displayed as a clickable mailto link
-4. **Response time expectation** — "We aim to reply within 2 business days." Gift buyers often have deadlines (birthdays, anniversaries) — setting expectations reduces anxiety.
-5. **Social links** — Instagram and/or X/Twitter if Notevra brand accounts exist
-6. **No contact form for v4.1** — reduces scope and avoids email infrastructure dependency
+---
 
-### Privacy Policy — Sections Required
+## Database Schema for songs Table
 
-Based on CCPA 2026 (effective Jan 1 2026), GDPR, and actual Notevra data flows:
+```sql
+CREATE TABLE songs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  session_token TEXT,                        -- links anonymous sessions to songs
+  recipient_name TEXT NOT NULL,              -- from quiz Step 1
+  relationship  TEXT NOT NULL,              -- "mom", "partner", etc.
+  genre         TEXT NOT NULL,              -- from quiz Step 2
+  message_preview TEXT,                     -- first 100 chars of Step 5 message
+  audio_r2_key  TEXT NOT NULL,              -- R2 object key (not full URL — presign at read time)
+  job_id        TEXT,                       -- HeartBula task_id for debugging
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  expires_at    TIMESTAMPTZ DEFAULT now() + INTERVAL '30 days'  -- matches R2 retention
+);
 
-1. **Introduction** — who we are, what this policy covers, effective date
-2. **What data we collect** — (a) quiz answers (browser localStorage — never stored raw on our servers), (b) generation prompt (sent to RunPod API), (c) generated audio file (stored in Cloudflare R2), (d) server logs (Vercel — IP address, User-Agent, timestamp, request path)
-3. **How we use your data** — quiz answers → generate a personalized song prompt → generate your song; audio → deliver to you for download; logs → security and debugging
-4. **AI transparency** — "We use ACE-Step 1.5, an open-source AI music model. Your quiz answers are used only to create your song. We do not train any AI model on your data. Cloudflare does not train AI on content stored in R2."
-5. **Third-party services** — Vercel (hosting), Cloudflare R2 (audio storage), RunPod (AI compute); none for analytics, advertising, or payment processing in v4.1
-6. **Data retention** — quiz answers: browser only, cleared when you clear browser data; generated audio: deleted from our servers after 30 days; server logs: per Vercel's standard retention policy
-7. **Cookies and local storage** — we use browser localStorage to save your quiz progress; we do not use advertising or analytics cookies
-8. **Your rights** — how to request deletion; email address for requests; note that without accounts, data is not indexed to your identity
-9. **Children's privacy** — minimum age 13; we do not knowingly collect data from children under 13
-10. **Policy updates** — how we notify users of changes; effective date
-11. **Contact** — email for privacy-related requests
+-- Enable Row Level Security
+ALTER TABLE songs ENABLE ROW LEVEL SECURITY;
 
-### Terms of Service — Sections Required
+-- Authenticated users can read their own songs
+CREATE POLICY "Users can view own songs" ON songs
+  FOR SELECT TO authenticated
+  USING ((SELECT auth.uid()) = user_id);
 
-Based on Suno ToS analysis, DMCA Section 512, US Copyright Office guidance, and CCPA/GDPR:
+-- Authenticated users can insert songs (user_id must match their uid)
+CREATE POLICY "Users can insert own songs" ON songs
+  FOR INSERT TO authenticated
+  WITH CHECK ((SELECT auth.uid()) = user_id);
 
-1. **Acceptance of terms** — using the service constitutes acceptance; age requirement (13+)
-2. **What Notevra does** — brief description of the gift song service
-3. **Your song: license and ownership** — Notevra grants you a non-exclusive, personal, non-commercial license to download, share, and gift your generated song. Honest disclosure: AI-generated works do not qualify for copyright protection under current US law. You may use the song for personal gifting; you may not sell it, license it commercially, or use it to train competing AI models.
-4. **Acceptable use** — prohibited: illegal content, impersonation, CSAM, harassment, commercial resale without license, using outputs to train competing AI, circumventing service restrictions
-5. **User submissions** — by submitting quiz answers, you grant Notevra license to use that input solely to generate your requested song; we do not use it for AI training or share it with third parties except as needed to operate the service (RunPod generation)
-6. **DMCA and copyright** — designated copyright agent designation; takedown request process; counter-notice process; repeat infringer policy
-7. **Disclaimer of warranties** — service provided "as is"; no guarantee of output quality, specific style, uptime, or availability
-8. **Limitation of liability** — not liable for indirect/consequential damages; liability capped at amount paid in last 6 months or $100 (whichever is greater); at current free tier, this is $0/$100
-9. **Governing law** — specify applicable state/jurisdiction
-10. **Changes to terms** — how Notevra may update terms; continued use = acceptance
-11. **Contact** — for terms questions; for DMCA notices
+-- Anonymous insert allowed (for session_token claim flow)
+CREATE POLICY "Anonymous can insert songs" ON songs
+  FOR INSERT TO anon
+  WITH CHECK (user_id IS NULL);
+```
 
 ---
 
 ## Sources
 
-- [Suno Privacy Policy](https://suno.com/privacy) — HIGH confidence. Section structure and AI training disclosure language analyzed directly.
-- [Suno Terms of Service](https://suno.com/terms) — HIGH confidence. Ownership tiers, DMCA, acceptable use, liability analyzed directly.
-- [AIVA Licensing Terms helpdesk](https://aiva.crisp.help/en/article/i-dont-understand-the-terms-of-license-1wqvh5v/) — MEDIUM confidence. Free vs paid copyright ownership tiers.
-- [US Court of Appeals AI copyright ruling — March 2025 (Soundverse report)](https://www.soundverse.ai/blog/article/us-court-bans-copyright-for-ai-art-what-musicians-and-creators-must-know-in-2025) — HIGH confidence. Confirmed by multiple sources including US Copyright Office guidance.
-- [US Copyright Office — AI and Copyright](https://www.copyright.gov/ai/) — HIGH confidence. Official stance on human authorship requirement.
-- [DMCA Section 512 — US Copyright Office](https://www.copyright.gov/512/) — HIGH confidence. Safe harbor and designated agent registration requirements.
-- [CCPA Privacy Policy Requirements 2025 (SecurePrivacy)](https://secureprivacy.ai/blog/ccpa-privacy-policy-requirements-2025) — HIGH confidence. Data disclosure obligations.
-- [CCPA 2025 Updated Regulations (DLA Piper)](https://www.dlapiper.com/en-us/insights/publications/2025/09/ccpa-2025-updated-regulations) — HIGH confidence. Retention disclosure requirements effective Jan 1 2026.
-- [Cloudflare R2 Data Security](https://developers.cloudflare.com/r2/reference/data-security/) — HIGH confidence. Customer data isolation confirmation.
-- [Cloudflare Workers AI Privacy](https://developers.cloudflare.com/workers-ai/privacy/) — HIGH confidence. Cloudflare does not train on customer content.
-- [Contact Page Best Practices 2025 (Prosper Marketing)](https://www.prospermarketingsolutions.com/blogs-contact-form-best-practices-for-2025/) — MEDIUM confidence. Form field count and conversion data.
-- [37 SaaS Contact Page Examples (SaasFrame)](https://www.saasframe.io/categories/contact-page) — MEDIUM confidence. Design pattern reference.
-- [Suno Support Contact](https://help.suno.com/en/articles/2551617) — HIGH confidence. Confirms Suno's email-first support model with Discord as secondary community channel.
-- [Legal considerations for AI music generators (Soundful)](https://soundful.com/legal-considerations-when-using-ai-music-generators/) — MEDIUM confidence. Industry-level overview.
+- [Supabase Auth — Server-Side Next.js](https://supabase.com/docs/guides/auth/server-side/nextjs) — HIGH confidence. Official. Middleware proxy pattern, `getUser()` vs `getSession()` security note, cookie architecture.
+- [Supabase Auth — Password-Based Auth UI Docs](https://supabase.com/ui/docs/nextjs/password-based-auth) — HIGH confidence. Official. Complete route list: sign-up, login, forgot-password, update-password, confirm handler, error page.
+- [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security) — HIGH confidence. Official. `auth.uid()` policy patterns.
+- [Resend — Send emails with Supabase SMTP](https://resend.com/docs/send-with-supabase-smtp) — HIGH confidence. Official. SMTP host `smtp.resend.com`, port 465, user `resend`, password = API key.
+- [Resend — Supabase partner integration](https://supabase.com/partners/integrations/resend) — HIGH confidence. Official.
+- [Custom Auth Emails with React Email and Resend — Supabase Docs](https://supabase.com/docs/guides/functions/examples/auth-send-email-hook-react-email-resend) — HIGH confidence. Official.
+- [Supabase Auth SMTP changes — Discussion #29370](https://github.com/orgs/supabase/discussions/29370) — HIGH confidence. Confirms production SMTP requirement.
+- [PKCE password reset issue — Discussion #28655](https://github.com/orgs/supabase/discussions/28655) — MEDIUM confidence. Known same-browser PKCE limitation confirmed by community + Supabase team response.
+- [Auth signup UX — Authgear 2025 guide](https://www.authgear.com/post/login-signup-ux-guide) — MEDIUM confidence. Email confirmation conversion tradeoff analysis.
+- [Post-purchase upsell conversion — Passionates 2026](https://passionates.com/one-click-post-purchase-upsell-landing-page/) — MEDIUM confidence. Post-conversion timing research ("post-purchase euphoria" window).
+- [React Email + Resend integration](https://react.email/docs/integrations/resend) — HIGH confidence. Official React Email docs.
+- [How to Send Emails in Next.js — Sequenzy 2026](https://www.sequenzy.com/blog/send-emails-nextjs) — MEDIUM confidence. Current-year patterns for server-side Resend in App Router.
 
 ---
 
-*Feature research for: Notevra v4.1 — Legal and informational pages (Contact, Privacy Policy, Terms of Service)*
+*Feature research for: Notevra v4.2 — Supabase Auth, Resend email delivery, song dashboard*
 *Researched: 2026-03-06*

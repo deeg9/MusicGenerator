@@ -1,53 +1,235 @@
 # Stack Research
 
-**Domain:** Legal and informational static pages — Contact, Privacy Policy, Terms of Service for AI music gift service
+**Domain:** Supabase Auth + Resend email delivery + song dashboard — additions to existing Notevra gift funnel
 **Researched:** 2026-03-06
-**Confidence:** HIGH (versions verified against live npm registry; Next.js App Router patterns verified against official Next.js docs)
+**Confidence:** HIGH (versions verified against live npm registry and official docs; patterns verified against official Supabase Auth SSR guide updated for Next.js 16)
 
 ---
 
 ## Context: Existing Stack (Do Not Re-research)
 
-This research covers ONLY net-new additions for the v4.1 Legal & Info Pages milestone. The following are already installed and working:
+This research covers ONLY net-new additions for the v4.2 Auth & Email Delivery milestone. The following are already installed and working:
 
-| Already In Place | Version | Relevance to v4.1 |
+| Already In Place | Version | Relevance to v4.2 |
 |------------------|---------|-------------------|
-| Next.js App Router | 16.1.6 | Static page rendering, `generateMetadata`, Server Actions |
-| React | 19.2.3 | Server Components for static pages; `useActionState` for form state |
-| Zod | ^4.3.6 | Already used for quiz validation — reuse for contact form validation |
-| Tailwind CSS | ^4 | OKLCH tokens already configured — all styling included |
-| DM Sans + Libre Baskerville | next/font/google | Typography already loaded in root layout — no additions needed |
-| Framer Motion | ^12.35.0 | Optional entrance animations — already installed |
-| Header + Footer | — | Already wrap every page in root layout — legal pages inherit them |
-| lucide-react | ^0.577.0 | Icons for contact page (email, social) — already installed |
+| Next.js App Router | 16.1.6 | Server Components, Server Actions, middleware — all used by auth flow |
+| React | 19.2.3 | Client Components for auth modals/forms; `useActionState` for form state |
+| Drizzle ORM | ^0.45.1 | Already the DB layer — songs table will be added alongside auth |
+| `postgres` driver | ^3.4.8 | Already connects to Supabase Postgres — auth uses the same project |
+| Zod | ^4.3.6 | Already installed — reuse for auth form validation |
+| Tailwind CSS | ^4 | OKLCH tokens already configured — auth/dashboard UI included |
+| react-hook-form | NOT INSTALLED | Check: project uses native forms + `useActionState` for quiz; auth forms are simple (2-3 fields), no hook-form needed |
+| Framer Motion | ^12.35.0 | Auth modal entrance animation — already installed |
+| lucide-react | ^0.577.0 | Icons for auth UI — already installed |
+
+**Key architectural fact:** Supabase Auth and Drizzle ORM coexist cleanly. Supabase Auth manages `auth.users` (its own schema). Drizzle manages your `public.*` tables. The link is a `user_id uuid references auth.users(id)` foreign key on any table that needs to belong to a user (in this case, a `user_songs` or enriched `generations` table).
 
 ---
 
 ## Recommended Stack — New Additions Only
 
-### Content: MDX for Legal Pages
+### Auth: Supabase Auth via @supabase/ssr
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| `@next/mdx` | `16.1.6` | Render Privacy Policy and Terms of Service from local `.mdx` files in `/app` | The official Next.js package for MDX, version-locked to Next.js. Lets you write legal content as structured Markdown with React component interpolation (e.g., `<EffectiveDate />` or `<ContactEmail />`). MDX files in the App Router `app/` directory become pages automatically with `pageExtensions` config — no separate data layer needed. Legal content lives in version-controlled `.mdx` files, editable without touching React code. |
-| `@mdx-js/loader` | `3.1.1` | Webpack loader that compiles `.mdx` to React components | Required peer dependency of `@next/mdx` for webpack-based Next.js builds. Does the actual MDX-to-JSX compilation at build time — no runtime overhead. |
-| `@mdx-js/react` | `3.1.1` | Provides `MDXProvider` context and component substitution | Allows global component overrides via `mdx-components.tsx` — so `# Heading` becomes `<h1 className="font-display text-3xl ...">` using Notevra's Libre Baskerville styles, and `---` becomes a styled `<hr />`. Write once, applies to all `.mdx` legal pages. |
-| `@types/mdx` | latest | TypeScript types for MDX module imports | Required for TypeScript to understand `.mdx` file imports without type errors. Peer dep for `@mdx-js/react`. |
+| `@supabase/supabase-js` | `^2.98.0` | Supabase client — Auth API, user session management | The base Supabase JS client. Required peer dep of `@supabase/ssr`. Provides `supabase.auth.signUp()`, `signInWithPassword()`, `resetPasswordForEmail()`, `signOut()`, and `onAuthStateChange()`. |
+| `@supabase/ssr` | `^0.9.0` | Cookie-based SSR session management for Next.js App Router | The official replacement for the deprecated `@supabase/auth-helpers-nextjs`. Exports `createBrowserClient` (Client Components) and `createServerClient` (Server Components + middleware). Handles cookie refresh in middleware so Server Components always have a valid session. Required for Next.js App Router auth — without it, sessions don't persist across server renders. |
 
-**Why MDX over plain TSX for legal content:** Legal content changes independently of component logic. Non-developer edits (updating an effective date, adding a clause) should be a single-file markdown edit, not a JSX file change. MDX with the `@next/mdx` App Router pattern achieves this while keeping content in git, building to static HTML at `next build`, and costing zero additional runtime overhead.
+**Why Supabase Auth over alternatives:**
+- **vs. NextAuth / Auth.js:** The Supabase project (`aiypybffzqgmerkjehfn`) already exists with Row Level Security. Supabase Auth is built into that project — zero additional infrastructure. NextAuth would require a separate adapter and duplicate user management.
+- **vs. Clerk:** Clerk adds a third-party service with its own pricing. Supabase Auth is already included in the existing Supabase plan.
+- **vs. custom JWT:** Custom auth is weeks of work with many security edge cases. Supabase Auth handles email verification, password reset flows, session refresh, and PKCE out of the box.
 
-**Why MDX over a headless CMS (Contentful, Sanity):** Zero infrastructure cost, zero API calls at runtime, legal content lives in the same git repository as the code that links to it. For 2-3 static legal pages that change rarely, a CMS adds operational complexity with no benefit.
+**Critical: `@supabase/auth-helpers-nextjs` is deprecated.** Do not install it. All maintenance is on `@supabase/ssr`.
 
-### Contact Form: Resend Email API
+**API key naming note:** Supabase is transitioning from `NEXT_PUBLIC_SUPABASE_ANON_KEY` to `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (new format: `sb_publishable_...`). Both work during the transition period — the existing project likely has the anon key; either value can be used in `createBrowserClient` and `createServerClient` without code changes.
+
+### Email: Resend + React Email
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| `resend` | `6.9.3` | Send contact form submissions to the Notevra inbox via Next.js Server Actions | Resend is the current standard for transactional email in Next.js projects. Free tier: 3,000 emails/month, 100/day — sufficient for a contact form. Native Server Actions integration: the `resend.emails.send()` call goes inside an `async` server function with `"use server"` — no API route needed. Zod is already installed for validation. React 19's `useActionState` handles pending/error/success states without client-side state libraries. |
+| `resend` | `^6.9.3` | Transactional email API — song-ready notification to creator, gift delivery to recipient | Already researched and selected in v4.1 for the contact form. Same SDK, same pattern. Free tier: 3,000 emails/month, 100/day. Native Next.js Server Actions integration via `resend.emails.send()`. API-based (no SMTP server to manage). |
+| `@react-email/components` | `^0.0.36` | React component library for building HTML email templates | Provides pre-built, well-tested email components (`Html`, `Body`, `Container`, `Heading`, `Text`, `Button`, `Hr`, `Link`, `Section`, `Img`) that render to cross-client-compatible HTML. Maintained by the Resend team — first-class integration. Write email templates as React components, render server-side. |
+| `@react-email/render` | `^1.1.3` | Renders React email components to HTML strings for sending | The render function (`renderAsync(EmailComponent)`) converts your React email template to a production-ready HTML string. Used server-side in Route Handlers or Server Actions before passing to `resend.emails.send({ html: ... })`. |
+
+**Why `@react-email/components` for this milestone (not plain HTML strings):**
+
+Notevra sends two distinct email types with brand styling — a song-ready notification (with a link to the dashboard + playback) and a gift delivery email (emotional, the recipient's first contact with Notevra). Both need the baby-blue/yellow brand treatment with proper heading hierarchy and a CTA button. Writing cross-client HTML email by hand is notoriously error-prone across Outlook/Gmail/Apple Mail. React Email's components handle this. The template complexity justifies the dependency.
+
+**`@react-email/render` + `next.config.ts` note:** React Email requires `@react-email/render` to be listed in `serverExternalPackages` in `next.config.ts` to avoid bundling conflicts with Next.js's webpack. This is a one-line config addition (see Configuration section below).
 
 **Why Resend over alternatives:**
-- **vs. Nodemailer/SMTP:** Nodemailer requires a mail server or SMTP credentials. Resend is an API — no server management, better deliverability, simpler setup.
-- **vs. SendGrid:** SendGrid requires domain verification for any meaningful volume and has a more complex API. Resend's API surface is minimal and its Next.js integration is first-class.
-- **vs. a simple mailto: link on the contact page:** A `mailto:` link is adequate if the Contact page only needs to display contact info. If an inline form is desired, Resend is the standard. See "Stack Patterns by Variant" below.
+- **vs. Nodemailer/SMTP:** API-based, no SMTP server, better deliverability, simpler setup for a new project.
+- **vs. SendGrid:** SendGrid has more complex API, higher friction for domain verification, less clean Next.js DX.
+- **vs. AWS SES:** More setup complexity, requires AWS account/IAM. Resend is faster to ship.
+
+### Supporting: No Additional Libraries Needed
+
+| Capability | Approach | Why No New Package |
+|------------|----------|--------------------|
+| Auth form validation | Zod (already installed) + native `<form>` + `useActionState` | Email/password forms are 2-3 fields. Zod already handles validation. react-hook-form would add ~30KB for no benefit at this field count. |
+| Protected routes | Next.js `middleware.ts` + `@supabase/ssr` | The middleware pattern (see below) handles route protection without a router-level auth library. |
+| Auth modal UI | Tailwind (already installed) + Framer Motion (already installed) | The auth prompt on the success page is a modal — no headless UI library needed. |
+| Song dashboard | Server Component + Drizzle query | The dashboard lists songs from the DB. Drizzle is already installed. No separate data-fetching library needed. |
+| Password reset | Supabase Auth built-in | `supabase.auth.resetPasswordForEmail()` handles reset email delivery via Supabase's own email — no Resend needed for this flow unless you want custom branding on the reset email. |
+
+---
+
+## Configuration Required
+
+### `next.config.ts` — serverExternalPackages
+
+```ts
+// next.config.ts
+const nextConfig: NextConfig = {
+  // ... existing config
+  serverExternalPackages: ['@react-email/render'],
+};
+```
+
+This prevents `@react-email/render` from being bundled by Next.js webpack, which causes runtime errors when rendering email templates in Server Actions or Route Handlers. One-line addition, no impact on other packages.
+
+### `lib/supabase/server.ts` — Server Client
+
+```ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+export async function createClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,  // or PUBLISHABLE_KEY if using new format
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Server Component context — cookies() is read-only; middleware handles writes
+          }
+        },
+      },
+    }
+  );
+}
+```
+
+### `lib/supabase/client.ts` — Browser Client
+
+```ts
+import { createBrowserClient } from '@supabase/ssr';
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+```
+
+### `middleware.ts` — Token Refresh (CRITICAL)
+
+Server Components cannot write cookies. Without this middleware, auth tokens expire and the user appears logged out mid-session. The middleware runs on every navigation and refreshes the session before the page renders.
+
+```ts
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // IMPORTANT: Do NOT run any code between createServerClient and getUser()
+  // getUser() validates the token with Supabase Auth server (not just JWT decode)
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Redirect unauthenticated users away from protected routes
+  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  return supabaseResponse;
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
+```
+
+**Security note:** Always use `auth.getUser()` in middleware. Never use `auth.getSession()` — it does not revalidate the token with the Supabase server and can be spoofed.
+
+### Database: `user_id` Column on Generations Table
+
+Supabase Auth manages `auth.users`. Drizzle manages `public.generations`. The link is a nullable `user_id` column on the `generations` table — nullable because quiz generation stays public (no account required).
+
+```ts
+// src/db/schema.ts — add user_id to generations
+userId: uuid('user_id'),  // nullable — anonymous generations allowed
+// No .references() directly to auth.users in Drizzle schema definition
+// Add the FK constraint via a raw SQL migration instead (Drizzle can't reference auth.* schema)
+```
+
+The FK constraint is added via raw migration SQL:
+```sql
+ALTER TABLE public.generations
+  ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+```
+
+This is because Drizzle's schema definitions can only reference tables in the `public` schema — `auth.users` is in the `auth` schema managed by Supabase, not by Drizzle. The convention is: define the column in Drizzle schema without `.references()`, add the FK via a custom SQL migration.
+
+### Environment Variables to Add
+
+```bash
+# .env.local — additions for v4.2
+
+# Supabase Auth (same project as DATABASE_URL)
+NEXT_PUBLIC_SUPABASE_URL=https://aiypybffzqgmerkjehfn.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=       # From Supabase Dashboard > Settings > API > anon/public key
+                                     # Or use NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY with new sb_publishable_... format
+
+# Resend (for song-ready + gift delivery emails)
+RESEND_API_KEY=                      # From Resend Dashboard > API Keys
+RESEND_FROM_ADDRESS=songs@notevra.com  # Must be a verified domain in Resend
+```
+
+---
+
+## Installation
+
+```bash
+# Auth
+npm install @supabase/supabase-js @supabase/ssr
+
+# Email
+npm install resend @react-email/components @react-email/render
+```
+
+No dev-only dependencies. All packages needed at runtime (build time for React Email templates, runtime for auth and email sending).
 
 ---
 
@@ -55,130 +237,12 @@ This research covers ONLY net-new additions for the v4.1 Legal & Info Pages mile
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `next-mdx-remote` | Designed for dynamic MDX loaded from a CMS or database at runtime. Sends the MDX runtime to the client bundle. For static local legal files, `@next/mdx` compiles at build time with zero runtime cost. | `@next/mdx` + local `.mdx` files |
-| `contentlayer` or `contentlayer2` | Contentlayer is effectively unmaintained (last release 2023, open GitHub issues unresolved). The fork `contentlayer2` exists but the community has shifted to direct `@next/mdx` or Velite for local content. | `@next/mdx` directly |
-| `react-hook-form` (net new) | Already have Zod installed. For a 3-field contact form (name, email, message), React 19's `useActionState` + native form action + Zod server-side validation is sufficient. Adding react-hook-form for this scope adds ~30KB client JS for marginal benefit. | Native `<form action={serverAction}>` + `useActionState` + Zod |
-| `@react-email/components` | Full React Email component library is for designing rich HTML emails with layouts, images, and brand templates. A contact form notification email needs only a minimal plain-text template — the `resend` package alone handles this without a separate rendering library. | Inline `text` field in `resend.emails.send()` |
-| Any rich text editor (TipTap, Quill, Slate) | Legal pages are write-once, edit-rarely content. An editor implies a CMS workflow. Legal content belongs in version-controlled `.mdx` files, edited in a code editor and deployed via git. | MDX files in git |
-| `gray-matter` | Frontmatter parsing library for extracting metadata from markdown files. Useful when programmatically loading many content files. For 2 legal pages loaded directly as App Router pages, frontmatter is not needed — metadata goes in a `export const metadata` export alongside the MDX page. | `export const metadata` in `page.tsx` adjacent to `.mdx` |
-
----
-
-## Stack Patterns by Variant
-
-**If Contact page = display only (email address + social links, no inline form):**
-- No `resend` package needed
-- Page is a Server Component with static content — zero new dependencies
-- Render contact info with lucide-react icons (already installed)
-- This is the recommended approach for v4.1 — validate conversion before adding form complexity
-
-**If Contact page = inline form with email delivery:**
-- Add `resend` ^6.9.3
-- Use React 19 `useActionState` + `"use server"` action + Zod for validation
-- No additional client-side form library needed
-- Requires a Resend account + domain verification + `RESEND_API_KEY` in `.env.local`
-
-**If Privacy Policy / Terms need effective dates or dynamic content:**
-- Use MDX with a custom React component: `<EffectiveDate date="2026-03-06" />`
-- Component renders the date in the correct locale format — no date library needed
-
-**If legal content needs to be edited by a non-developer:**
-- Consider Notion + `notion-to-md` or a headless CMS in a future milestone
-- For v4.1, git + MDX is the right call (single developer, infrequent edits)
-
----
-
-## SEO Metadata Approach
-
-No new packages needed. Next.js App Router's built-in `generateMetadata` / `export const metadata` handles all SEO for these pages.
-
-**Pattern for legal pages (Server Components — static at build time):**
-
-```ts
-// app/privacy/page.tsx (or adjacent to page.mdx)
-export const metadata = {
-  title: 'Privacy Policy — Notevra',
-  description: 'How Notevra collects, uses, and protects your personal information when you create a personalized AI song gift.',
-  robots: { index: true, follow: true },
-};
-```
-
-**Why `robots: index: true` for legal pages:** Privacy Policy and Terms of Service pages should be indexed. Search engines may surface them for trust signals. They should NOT have `noindex` unless there is a specific legal reason.
-
-**Why no Open Graph image for legal pages:** Legal pages don't benefit from OG images for social sharing. A generic `<meta name="robots">` and a `<link rel="canonical">` (automatically handled by Next.js via `alternates.canonical`) is sufficient.
-
-**Static rendering guarantee:** All three pages (Contact, Privacy, Terms) have no dynamic data. They will pre-render to static HTML at `next build` without any additional configuration because Next.js App Router defaults to static rendering for Server Components with no dynamic data access.
-
----
-
-## MDX Configuration
-
-```ts
-// next.config.ts — add createMDX wrapper
-import type { NextConfig } from 'next';
-import createMDX from '@next/mdx';
-
-const withMDX = createMDX({
-  // Remark/rehype plugins can be added here if needed later
-  // e.g., remarkGfm for GitHub-flavored markdown tables
-});
-
-const nextConfig: NextConfig = {
-  pageExtensions: ['ts', 'tsx', 'md', 'mdx'],
-  // existing config...
-};
-
-export default withMDX(nextConfig);
-```
-
-```tsx
-// src/mdx-components.tsx — maps markdown elements to Notevra design system
-import type { MDXComponents } from 'mdx/types';
-
-export function useMDXComponents(components: MDXComponents): MDXComponents {
-  return {
-    h1: ({ children }) => (
-      <h1 className="font-display text-3xl font-bold text-foreground mb-6 mt-10">{children}</h1>
-    ),
-    h2: ({ children }) => (
-      <h2 className="font-display text-xl font-bold text-foreground mb-4 mt-8">{children}</h2>
-    ),
-    h3: ({ children }) => (
-      <h3 className="font-sans text-lg font-semibold text-foreground mb-3 mt-6">{children}</h3>
-    ),
-    p: ({ children }) => (
-      <p className="text-muted-foreground leading-relaxed mb-4">{children}</p>
-    ),
-    a: ({ href, children }) => (
-      <a href={href} className="text-primary underline underline-offset-2 hover:text-primary/80">{children}</a>
-    ),
-    ul: ({ children }) => (
-      <ul className="list-disc list-inside text-muted-foreground space-y-1 mb-4 ml-4">{children}</ul>
-    ),
-    ol: ({ children }) => (
-      <ol className="list-decimal list-inside text-muted-foreground space-y-1 mb-4 ml-4">{children}</ol>
-    ),
-    hr: () => <hr className="border-border/40 my-8" />,
-    ...components,
-  };
-}
-```
-
-**Note:** `mdx-components.tsx` must live at the project root or `src/` root, not inside `app/`. Next.js looks for it at `./mdx-components.tsx` or `./src/mdx-components.tsx`.
-
----
-
-## Installation
-
-```bash
-# MDX support for Privacy Policy and Terms of Service pages
-npm install @next/mdx @mdx-js/loader @mdx-js/react @types/mdx
-
-# Contact form email delivery (only if adding an inline form — see Stack Patterns)
-npm install resend
-```
-
-No dev-only dependencies — `@next/mdx` and its peers are needed at build time (not dev-only).
+| `@supabase/auth-helpers-nextjs` | Officially deprecated. No new bug fixes or features. Will cause confusion alongside `@supabase/ssr`. | `@supabase/ssr` |
+| `next-auth` / `auth.js` | Adds a separate auth layer on top of Supabase Auth. Requires a Supabase adapter, doubles complexity, and the Supabase project already has auth built in. | `@supabase/ssr` directly |
+| `react-hook-form` (net new) | Auth forms are 2-3 fields (email + password). Zod + `useActionState` covers this. RHF adds ~30KB for no benefit at this field count. | Native `<form>` + Zod + `useActionState` |
+| `react-email` (dev tool, not `@react-email/components`) | The `react-email` npm package is a dev-server tool for previewing email templates in a browser. Useful for complex template development but not required at runtime — it has a known conflict with Next.js 15.3+ preview server (fails on internal Next.js module). | `@react-email/components` + `@react-email/render` only |
+| `nodemailer` | Requires SMTP credentials and server management. Resend is API-based with better deliverability and simpler setup. | `resend` |
+| Supabase Row Level Security for all tables | RLS is valuable but adds complexity. For this milestone, server-side auth checks (middleware + `auth.getUser()`) are sufficient. RLS can be layered on in a future security hardening phase. | Server-side auth checks in Route Handlers / Server Actions |
 
 ---
 
@@ -186,11 +250,31 @@ No dev-only dependencies — `@next/mdx` and its peers are needed at build time 
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| `@next/mdx` + local files | Headless CMS (Sanity, Contentful) | When legal content is edited by non-developers with no git access, or when the same legal content must appear across multiple products/brands |
-| `@next/mdx` + local files | `next-mdx-remote` | When MDX content is stored in a database or fetched from an API at runtime rather than co-located in the repo |
-| Resend for contact form | `mailto:` link | Preferred for v4.1 if the contact page only needs to display info. `mailto:` avoids all email infrastructure until there is a demonstrated need for an inline form. |
-| Resend for contact form | Nodemailer + SMTP | When you already have SMTP infrastructure (e.g., existing G Suite domain). Resend is simpler for new projects with no existing mail server. |
-| React 19 `useActionState` | `react-hook-form` | When the form has 5+ fields, complex cross-field validation, or multi-step behavior. A 3-field contact form does not justify the bundle addition. |
+| `@supabase/ssr` | `@supabase/auth-helpers-nextjs` | Never — it's deprecated. `@supabase/ssr` is the successor. |
+| Supabase Auth | Clerk | When starting a new project without an existing Supabase setup, or when you need social OAuth (GitHub, Google) out of the box without configuration. For Notevra, Supabase is already the DB — adding Clerk creates a second identity system. |
+| Supabase Auth | Auth.js (NextAuth) | When you need multi-provider OAuth (10+ providers) and your DB is not Supabase. For Notevra, email+password is the only required method in this milestone. |
+| `@react-email/components` | Plain HTML string in `resend.emails.send()` | When the email is simple (1-2 lines, no styling, no CTA button). Notevra's gift delivery email is an emotionally significant touchpoint — it needs brand styling and a CTA button. React Email's components handle cross-client HTML rendering correctly. |
+| Resend | AWS SES | When your app is already deeply integrated in AWS infrastructure and you need very high volume (>100K emails/month) at lowest cost. For Notevra at launch volume, Resend's free tier and simpler DX win. |
+
+---
+
+## Stack Patterns by Variant
+
+**If the auth prompt on the success page is a modal (quiz stays public):**
+- No route-level protection for `/quiz` or `/success`
+- Middleware only protects `/dashboard`
+- Auth modal uses `createBrowserClient` + `supabase.auth.signUp()` / `signInWithPassword()`
+- After sign-in, a Server Action associates the `generation_id` from localStorage with the new `user_id`
+- This is the recommended pattern — keeps the funnel frictionless
+
+**If password reset email needs Notevra branding:**
+- Use Supabase Auth's "Custom SMTP" setting (Supabase Dashboard > Auth > SMTP Settings) pointing to Resend's SMTP bridge (`smtp.resend.com`)
+- OR use a Supabase Auth hook to intercept the reset email and send via Resend SDK
+- For v4.2, using Supabase's built-in reset email is sufficient — defer custom branding
+
+**If song dashboard needs real-time updates (song status polling):**
+- Supabase Realtime (`supabase.channel().on('postgres_changes')`) is available via `@supabase/supabase-js`
+- For v4.2, polling or a simple refresh pattern is sufficient — generation is synchronous (~7s) and completes before the user reaches the dashboard
 
 ---
 
@@ -198,26 +282,31 @@ No dev-only dependencies — `@next/mdx` and its peers are needed at build time 
 
 | Package | Version | Compatible With | Notes |
 |---------|---------|-----------------|-------|
-| `@next/mdx` | 16.1.6 | Next.js 16.1.6 | Version-locked to Next.js — always install the same version as `next`. |
-| `@mdx-js/loader` | 3.1.1 | `@next/mdx` 16.x | Peer dependency. MDX v3 required — v2 dropped Next.js App Router support. |
-| `@mdx-js/react` | 3.1.1 | `@next/mdx` 16.x, React 19.2.3 | Same MDX v3 family. React 19 compatible. |
-| `resend` | 6.9.3 | Next.js 16 Server Actions, React 19 | Uses native fetch internally. Works in Edge runtime and Node.js runtime. |
+| `@supabase/supabase-js` | ^2.98.0 | Next.js 16, React 19 | Uses native fetch internally. Works in Node.js and Edge runtimes. |
+| `@supabase/ssr` | ^0.9.0 | `@supabase/supabase-js` ^2.x, Next.js 16 | Peer dep: `@supabase/supabase-js`. Both must be installed. PKCE flow enabled by default. |
+| `resend` | ^6.9.3 | Next.js 16 Server Actions, React 19 | Uses native fetch. Works in Node.js runtime (not Edge). Route Handlers and Server Actions are Node.js by default. |
+| `@react-email/components` | ^0.0.36 | `@react-email/render` same major | Must use together. Both maintained by Resend team — versions track each other. |
+| `@react-email/render` | ^1.1.3 | Next.js 16 with `serverExternalPackages` | **Requires** `serverExternalPackages: ['@react-email/render']` in `next.config.ts` or webpack bundling will error. |
 
 ---
 
 ## Sources
 
-- Next.js official MDX guide — https://nextjs.org/docs/app/guides/mdx — App Router MDX setup, `pageExtensions`, `mdx-components.tsx` location (HIGH confidence — official docs, updated February 27, 2026)
-- npm registry — `@next/mdx` latest: 16.1.6 (HIGH confidence — live registry)
-- npm registry — `@mdx-js/loader` and `@mdx-js/react` latest: 3.1.1 (HIGH confidence — live registry)
-- npm registry — `resend` latest: 6.9.3 (HIGH confidence — live registry)
-- Resend docs — https://resend.com/docs/send-with-nextjs — Server Actions integration pattern (HIGH confidence — official docs)
-- Resend pricing — https://resend.com/blog/new-free-tier — Free tier: 3,000 emails/month, 100/day (MEDIUM confidence — official blog post, date not confirmed current)
-- Next.js `generateMetadata` docs — https://nextjs.org/docs/app/api-reference/functions/generate-metadata — `metadata` export, `robots`, `alternates.canonical` (HIGH confidence — official docs)
-- Next.js Route Segment Config docs — https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config — `export const dynamic = 'force-static'` behavior (HIGH confidence — official docs)
-- WebSearch — contentlayer maintenance status — multiple community sources confirm lack of active maintenance since 2023 (MEDIUM confidence — consistent across community sources)
+- Supabase SSR client docs — https://supabase.com/docs/guides/auth/server-side/creating-a-client — `createServerClient`, `createBrowserClient`, cookie-only pattern (HIGH confidence — official docs, confirmed updated for Next.js 16)
+- Supabase Auth Next.js quickstart — https://supabase.com/docs/guides/auth/quickstarts/nextjs — env var names including new `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` format (HIGH confidence — official docs)
+- Supabase AI prompt for Next.js auth — https://supabase.com/docs/guides/getting-started/ai-prompts/nextjs-supabase-auth — full middleware.ts and server/client patterns for Next.js 16 (HIGH confidence — official Supabase docs)
+- Supabase API key migration — https://github.com/orgs/supabase/discussions/29260 — publishable key vs anon key transition, backward compatibility (HIGH confidence — official GitHub discussion)
+- Supabase user data management — https://supabase.com/docs/guides/auth/managing-user-data — profiles table pattern, `auth.users` FK, trigger for auto-population (HIGH confidence — official docs)
+- Drizzle + Supabase auth.users FK pattern — https://github.com/orgs/supabase/discussions/27426 — how to reference auth.users from Drizzle-managed public tables (MEDIUM confidence — official Supabase discussion forum)
+- npm registry — `@supabase/ssr` latest: 0.9.0, published 2 days ago (HIGH confidence — npm registry search result)
+- npm registry — `@supabase/supabase-js` latest: 2.98.0, published 8 days ago (HIGH confidence — npm registry search result)
+- npm registry — `resend` latest: 6.9.3, published 7 days ago (HIGH confidence — npm registry search result)
+- Resend Next.js docs — https://resend.com/docs/send-with-nextjs — Server Actions pattern, `{ data, error }` response handling (HIGH confidence — official docs)
+- React Email GitHub issue #977 — https://github.com/resend/react-email/issues/977 — serverExternalPackages requirement for `@react-email/render` (HIGH confidence — confirmed in multiple issues and discussions)
+- WebSearch — react-email v3/v5 and Next.js 15-16 compatibility — `serverExternalPackages` fix confirmed across multiple sources (MEDIUM confidence — community sources, consistent)
+- WebSearch — `@supabase/ssr` deprecates `@supabase/auth-helpers-nextjs` — official migration guide confirmed (HIGH confidence — official Supabase migration docs)
 
 ---
 
-*Stack research for: Notevra v4.1 — Contact, Privacy Policy, and Terms of Service pages*
+*Stack research for: Notevra v4.2 — Supabase Auth, Resend email delivery, song dashboard*
 *Researched: 2026-03-06*
