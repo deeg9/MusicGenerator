@@ -3,42 +3,80 @@
 **Defined:** 2026-03-06
 **Core Value:** Anyone can create a deeply personal, one-of-a-kind song for someone they love — in seconds, no musical skill required.
 
-## v4.1 Requirements
+## v4.2 Requirements
 
-Requirements for Legal & Info Pages milestone. Each maps to roadmap phases.
+Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
+
+### Authentication
+
+- [ ] **AUTH-01**: User can sign up with email and password
+- [ ] **AUTH-02**: User receives email confirmation after sign-up (via Resend SMTP)
+- [ ] **AUTH-03**: User can log in with email and password
+- [ ] **AUTH-04**: User can reset password via email link
+- [ ] **AUTH-05**: User session persists across browser refresh (cookie-based via @supabase/ssr)
+- [ ] **AUTH-06**: User can sign out
+- [ ] **AUTH-07**: Auth callback route handles email confirmation and password reset tokens
+- [ ] **AUTH-08**: Auth error page shows graceful message for expired/invalid links
+- [ ] **AUTH-09**: Header nav shows auth state (Sign up/Login when anonymous, My Songs when authenticated)
+
+### Song Persistence
+
+- [ ] **SONG-01**: Songs table exists in Supabase with RLS policies (user can only access own songs)
+- [ ] **SONG-02**: Generated songs are saved to database with user_id (if authenticated) or session_token (if anonymous)
+- [ ] **SONG-03**: Quiz context stored on song record (recipient name, relationship, message, genre)
+- [ ] **SONG-04**: Anonymous songs are claimed by user account on sign-up via session_token match
+
+### Email Delivery
+
+- [ ] **EMAIL-01**: Resend configured as Supabase SMTP provider for auth emails
+- [ ] **EMAIL-02**: Creator receives song-ready email with listen/download link after generation
+- [ ] **EMAIL-03**: Recipient receives branded gift delivery email with song context and listen link
+- [ ] **EMAIL-04**: Email templates use Notevra brand styling (baby blue, Libre Baskerville, warm tone)
+
+### Dashboard
+
+- [ ] **DASH-01**: Authenticated users can access /dashboard (redirects to login if unauthenticated)
+- [ ] **DASH-02**: Dashboard lists all user's past songs with recipient name, relationship, genre, and date
+- [ ] **DASH-03**: User can play songs in dashboard via native audio player with R2 presigned URLs
+- [ ] **DASH-04**: User can re-download songs from dashboard
+
+### Success Page
+
+- [ ] **SUCC-01**: Non-blocking auth upsell appears on success page after generation ("Sign up to save your song")
+- [ ] **SUCC-02**: User can enter recipient email on success page to send gift delivery email
+- [ ] **SUCC-03**: Recipient email field includes privacy framing ("Private link — no marketing, ever")
+
+## v4.1 Requirements (Deferred)
+
+Deferred legal pages — not started, skipped in favor of v4.2.
 
 ### Contact Page
 
 - [ ] **CONT-01**: User can view contact email address (contact@notevra.com) with mailto link
 - [ ] **CONT-02**: Contact page has proper SEO metadata (title, description)
-- [ ] **CONT-03**: Contact page uses consistent brand styling (Libre Baskerville headings, DM Sans body, baby blue palette)
+- [ ] **CONT-03**: Contact page uses consistent brand styling
 
 ### Privacy Policy
 
-- [ ] **PRIV-01**: Privacy Policy lists all data collected (quiz answers: relationship, occasion, genre, qualities, memories, message; generated audio; server logs)
-- [ ] **PRIV-02**: Privacy Policy explains how data is used (song generation, service improvement)
-- [ ] **PRIV-03**: Privacy Policy names third-party processors (RunPod, Cloudflare R2, Vercel)
-- [ ] **PRIV-04**: Privacy Policy states data retention policy (indefinite for audio, session-based for quiz data in localStorage)
-- [ ] **PRIV-05**: Privacy Policy includes CCPA/GDPR user rights section (access, deletion, opt-out)
-- [ ] **PRIV-06**: Privacy Policy includes children's privacy section (COPPA — service not intended for under 13)
+- [ ] **PRIV-01**: Privacy Policy lists all data collected
+- [ ] **PRIV-02**: Privacy Policy explains how data is used
+- [ ] **PRIV-03**: Privacy Policy names third-party processors
+- [ ] **PRIV-04**: Privacy Policy states data retention policy
+- [ ] **PRIV-05**: Privacy Policy includes CCPA/GDPR user rights section
+- [ ] **PRIV-06**: Privacy Policy includes children's privacy section (COPPA)
 - [ ] **PRIV-07**: Privacy Policy includes policy update notification clause
-- [ ] **PRIV-08**: Privacy Policy has proper SEO metadata and "Last Updated" date displayed
+- [ ] **PRIV-08**: Privacy Policy has proper SEO metadata and "Last Updated" date
 
 ### Terms of Service
 
-- [ ] **TOS-01**: ToS defines AI-generated content rights using license language (not ownership)
-- [ ] **TOS-02**: ToS includes acceptable use policy (no illegal content, no impersonation, no harmful use)
-- [ ] **TOS-03**: ToS includes DMCA/copyright section with designated agent contact
-- [ ] **TOS-04**: ToS includes disclaimers (no warranty, AI output not guaranteed unique)
+- [ ] **TOS-01**: ToS defines AI-generated content rights using license language
+- [ ] **TOS-02**: ToS includes acceptable use policy
+- [ ] **TOS-03**: ToS includes DMCA/copyright section
+- [ ] **TOS-04**: ToS includes disclaimers
 - [ ] **TOS-05**: ToS includes limitation of liability clause
 - [ ] **TOS-06**: ToS includes governing law and dispute resolution clause
 - [ ] **TOS-07**: ToS includes service modification/termination rights
-- [ ] **TOS-08**: ToS has proper SEO metadata and "Last Updated" date displayed
-
-### Shared Infrastructure
-
-- [ ] **INFRA-01**: Shared LegalLayout component for consistent page structure across all three pages
-- [ ] **INFRA-02**: Legal prose typography styles applied via Tailwind (using existing OKLCH tokens)
+- [ ] **TOS-08**: ToS has proper SEO metadata and "Last Updated" date
 
 ## v4.0 Requirements (Complete)
 
@@ -83,18 +121,11 @@ Requirements for Legal & Info Pages milestone. Each maps to roadmap phases.
 ### Monetization
 
 - **PAY-01**: Payment/checkout via Stripe
-- **AUTH-01**: User authentication (Supabase Auth)
-- **EMAIL-01**: Email delivery system (order confirmation + song link)
 
 ### Analytics
 
 - **ANLYT-01**: Analytics/conversion tracking
 - **ADMIN-01**: Admin dashboard for order management
-
-### Email Integration
-
-- **EMAIL-02**: Contact form with name, email, message fields
-- **EMAIL-03**: Form submissions sent via Resend or similar service
 
 ### Legal Compliance
 
@@ -105,11 +136,14 @@ Requirements for Legal & Info Pages milestone. Each maps to roadmap phases.
 
 | Feature | Reason |
 |---------|--------|
-| Contact form | No email sending infrastructure yet — defer to post-payment milestone |
-| Cookie consent banner | No cookies used (localStorage only), no analytics — unnecessary friction |
-| Social media links | No accounts exist yet |
-| MDX for legal content | TSX pages with Tailwind typography are simpler and sufficient |
-| Legal review by attorney | Content will be well-researched but not attorney-reviewed |
+| Social login (Google/GitHub OAuth) | Email+password sufficient for gift service; OAuth adds account-linking complexity |
+| Mandatory auth before generation | Kills quiz funnel conversion — auth must come after generation |
+| Hard email verification gate | Users should see dashboard immediately; soft banner for unconfirmed |
+| Passwordless / magic link only | Breaks immediate "save my song" momentum with inbox-checking wait |
+| Public song sharing URLs | Requires permanent R2 storage, URL management — gift email is the sharing mechanism |
+| In-dashboard song regeneration | User can start a new quiz instead; avoids scope creep |
+| Batch email to multiple recipients | One song, one gift, one email — singularity is the brand |
+| Dark mode | Warm light aesthetic is the brand direction |
 
 ## Traceability
 
@@ -117,33 +151,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 (v4.1) | Phase 24 | Pending |
-| INFRA-02 (v4.1) | Phase 24 | Pending |
-| CONT-01 | Phase 25 | Pending |
-| CONT-02 | Phase 25 | Pending |
-| CONT-03 | Phase 25 | Pending |
-| PRIV-01 | Phase 26 | Pending |
-| PRIV-02 | Phase 26 | Pending |
-| PRIV-03 | Phase 26 | Pending |
-| PRIV-04 | Phase 26 | Pending |
-| PRIV-05 | Phase 26 | Pending |
-| PRIV-06 | Phase 26 | Pending |
-| PRIV-07 | Phase 26 | Pending |
-| PRIV-08 | Phase 26 | Pending |
-| TOS-01 | Phase 27 | Pending |
-| TOS-02 | Phase 27 | Pending |
-| TOS-03 | Phase 27 | Pending |
-| TOS-04 | Phase 27 | Pending |
-| TOS-05 | Phase 27 | Pending |
-| TOS-06 | Phase 27 | Pending |
-| TOS-07 | Phase 27 | Pending |
-| TOS-08 | Phase 27 | Pending |
+| AUTH-01 | — | Pending |
+| AUTH-02 | — | Pending |
+| AUTH-03 | — | Pending |
+| AUTH-04 | — | Pending |
+| AUTH-05 | — | Pending |
+| AUTH-06 | — | Pending |
+| AUTH-07 | — | Pending |
+| AUTH-08 | — | Pending |
+| AUTH-09 | — | Pending |
+| SONG-01 | — | Pending |
+| SONG-02 | — | Pending |
+| SONG-03 | — | Pending |
+| SONG-04 | — | Pending |
+| EMAIL-01 | — | Pending |
+| EMAIL-02 | — | Pending |
+| EMAIL-03 | — | Pending |
+| EMAIL-04 | — | Pending |
+| DASH-01 | — | Pending |
+| DASH-02 | — | Pending |
+| DASH-03 | — | Pending |
+| DASH-04 | — | Pending |
+| SUCC-01 | — | Pending |
+| SUCC-02 | — | Pending |
+| SUCC-03 | — | Pending |
 
 **Coverage:**
-- v4.1 requirements: 18 total
-- Mapped to phases: 18
-- Unmapped: 0
+- v4.2 requirements: 24 total
+- Mapped to phases: 0
+- Unmapped: 24 ⚠️
 
 ---
 *Requirements defined: 2026-03-06*
-*Last updated: 2026-03-06 after v4.1 roadmap creation*
+*Last updated: 2026-03-06 after v4.2 initial definition*
