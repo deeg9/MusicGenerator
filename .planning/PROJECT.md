@@ -27,20 +27,19 @@ Anyone can create a deeply personal, one-of-a-kind song for someone they love �
 
 ### Active
 
-- [ ] End-to-end flow testing (landing → quiz → generation → success)
-- [ ] Backend API verification (HeartMuLa pod connectivity, generation pipeline)
-- [ ] Frontend UI bug fixes (responsive, accessibility, edge cases)
-- [ ] Performance optimization (load times, generation latency, Core Web Vitals)
-- [ ] Error handling hardening (network failures, API errors, timeouts)
-- [ ] Mobile responsiveness verification and fixes
-- [ ] Pod migration validation (A40 pod URL update + connectivity)
+- [ ] Supabase Auth (sign up, login, password reset, session management)
+- [ ] Auth prompt on success page (sign up to save song)
+- [ ] Song-to-user association (link generated songs to user accounts)
+- [ ] Resend email: song-ready notification to creator
+- [ ] Resend email: gift delivery to recipient
+- [ ] Recipient email capture on success page
+- [ ] Song dashboard (list past songs, playback, re-download)
 
 #### Deferred to future milestone
 - Payment/checkout via Stripe
-- User authentication (Supabase Auth)
-- Email delivery system (order confirmation + song link)
 - Analytics/conversion tracking
 - Admin dashboard for order management
+- Legal pages (Contact, Privacy Policy, Terms of Service) — v4.1 deferred
 
 ### Out of Scope
 
@@ -52,14 +51,16 @@ Anyone can create a deeply personal, one-of-a-kind song for someone they love �
 - Remixing / editing tools — adds complexity, not core to gift service
 - Social features — not core to gift value
 
-## Current Milestone: v4.1 Legal & Info Pages
+## Current Milestone: v4.2 Auth & Email Delivery
 
-**Goal:** Add essential legal and informational pages — Contact, Privacy Policy, and Terms of Service — tailored to Notevra as an AI music generation gift service.
+**Goal:** Add Supabase Auth for user accounts and Resend email delivery so creators can save songs and send them as gifts to recipients.
 
 **Target features:**
-- Contact page with email/social info display
-- Privacy Policy page covering AI-generated content, audio storage, quiz data collection
-- Terms of Service page covering usage rights, AI-generated music ownership, acceptable use
+- Full Supabase Auth (email+password sign up, login, password reset)
+- Auth prompt on success page after generation (quiz stays public)
+- Resend email: song-ready link to creator
+- Resend email: gift delivery to recipient (email entered on success page)
+- Song dashboard for signed-in users (past songs with playback + re-download)
 
 ## Context
 
@@ -75,7 +76,6 @@ Anyone can create a deeply personal, one-of-a-kind song for someone they love �
 
 - **Tech stack**: Next.js App Router, ACE-Step 1.5 REST API on RunPod, Cloudflare R2
 - **Infrastructure**: RunPod A40 Pod (96y089egxk3xm5), existing R2 bucket
-- **No auth yet**: No user accounts — funnel is public
 - **No payments yet**: Free generation — monetize after UX validation
 
 ## Key Decisions
@@ -100,4 +100,4 @@ Anyone can create a deeply personal, one-of-a-kind song for someone they love �
 | A40 pod migration | Migrated from RTX 4090 to A40 for v4.0 testing | — Pending |
 
 ---
-*Last updated: 2026-03-06 after v4.1 milestone start*
+*Last updated: 2026-03-06 after v4.2 milestone start*
