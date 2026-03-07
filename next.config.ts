@@ -6,7 +6,7 @@ const withBundleAnalyzer = BundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['ffmpeg-static'],
+  serverExternalPackages: ['ffmpeg-static', 'react-email', '@react-email/render'],
 };
 
 export default withBundleAnalyzer(nextConfig);

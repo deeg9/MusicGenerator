@@ -11,11 +11,13 @@
     "test:e2e:headed": "playwright test --project=chromium --headed",
     "test:e2e:mobile": "playwright test e2e/mobile-*.spec.ts --project=mobile-iphone --project=mobile-ipad",
     "test:unit": "vitest run",
-    "analyze": "ANALYZE=true next build --webpack"
+    "analyze": "ANALYZE=true next build --webpack",
+    "email": "email dev --dir src/emails --port 3001"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1001.0",
     "@aws-sdk/s3-request-presigner": "^3.1001.0",
+    "@react-email/components": "^1.0.8",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.98.0",
     "@types/canvas-confetti": "^1.9.0",
@@ -28,6 +30,7 @@
     "postgres": "^3.4.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "resend": "^6.9.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -46,6 +49,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jsdom": "^28.1.0",
+    "react-email": "^5.2.9",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.0.18"
