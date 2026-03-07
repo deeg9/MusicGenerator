@@ -1,250 +1,259 @@
 # Project Research Summary
 
-**Project:** Notevra v4.0 — Testing & Optimization
-**Domain:** E2E testing, API verification, performance auditing, mobile responsiveness — Next.js App Router gift funnel
+**Project:** Notevra v4.1 — Legal and Informational Pages
+**Domain:** Legal compliance, trust infrastructure, and informational pages for an AI music gift service
 **Researched:** 2026-03-06
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Notevra v4.0 is a hardening and validation milestone for a shipped gift song funnel — not a feature-building milestone. The v3.0 product (landing page → 6-step quiz → AI generation via HeartMuLa/RunPod → success page with audio delivery) is functionally complete. v4.0's job is to prove that it works reliably under real conditions: correct quiz validation, stable generation polling, mobile usability, production-quality Core Web Vitals, and an error UI that guides users when generation fails. This is a common milestone pattern for early-stage consumer products validating before monetization.
+Notevra v4.1 adds three pages — Contact, Privacy Policy, and Terms of Service — to an existing product that already works. This is not a product feature milestone; it is a trust and legal compliance milestone. The research is unambiguous: these pages must be accurate to Notevra's actual data flows, not copy-pasted from templates. The quiz collects emotionally sensitive personal information (recipient names, relationship details, personal memories), and any Privacy Policy that fails to name this data explicitly is non-compliant with CCPA 2026 (effective January 1, 2026) and GDPR. The standard "contact, privacy, terms" milestone that looks simple from the outside has meaningful legal risk concentrated in the content, not the code.
 
-The recommended approach builds testing infrastructure in dependency order: environment setup and Playwright configuration first, missing Vitest API route tests second, then E2E specs from simplest (no-API UI flows) to most complex (live generation with a real A40 pod), followed by performance auditing and mobile verification. The stack additions are minimal and well-justified: Playwright for E2E, MSW for unit-level API mocking, @vitest/coverage-v8 for coverage, @next/bundle-analyzer for performance, and @axe-core/playwright for accessibility scans. No framework replacements — all tools extend what already exists.
+The recommended technical approach is minimal and correct for the scope: three static Server Components using the existing Next.js App Router, a single shared `LegalLayout` prose wrapper, a custom `.prose-legal` CSS block in `globals.css` (no new typography plugin), and optionally MDX via `@next/mdx` if legal content needs to live as editable Markdown files. The Contact page should launch as a display-only page (email or social links + response time expectation + brand warmth) with no inline form — a form adds spam protection complexity and email infrastructure dependency that is not justified by current support volume. The existing Footer already has links wired to `/contact`, `/privacy`, and `/terms` — the routes just need to exist.
 
-The key risks are architectural. Playwright's page.route() cannot intercept server-side fetch calls to HeartMuLa — E2E generation tests must hit the real A40 pod, not mocks. The A40 pod migration (from RTX 4090 pod zwysa4aou3a8it to A40 pod 96y089egxk3xm5) is unverified, making pod connectivity the most critical blocker for the milestone. Secondary risks include Framer Motion animation flakiness in E2E tests (mitigated by setting reducedMotion: 'reduce' in Playwright config), localStorage test contamination between quiz specs, and performance metrics measured from the dev server rather than a production build. All risks are known and preventable with correct setup before tests are written.
+The highest-risk item in this milestone is not a line of code: it is the DMCA designated agent registration with the US Copyright Office ($6 one-time fee) that must be completed before the Terms of Service goes live. Without this registration, Notevra loses DMCA Section 512 safe harbor protection for any hosted content. The second-highest-risk item is ownership language in the ToS: AI-generated works lack copyright protection under US law as of a 2025 US Court of Appeals ruling, and any ToS that says "you own your song" without qualification is a misleading representation. Both are write-once-correctly problems, not refactor problems.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The existing stack (Next.js 16.1.6, React 19.2.3, Vitest 4.0.18, @testing-library/react, jsdom, TypeScript, Tailwind CSS 4) requires no changes. v4.0 adds five devDependencies only.
+The v4.1 milestone requires minimal net-new dependencies. The existing stack (Next.js 16.1.6, React 19.2.3, Tailwind CSS v4, DM Sans + Libre Baskerville, Framer Motion, Zod, lucide-react) covers everything needed for a display-only Contact page and TSX-based Privacy Policy and Terms of Service.
 
-See `.planning/research/STACK.md` for full version compatibility matrix and integration code examples.
+See `.planning/research/STACK.md` for full version compatibility matrix and configuration code examples.
 
-**Core technologies (net-new):**
-- `@playwright/test ^1.50.1`: E2E testing of the full landing → quiz → generation → success flow — the Next.js-recommended E2E framework; supports App Router Server Components; handles full browser automation including network interception and mobile device emulation
-- `msw ^2.12.10`: API mocking for Vitest unit/integration tests — uses Fetch API primitives (not http module), so it works with Next.js native fetch; covers HeartMuLa generate/query_result and R2 presigned URL calls in isolation
-- `@vitest/coverage-v8 ^4.0.18`: Code coverage — V8 is the only practical choice for App Router (Istanbul's babel instrumentation breaks with SWC); must match vitest major version (^4.x)
-- `@next/bundle-analyzer ^16.1.6`: Bundle composition audit — wraps next.config.ts, enabled only via ANALYZE=true env var, zero production impact; version tracks Next.js version
-- `@axe-core/playwright ^4.11.1`: Automated WCAG scans within existing Playwright tests — official Deque package (not community wrapper); scans any page state during a Playwright test run
+**Core technologies (net-new, conditional):**
+- `@next/mdx@16.1.6` + `@mdx-js/loader@3.1.1` + `@mdx-js/react@3.1.1` + `@types/mdx`: MDX support for legal pages — compiles at build time, zero runtime cost, legal content stays in git as editable Markdown. Add only if MDX is chosen over TSX for legal content.
+- `resend@6.9.3`: Contact form email delivery — add only after Stripe payments create enough support volume to justify a form. Deferred from v4.1.
+- Native `<form>` + `useActionState` + Zod: Sufficient for a future 3-field contact form — no `react-hook-form` needed.
 
-**Explicitly excluded:** Cypress (App Router compatibility issues; Playwright is Next.js's official recommendation), Jest (Vitest already installed and API-compatible), Lighthouse CI with score gates (premature before baseline established), Istanbul coverage (breaks with SWC), supertest (incompatible with App Router routes).
+**Do not add:**
+- `next-mdx-remote` — runtime MDX, overkill for static local files; sends MDX runtime to the client bundle
+- `contentlayer` / `contentlayer2` — effectively unmaintained since 2023
+- `@tailwindcss/typography` — fights the existing OKLCH token system; write `.prose-legal` manually in `globals.css`
+- `@react-email/components` — full email template library; a contact notification needs only a plain-text string
 
 ### Expected Features
 
-The v4.0 feature landscape is entirely testing and optimization work. No new user-facing features ship in this milestone. The question being answered is: what testing and optimization work is table stakes, what is differentiating, and what is scope creep?
+The feature research is high-confidence, grounded in CCPA 2026, GDPR, DMCA Section 512, and direct analysis of competitor ToS and Privacy Policies (Suno, AIVA, Boomy).
 
-See `.planning/research/FEATURES.md` for full feature dependency graph and prioritization matrix.
+See `.planning/research/FEATURES.md` for the full feature dependency graph, competitor analysis, and section-by-section content requirements for each page.
 
 **Must have (table stakes — P1):**
-- A40 pod connectivity verification — all generation tests depend on it; the pod migration from RTX 4090 is unverified and is the single biggest milestone blocker
-- Error boundaries (error.tsx) at /quiz and /quiz/success route segments — Next.js App Router has no default error boundaries; without them, any uncaught client error crashes the full page with no recovery UI
-- Full happy-path E2E test — landing → 6-step quiz → generation → success page; covers the complete product flow end-to-end
-- Generation API error handling — pod offline (503), FAILED status, polling timeout; each must show a retry UI rather than an infinite spinner
-- Per-step quiz validation E2E — all 6 Zod schemas enforce correctly; empty submits show correct error states
-- Mobile viewport tests — iPhone 15 Pro and Pixel 8; no horizontal overflow, buttons tappable (44px min), inputs usable
-- Core Web Vitals audit — Lighthouse on landing page and quiz from a production build; document LCP, INP, CLS baseline; fix P1 issues (likely: hero image missing next/image priority, layout shift on quiz card mount)
+- Contact page with email address, response time expectation ("We aim to reply within 2 business days"), and brand-warm copy
+- Privacy Policy: quiz data explicitly named as personal information, AI transparency statement, specific retention timeframes (not "as long as necessary"), named third-party processors (Vercel, RunPod, Cloudflare R2), user rights section with deletion contact mechanism
+- Terms of Service: usage license (not ownership claim), honest AI copyright disclosure, acceptable use policy, DMCA agent designation, minimum age (13+), warranty disclaimer, liability cap, "Changes to Terms" clause with Last Updated date
+- DMCA agent registered with US Copyright Office ($6 one-time action — must complete before ToS goes live)
+- Footer links to all three pages (Footer component already wired — routes just need to exist)
 
-**Should have (competitive — P2, add within this milestone after P1s pass):**
-- Polling resilience test — simulate 2-3 failed poll responses before eventual success; the most likely real-world failure mode for async generation
-- Page Object Model (POM) architecture — QuizPage, LandingPage, SuccessPage classes; justified immediately given 6-step quiz with selectors shared across multiple specs
-- Unit test for quizToPrompt() — pure function, no dependencies; high value at very low cost
-- Bundle size analysis via @next/bundle-analyzer — framer-motion, canvas-confetti candidates; run once to inform lazy loading decisions
-- localStorage quiz persistence test — regression test for notevra_quiz_v1 key; page.reload() with state assertions
-- Smoke test tags (@smoke) — tag 5-6 critical tests for CI use without running full generation suite
+**Should have (differentiators — P2):**
+- Plain-language Privacy Policy under 1,000 words (vs. competitor boilerplate from Termly or iubenda)
+- Proactive AI transparency statement naming ACE-Step 1.5 and explicitly stating user data is not used for training
+- Warm, brand-aligned Contact page copy in Libre Baskerville
+- Social links on Contact page if Notevra brand accounts exist
 
-**Defer to v5.0+:**
-- Lighthouse CI score gates — premature before performance optimization stabilizes
-- Full accessibility audit — own milestone with its own remediation backlog
-- Load/stress testing — pre-monetization; no real concurrent users yet
-- Visual regression testing — requires stable design system and baseline management strategy
-- Analytics/conversion tracking — post-payment funnel analysis
+**Defer (v4.x or later):**
+- Contact form with backend — add when Resend is integrated for order delivery (post-Stripe payments)
+- Cookie consent banner — add only when analytics are introduced; not needed for v4.1 (no analytics cookies, localStorage is not a cookie)
+- Commercial use tier in ToS — add with Stripe payments and commercial licensing
+- Binding arbitration clause — add with payments; requires a click-through acceptance mechanism to be enforceable
+- Automated data deletion tooling — add with Supabase Auth and user accounts
 
 ### Architecture Approach
 
-Test infrastructure is layered onto the existing application without structural changes to any app source code. The architecture separates E2E tests (e2e/ at project root — outside src/) from unit/integration tests (Vitest — inside src/), with a clear boundary: Playwright tests reach the application only via HTTP to localhost:3000, never via direct imports. Vitest tests mock all external calls via vi.mock() and never touch real network. Bundle analysis is a build-time-only tool with zero production impact.
+All three pages are static Server Components with zero client-side JavaScript for page content. They inherit the root layout's Header and Footer automatically — no layout changes required. The only new shared component is `LegalLayout`, a prose wrapper that takes `title` and `lastUpdated` props and applies a `.prose-legal` CSS class. This CSS block is defined once in `globals.css` under `@layer components` using existing OKLCH design tokens — no typography plugin, no override configuration.
 
-See `.planning/research/ARCHITECTURE.md` for full directory structure, data flow diagrams, and annotated code examples.
+See `.planning/research/ARCHITECTURE.md` for full directory structure, annotated code examples for LegalLayout, `.prose-legal`, and the static metadata export pattern, plus anti-pattern documentation.
 
 **Major components:**
-1. `e2e/flows/` — Playwright test specs, one file per user flow (landing, quiz-happy-path, quiz-validation, quiz-error-states, api-smoke)
-2. `e2e/pages/` — Page Object Model classes (LandingPage, QuizPage, SuccessPage); wraps Playwright locators so selector changes require one edit, not many
-3. `e2e/fixtures/` — Playwright fixture extensions; pre-filled quiz data for skipping setup steps in post-quiz specs
-4. `playwright.config.ts` — browser targets (Chromium + Mobile Chrome), webServer pointing to npm run start, timeout configuration per project
-5. `src/app/api/poll-job/[jobId]/route.test.ts` and `src/app/api/audio/[jobId]/route.test.ts` — two missing Vitest API route tests following the established vi.mock pattern from quiz-generate/route.test.ts
-6. `next.config.ts` (modified) — withBundleAnalyzer wrapper, ffmpeg-static in serverExternalPackages
-7. Performance tooling — lazy loading via next/dynamic for framer-motion and canvas-confetti if bundle analysis confirms they are in the client bundle
+1. `src/components/LegalLayout.tsx` — Shared prose wrapper: max-width container (`max-w-3xl`), page `<h1>` rendered from `title` prop, `lastUpdated` date in header, `.prose-legal` children slot. Server Component, no state, no hooks.
+2. `src/app/contact/page.tsx` — Contact page: display-only Server Component, `mailto:` link or social links + response time copy + brand-warm headline
+3. `src/app/privacy/page.tsx` — Privacy Policy: Server Component, `<article>` outer wrapper, `<section aria-labelledby>` per major section, `id` attributes on all `<h2>` elements for anchor navigation
+4. `src/app/terms/page.tsx` — Terms of Service: same semantic structure as Privacy Policy; cross-references Privacy Policy
+5. `.prose-legal` CSS block in `globals.css` — Styles `h2`, `h3`, `p`, `ul`, `ol`, `a` inside legal prose using `var(--font-libre)`, `var(--foreground)`, `var(--navy-800)`, `var(--blue-500)` (all confirmed present in `src/app/tokens/primitives.css`)
 
-**Build order (dependency-ordered):**
-Vitest config update → missing route unit tests → Playwright install + config → Page Object Models → smoke E2E specs (no API) → happy-path E2E (live pod) → error state E2E → bundle analysis + optimization
+**Build order (dependency-ordered):** `.prose-legal` in `globals.css` → `LegalLayout.tsx` → `contact/page.tsx` → `privacy/page.tsx` → `terms/page.tsx`. Each step depends on the previous. Validate Footer link resolution after Contact page (the first new route).
+
+**Key anti-patterns to avoid:**
+- `'use client'` on legal pages — breaks `metadata` export, forces content into JS bundle, eliminates static rendering
+- Per-route `layout.tsx` for prose wrapper — introduces unnecessary route group complexity; import `LegalLayout` directly in each page instead
+- `@tailwindcss/typography` — requires extensive overrides to match OKLCH tokens; `.prose-legal` block is 20 lines and uses existing variables directly
 
 ### Critical Pitfalls
 
-See `.planning/research/PITFALLS.md` for all 10 pitfalls with full prevention strategies, warning signs, and recovery steps.
+See `.planning/research/PITFALLS.md` for all 11 pitfalls with warning signs, "Looks Done But Isn't" checklist, and recovery strategies.
 
-**Top pitfalls requiring immediate attention at Phase 1 setup:**
+**Top pitfalls requiring immediate attention during content writing:**
 
-1. **page.route() cannot intercept server-side HeartMuLa fetch calls** — E2E tests that mock HeartMuLa with page.route() will silently fail to intercept; the real pod is called regardless. Use live pod for all generation E2E; reserve mocking for Vitest unit tests. Never attempt to use page.route() for HeartMuLa URLs.
+1. **Privacy Policy omits quiz data as personal information** — Relationship details, recipient names, personal memories, and heartfelt messages are personal information under CCPA and GDPR. The policy must name them explicitly and describe their emotional sensitivity. Avoid: treating quiz answers as "anonymous session data." The policy must also explicitly state quiz data is NOT used for AI training.
 
-2. **A40 pod migration unverified — blocks the entire milestone** — All generation tests fail if the pod URL in HEARTMULA_URL is wrong or pod is stopped. Add a Playwright globalSetup health check that fails early with a clear error before any test runs. This is the first action of Phase 1.
+2. **ToS claims "you own your song" without qualification** — US law as of March 2025 does not grant copyright protection to AI-generated works. "You own your song" is a misleading representation that creates liability if users rely on it commercially. Use: "Notevra grants you a worldwide, royalty-free license to use, share, and download your song. We do not claim ownership. Because songs are AI-generated, they may not qualify for copyright protection under current US law." Do not copy Suno's ToS — they updated it in November 2025 after a Warner Music Group settlement.
 
-3. **Framer Motion slide animations cause flaky quiz step assertions** — AnimatePresence transitions run 300ms; toBeVisible() fires mid-animation. Set reducedMotion: 'reduce' in playwright.config.ts base config — this activates the useReducedMotion() zero-duration path already in the app.
+3. **DMCA agent not registered before ToS goes live** — DMCA Section 512 safe harbor requires a registered designated agent at copyright.gov ($6). Without this, Notevra is exposed to full DMCA liability. This is a one-time action and a hard dependency for ToS publication — it must happen before the page ships.
 
-4. **Playwright default 30s timeout is shorter than the app's 120s polling timeout** — generation tests fail at exactly 30s under normal conditions. Set test.setTimeout(90_000) on the happy path spec; configure a separate Playwright project for generation tests with a higher timeout budget.
+4. **Vague data retention language ("as long as necessary")** — CPRA (active enforcement 2025-2026) requires specific retention periods for each data category. State concrete timeframes: generated audio deleted after 30 days (or chosen number); quiz answers not stored server-side beyond generation; Vercel logs per Vercel's standard policy.
 
-5. **localStorage quiz persistence contaminates test isolation** — notevra_quiz_v1 key persists across tests that share a browser context. Call localStorage.clear() in a beforeEach hook for all quiz tests before writing any quiz flow spec.
-
-6. **env.ts Zod validation crashes the Next.js server before any test runs if env vars are missing** — Playwright's webServer error is cryptic. Create .env.test with all required variables and add a globalSetup health check with a readable error message.
+5. **Contact page exposes founder email in plain HTML source** — `href="mailto:hello@notevra.com"` in plain text is harvested by scrapers within weeks of launch. For v4.1, the recommended approach is social-links-only contact (if accounts exist) or a displayed email with HTML entity encoding as a minimum partial mitigation. A Resend-based form that abstracts the real address is the proper solution but is deferred.
 
 ## Implications for Roadmap
 
-Based on combined research, the milestone should follow strict dependency ordering. Each phase has concrete prerequisites that, if skipped, create failure modes that look like unrelated bugs rather than setup problems.
+Based on combined research, the milestone maps naturally to six sequential phases ordered by dependency chain. Legal content and non-code decisions must be made before implementation begins. Non-code actions (DMCA registration, email address decision, retention period decision) are blocking dependencies for specific phases.
 
-### Phase 1: Foundation — Playwright Setup and Environment Verification
+### Phase 1: Content Decisions and Non-Code Prerequisites
 
-**Rationale:** The most dangerous work in this milestone is setup-related, not test-writing. Every subsequent phase depends on: Playwright being correctly configured, the A40 pod being reachable, environment variables being complete, localStorage isolation being in place, and animation flakiness being prevented. Doing all setup work in one focused phase means the rest of the milestone is about test logic, not environment debugging. Six of the ten documented pitfalls are prevented entirely by correct Phase 1 setup.
+**Rationale:** Non-code decisions and legal content must be locked before implementation begins. Writing legal text after building the page structure leads to rework if the content drives layout changes. DMCA registration must happen before the ToS route is deployed. This phase is short (2-4 hours of work) but unlocks everything downstream.
 
-**Delivers:** Working Playwright harness (playwright.config.ts, webServer config pointing to npm run start, Chromium + Pixel 5 browser install), confirmed A40 pod connectivity via globalSetup health check, .env.test with all required variables, reducedMotion: 'reduce' in base config, localStorage.clear() in beforeEach pattern, updated Vitest config excluding e2e/, package.json test scripts (test:unit, test:e2e, test:all, analyze).
+**Delivers:** DMCA designated agent registered at copyright.gov ($6), contact email address decided and monitored, audio retention period decided (concrete number for R2 lifecycle rule and Privacy Policy), contact mechanism decided (display-only vs. form with Resend), social media account status confirmed, final legal text drafted for all three pages.
 
-**Addresses:** A40 pod connectivity verification (P1), Playwright harness infrastructure
-**Avoids:** All six setup-related pitfalls: page.route() misunderstanding (Pitfall 1), timeout mismatch (Pitfall 2), animation flakiness (Pitfall 3), env.ts crash (Pitfall 4), pod URL staleness (Pitfall 5), localStorage contamination (Pitfall 7)
-**Research flag:** Standard patterns — all config patterns are documented in ARCHITECTURE.md with verified code examples. No additional research needed.
+**Addresses:** DMCA registration (hard dependency for ToS launch), data retention period decision, contact mechanism decision (affects Contact page implementation approach), email address operational decision.
 
----
+**Avoids:** Pitfall 3 (DMCA agent missing at launch), Pitfall 5 (vague retention language — must decide the number before writing the policy), Pitfall 7 (contact form spam — decide static vs. form before building anything).
 
-### Phase 2: Unit Test Gap Closure and Error Boundaries
-
-**Rationale:** Two API routes (poll-job and audio) have no Vitest unit tests. These tests are fast to write (vi.mock pattern established in quiz-generate/route.test.ts), independent of Playwright, and close the unit test gap before E2E tests create false confidence. Error boundaries (error.tsx) must be implemented before error-path E2E tests are written — otherwise Playwright just observes a page crash, not a graceful error UI. The debug.technicalMessage security exposure identified in PITFALLS.md should also be addressed here.
-
-**Delivers:** poll-job/[jobId]/route.test.ts and audio/[jobId]/route.test.ts (vi.mock pattern, matching quiz-generate coverage), error.tsx at /quiz and /quiz/success route segments with retry UI, updated Vitest coverage configuration via @vitest/coverage-v8, review and server-side filtering of debug.technicalMessage in error responses.
-
-**Addresses:** Error boundaries (P1), unit test coverage for all API routes, @vitest/coverage-v8 configuration
-**Avoids:** Error path E2E tests having nothing to assert against; debug.technicalMessage client exposure (security, Pitfall SECURITY section)
-**Uses stack:** @vitest/coverage-v8 (configure), msw server.ts mock handlers (implement for HeartMuLa and R2)
-**Research flag:** Standard patterns — vi.mock pattern and Next.js error.tsx are officially documented. No additional research needed.
+**Research flag:** No additional code research needed. Content writing guidance is fully documented in FEATURES.md (section-by-section requirements for all three pages). The legal text itself requires thoughtful writing against actual Notevra data flows — not code research.
 
 ---
 
-### Phase 3: Page Object Models and Smoke E2E Tests (No API Required)
+### Phase 2: Shared Infrastructure
 
-**Rationale:** Building POMs before any spec references them validates the locator API design without coupling to spec implementation. Smoke specs (landing page, quiz validation) require no live API calls and provide fast feedback. These specs reveal selector issues and confirm Playwright can navigate the app before generation tests (which take 20-30s each) are written. The quizToPrompt() unit test belongs here — pure function, no dependencies, high value at low cost.
+**Rationale:** CSS and shared component must exist before any page can be built. Two files, zero page routes, validates the design system works for prose content at the typography level.
 
-**Delivers:** LandingPage.ts, QuizPage.ts, SuccessPage.ts POMs in e2e/pages/; e2e/fixtures/index.ts with pre-filled quiz data; landing.spec.ts (page load, CTA navigation to /quiz, no API); quiz-validation.spec.ts (all 6 Zod schemas, empty submit shows error states, valid input enables Continue); quizToPrompt() unit test in Vitest covering edge cases.
+**Delivers:** `.prose-legal` CSS block added to `globals.css` under `@layer components`, `src/components/LegalLayout.tsx` Server Component with `title`, `lastUpdated` props and semantic `<article>` wrapper.
 
-**Addresses:** Per-step quiz validation tests (P1), POM architecture (P2), unit test for quizToPrompt() (P2)
-**Implements architecture:** e2e/pages/ and e2e/flows/ directory structure; Page Object Model pattern
-**Research flag:** Standard patterns — Playwright POM is official documentation with verified examples in ARCHITECTURE.md. No additional research needed.
+**Uses:** Existing OKLCH design tokens (`var(--font-libre)`, `var(--foreground)`, `var(--navy-800)`, `var(--blue-500)`) — all confirmed present in `src/app/tokens/primitives.css`.
 
----
+**Implements:** Architecture Pattern 2 (LegalLayout) and Pattern 3 (.prose-legal). Validates prose typography in isolation before any page ships.
 
-### Phase 4: Full Happy-Path and Error State E2E Tests
+**Avoids:** Anti-Pattern 3 (adding `@tailwindcss/typography`), Anti-Pattern 1 (`'use client'` on the wrapper component).
 
-**Rationale:** The happy-path E2E test is the highest-value single test in the milestone — it validates the complete product flow with a real A40 pod. It must come after Phase 3 because it reuses the QuizPage and SuccessPage POMs. Error state specs come immediately after because they reuse the same POMs and mock failure responses at the Next.js API layer (not the HeartMuLa layer — see Pitfall 1). The polling resilience test is an extension of error state coverage and belongs in this phase.
-
-**Delivers:** quiz-happy-path.spec.ts with 90s test.setTimeout; quiz-error-states.spec.ts covering pod offline (502 mock via page.route() on /api/quiz-generate), FAILED status (mock poll response), polling timeout; polling resilience test simulating 2-3 transient poll failures before success; api-smoke.spec.ts for pod connectivity verification gated on HEARTMULA_URL; @smoke tags on 5-6 critical tests.
-
-**Addresses:** Full happy-path E2E (P1), generation API error handling (P1), polling resilience test (P2), smoke test tags (P2)
-**Avoids:** Timeout mismatch (test.setTimeout(90_000)), page.route() used only for Next.js API layer not HeartMuLa server-side fetch (Pitfall 1), audio delivery tested via DOM and response assertions not audio playback (Pitfall 6)
-**Research flag:** Live-pod integration and Playwright route() interception patterns are documented in ARCHITECTURE.md. No additional research needed.
+**Research flag:** Standard patterns. All code examples are documented in ARCHITECTURE.md. No additional research needed.
 
 ---
 
-### Phase 5: Mobile Responsiveness Tests
+### Phase 3: Contact Page
 
-**Rationale:** Mobile tests reuse all three POMs from Phase 3 — the only addition is running the same flows at mobile viewports. This phase isolates mobile-specific issues (tap target sizes, touch-action: manipulation, horizontal overflow) from functional issues. Testing mobile after E2E passes on desktop means failures are attributable to viewport/touch behavior, not application logic. The reduced-motion accessibility test and localStorage persistence test both fit naturally here.
+**Rationale:** Contact page is the shortest-content page and the first to validate that new routes resolve, Footer links work, and LegalLayout renders correctly end-to-end. Ship this first to test the integration before committing to long-form legal page content. Contact mechanism decision (from Phase 1) drives implementation approach.
 
-**Delivers:** Full 6-step quiz flow tested on iPhone SE and Pixel 5 Playwright devices; tap target verification (44x44px minimum); horizontal overflow assertions on all pages; download link behavior on mobile; reduced-motion test verifying Framer Motion disables under prefers-reduced-motion: reduce; localStorage persistence test (fill steps 1-3, reload, confirm state restored).
+**Delivers:** `/contact` route, Footer link resolution confirmed, brand-warm contact display (email or social links + response time expectation in Libre Baskerville heading).
 
-**Addresses:** Mobile viewport tests (P1), localStorage persistence test (P2), reduced-motion accessibility test (P2)
-**Avoids:** Mobile touch event issues on SelectionCard/PillButton — verify touch-action: manipulation CSS is applied (Pitfall 10)
-**Research flag:** Playwright mobile device emulation is standard. Specific touch-action CSS fixes may require manual verification during execution, but the pattern is known.
+**Uses:** `LegalLayout`, lucide-react icons (already installed), `mailto:` link or social media links per Phase 1 decision.
+
+**Avoids:** Pitfall 7 (spam vector — display-only, no form), Pitfall 10 (email exposed in plain HTML — use social links or entity encoding).
+
+**Research flag:** Standard patterns. Display-only Server Component, zero complexity. No additional research needed.
 
 ---
 
-### Phase 6: Performance Audit and Optimization
+### Phase 4: Privacy Policy Page
 
-**Rationale:** Performance work comes last because it requires a production build (npm run build && npm start — never dev mode), benefits from knowing which code paths are exercised by the E2E suite, and optimization targets are identified by bundle analysis rather than guessed. The Core Web Vitals audit establishes the baseline; optimization work is scoped to P1 issues only. Lighthouse CI score gates are explicitly deferred to v5.0.
+**Rationale:** Privacy Policy is the longest page with the most legal risk. It depends on Phase 1 content decisions (data inventory, retention periods, third-party processor list). Building it after Contact validates the prose rendering at scale and confirms LegalLayout handles long-form content correctly.
 
-**Delivers:** Bundle analysis report from ANALYZE=true npm run build; framer-motion and canvas-confetti lazy loading via next/dynamic if analysis confirms they are primary client bundle contributors; LCP/INP/CLS baseline measurements from production build documented for v5.0 reference; hero image next/image priority fix if missing; quiz card mount layout shift fix if CLS > 0.1; audio proxy TTFB measured and streaming optimization deferred if TTFB < 500ms; ffmpeg-static serverExternalPackages verification.
+**Delivers:** `/privacy` route with complete CCPA 2026 and GDPR-compliant content: quiz data named as personal information, AI transparency statement, concrete retention periods, named third-party processors, user rights section with deletion contact mechanism, children's privacy section.
 
-**Addresses:** Core Web Vitals audit and P1 fixes (P1), bundle size analysis (P2)
-**Avoids:** Performance measurements from dev mode (Pitfall 8), audio proxy buffering documented and deferred appropriately (Pitfall 9)
-**Research flag:** framer-motion lazy loading with next/dynamic and AnimatePresence has non-obvious integration behavior. If bundle analysis confirms framer-motion is a primary client bundle concern, flag Phase 6 for `/gsd:research-phase` before implementing lazy loading — the correct wrapping pattern for components using AnimatePresence is not straightforward.
+**Uses:** `LegalLayout`, `<section aria-labelledby="...">` per major section, `id` attributes on `<h2>` headings for anchor navigation, `<article>` outer wrapper.
+
+**Avoids:** Pitfall 1 (quiz data omitted), Pitfall 5 (vague retention), Pitfall 6 (emotional sensitivity of memory/message data not acknowledged), Pitfall 9 (accessibility — heading hierarchy + contrast requirements).
+
+**Research flag:** No code research needed. Content requirements are fully specified in FEATURES.md ("Privacy Policy — Sections Required"). Architecture patterns are identical to Contact Page.
+
+---
+
+### Phase 5: Terms of Service Page
+
+**Rationale:** ToS depends on the ownership/license position finalized in Phase 1 and the DMCA agent registered (also Phase 1). It cross-references the Privacy Policy. Building it after Privacy Policy ensures Privacy Policy is final before ToS points to it.
+
+**Delivers:** `/terms` route with complete ToS: usage license (not ownership claim), honest AI copyright disclosure with ACE-Step model reference, acceptable use policy, DMCA agent designation (with registered agent name and email), minimum age (13+), warranty disclaimer, liability cap, "Changes to Terms" clause with Last Updated date, indemnification clause.
+
+**Uses:** `LegalLayout`, same semantic HTML structure as Privacy Policy.
+
+**Avoids:** Pitfall 2 (unsupportable ownership claim), Pitfall 3 (ACE-Step training data indemnification gap), Pitfall 4 (COPPA age clause missing), Pitfall 11 ("Changes to Terms" clause omitted).
+
+**Research flag:** No code research needed. Content requirements fully specified in FEATURES.md ("Terms of Service — Sections Required"). The DMCA agent registration from Phase 1 provides the designated agent contact to include.
+
+---
+
+### Phase 6: SEO, Sitemap, and Accessibility Verification
+
+**Rationale:** Verification phase, not a build phase. Easy to ship legal pages and discover weeks later they are de-indexed or fail accessibility audits. Making verification explicit prevents the "looks done but isn't" failure modes documented in PITFALLS.md.
+
+**Delivers:** All three routes added to `sitemap.ts` with `priority: 0.3` and `changeFrequency: 'monthly'`, `robots.ts` confirmed to not block any legal page path, `curl -I` verification that no `X-Robots-Tag: noindex` header is returned for each page in production, Lighthouse accessibility audit >= 90 on each page, heading hierarchy verified with axe or browser DevTools.
+
+**Avoids:** Pitfall 8 (legal pages accidentally noindexed or excluded from sitemap), Pitfall 9 (accessibility failures — heading order violations, contrast below 4.5:1).
+
+**Research flag:** Standard patterns. If `sitemap.ts` does not already exist in the codebase, check current state before writing new patterns — ARCHITECTURE.md assumes it exists; verify during Phase 6 execution. No pre-planning research needed.
 
 ---
 
 ### Phase Ordering Rationale
 
-- **Phase 1 first** because environment failures disguise themselves as application failures. Six of ten documented pitfalls are prevented by correct Playwright setup; deferring setup creates confusing failures throughout.
-- **Phase 2 before E2E** because error boundaries must exist before error-path E2E tests can assert graceful behavior; testing errors without error.tsx just verifies the app crashes.
-- **Phase 3 before Phases 4-5** because POMs are shared by all subsequent E2E phases; building them first means phases 4 and 5 focus on test logic, not selector duplication.
-- **Phase 4 before Phase 5** because if the full happy path fails on desktop, mobile failures are noise. Desktop confirmation is a prerequisite.
-- **Phase 6 last** because performance optimization requires a production build and benefits from E2E coverage data; optimizing before tests pass creates moving targets.
+- **Content before code:** Legal content drives implementation details (section structure, anchor IDs, cross-references between Privacy Policy and ToS). Writing content first avoids rework.
+- **Non-code actions are blocking dependencies:** DMCA registration, email address decision, and retention period decision are all Phase 1 blocking items. Phases 4 and 5 cannot be completed accurately without them.
+- **Contact page before legal pages:** Shortest content, fastest validation of route + LegalLayout + Footer integration. Any structural issue with LegalLayout surfaces on the simplest page first.
+- **Privacy Policy before ToS:** ToS cross-references Privacy Policy. ToS also depends on the data inventory finalized during Privacy Policy writing.
+- **Verification as its own phase:** SEO and accessibility checks are consistently skipped when embedded in page-build phases. Making them an explicit phase prevents the "looks done but isn't" failure mode.
 
 ### Research Flags
 
-Phases needing `/gsd:research-phase` during planning:
-
-- **Phase 6 (Performance):** framer-motion lazy loading with next/dynamic and AnimatePresence requires specific wrapping patterns that are not covered in the official docs. If bundle analysis confirms framer-motion is a primary client bundle concern, research the correct lazy loading approach before implementing. This is a MEDIUM-confidence area and should not be attempted without a research phase.
+Phases likely needing deeper research during planning:
+- **None identified.** This milestone is well-documented. Code patterns are established (Next.js App Router static Server Components). Legal content requirements are specified in detail in FEATURES.md. The only unknowns are operational decisions (email address, retention period, DMCA agent identity) that belong to Phase 1 planning, not code research.
 
 Phases with standard patterns (skip research-phase):
-
-- **Phase 1 (Setup):** Playwright webServer config, reducedMotion, localStorage isolation — all directly documented in official Playwright docs and ARCHITECTURE.md.
-- **Phase 2 (Unit tests + error boundaries):** vi.mock pattern is established in the codebase; Next.js error.tsx is officially documented.
-- **Phase 3 (POMs + smoke tests):** Official Playwright POM pattern with full examples in ARCHITECTURE.md.
-- **Phase 4 (E2E flows):** All patterns documented in ARCHITECTURE.md with verified code examples including timeout configuration and route interception.
-- **Phase 5 (Mobile):** Playwright device emulation is standard; CSS tap-target fixes are straightforward.
+- **All phases (2-6):** Next.js static Server Components, `export const metadata`, `@layer components` CSS, and Playwright sitemap/robots verification are all officially documented patterns. ARCHITECTURE.md provides ready-to-use code examples for every component.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All versions verified against live npm registry (2026-03-06); version compatibility confirmed across all five new packages; official Next.js 16.1.6 docs verified for Playwright recommendation |
-| Features | HIGH | Grounded in direct codebase inspection of existing components; priority ordering based on Playwright and Next.js official patterns and a confirmed codebase audit of what exists and what is missing |
-| Architecture | HIGH | All patterns verified against official Next.js and Playwright documentation; code examples confirmed against actual codebase structure (vitest.config.ts, quiz-generate/route.test.ts, next.config.ts inspected directly) |
-| Pitfalls | HIGH | All 10 pitfalls derived from direct codebase audit (2026-03-06) plus verified Playwright/Next.js documentation; Pitfalls 1-10 have documented warning signs and verified recovery strategies |
+| Stack | HIGH | Versions verified against live npm registry. `@next/mdx` version-locked to Next.js 16.1.6. Resend free tier pricing cited from official blog — verify current limits at resend.com/pricing before use. |
+| Features | HIGH | CCPA 2026, GDPR, DMCA Section 512, COPPA 2025 all verified against official regulatory sources. US copyright ruling (March 2025) confirmed via multiple sources including US Copyright Office guidance. Competitor ToS/Privacy analysis direct from live Suno and AIVA documents. |
+| Architecture | HIGH | Verified directly against codebase: `layout.tsx`, `Footer.tsx`, `globals.css`, `tokens/primitives.css` all inspected. Footer links confirmed already wired to `/contact`, `/privacy`, `/terms`. OKLCH tokens confirmed available for `.prose-legal`. |
+| Pitfalls | HIGH | Legal compliance pitfalls grounded in FTC, CPRA, US Copyright Office guidance, and active 2025-2026 enforcement precedents (Suno Warner settlement Nov 2025, CPRA enforcement ramp-up). Technical pitfalls grounded in actual codebase inspection. |
 
 **Overall confidence:** HIGH
 
-All four research files were grounded in direct codebase inspection plus official documentation. No pitfalls are speculative; all have verified sources. The primary remaining uncertainty is operational (A40 pod state) rather than architectural, and the mitigation (globalSetup health check) is straightforward.
-
 ### Gaps to Address
 
-- **A40 pod status (ID: 96y089egxk3xm5):** Research confirmed the migration plan and pod ID; it did not verify the pod is currently running. This must be the first thing verified during Phase 1 execution before any test is written. If the pod is stopped, it must be restarted in RunPod before proceeding.
+- **Contact email address:** The actual support email (`hello@notevra.com` or `support@notevra.com`) is an operational decision that must be made in Phase 1. It appears in three places — Privacy Policy (user rights section), Terms of Service (DMCA agent contact), and Contact page — and must be consistent. The inbox must be actively monitored before any page goes live.
 
-- **ffmpeg-static bundle placement:** STACK.md flagged that ffmpeg-static is listed as a `dependency` (not devDependency), which may cause the binary to appear in the server bundle. Phase 6 bundle analysis will confirm. ARCHITECTURE.md's Pattern 5 shows the preemptive fix (serverExternalPackages: ['ffmpeg-static'] in next.config.ts) which should be applied in Phase 1 as a safe precaution.
+- **Audio retention period:** "30 days" is suggested in research as a reasonable default for generated audio in Cloudflare R2. The actual decision must be made in Phase 1 and implemented as an R2 lifecycle rule. The Privacy Policy must state the exact same number that the lifecycle rule enforces. Mismatch between stated and actual retention is a compliance risk.
 
-- **framer-motion lazy loading with AnimatePresence:** If bundle analysis reveals framer-motion is a significant client bundle contributor, the correct next/dynamic wrapping pattern for AnimatePresence-using components is non-trivial. Flag Phase 6 for research-phase if this optimization is pursued.
+- **DMCA agent identity:** The designated agent can be the founder's name and email. This must be decided and registered at copyright.gov before Phase 5 (ToS). The agent's name and contact email are required content in the ToS DMCA section.
 
-- **debug.technicalMessage client exposure:** PITFALLS.md identified that classifyError in /lib/errors.ts includes debug.technicalMessage in the 502 response body, making internal error details accessible to the browser. This should be reviewed and filtered server-side during Phase 2 error boundary work before new error UI surfaces these messages.
+- **Social media accounts for Contact page:** If Notevra brand accounts (Instagram, X/Twitter) exist, include them on the Contact page. If they do not exist, the Contact page falls back to email-only or uses HTML entity encoding as a partial spam mitigation. Confirm account status in Phase 1.
+
+- **MDX vs. TSX decision:** Research recommends `@next/mdx` if legal content needs to be editable without touching React code. If only a developer will edit these files, plain TSX avoids the MDX configuration step. This is a preference call — make it before Phase 2 to avoid mid-milestone dependency installation.
+
+- **Resend free tier limits (if form is ever added):** Research cites 3,000 emails/month, 100/day from an official blog post. Verify current limits at resend.com/pricing before adding `resend` to a future milestone.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Next.js official testing guide — https://nextjs.org/docs/app/guides/testing — Playwright recommendation, App Router compatibility
-- Next.js Playwright guide — https://nextjs.org/docs/app/guides/testing/playwright — webServer config, baseURL, production vs dev trade-offs
-- Next.js error handling docs — https://nextjs.org/docs/app/getting-started/error-handling — error.tsx route segments
-- Next.js bundle analyzer / package bundling — https://nextjs.org/docs/app/guides/package-bundling — withBundleAnalyzer pattern
-- Next.js lazy loading — https://nextjs.org/docs/app/guides/lazy-loading — next/dynamic patterns
-- Playwright Best Practices — https://playwright.dev/docs/best-practices — role-based locators, data-testid guidance
-- Playwright Page Object Models — https://playwright.dev/docs/pom — POM pattern (official)
-- Playwright accessibility testing — https://playwright.dev/docs/accessibility-testing — @axe-core/playwright integration
-- Playwright mock APIs — https://playwright.dev/docs/mock — page.route() scope and server-side limitations
-- Playwright test timeouts — https://playwright.dev/docs/test-timeouts — timeout configuration
-- MSW v2 docs — https://mswjs.io/docs/integrations/node — setupServer, lifecycle hooks
-- Vitest coverage docs — https://vitest.dev/guide/coverage.html — V8 vs Istanbul comparison, SWC compatibility
-- npm registry — all five new packages verified against live registry (2026-03-06)
-- Direct codebase audit — src/app/api/, src/app/quiz/, src/lib/heartmula.ts, src/lib/errors.ts, src/env.ts, vitest.config.ts, next.config.ts, package.json
+
+- Next.js App Router documentation — https://nextjs.org/docs/app — Server Components, metadata export, static rendering
+- Next.js metadata API reference — https://nextjs.org/docs/app/api-reference/functions/generate-metadata
+- Next.js MDX guide — https://nextjs.org/docs/app/guides/mdx — `@next/mdx` App Router setup, `pageExtensions`, `mdx-components.tsx`
+- npm registry — `@next/mdx` 16.1.6, `@mdx-js/loader` 3.1.1, `@mdx-js/react` 3.1.1, `resend` 6.9.3 (live registry, 2026-03-06)
+- Resend docs — https://resend.com/docs/send-with-nextjs — Server Actions integration
+- CCPA 2026 / CPRA requirements — SecurePrivacy, DLA Piper — specific retention disclosure requirements effective January 1, 2026
+- DMCA Section 512 — https://www.copyright.gov/512/ — safe harbor, designated agent registration
+- US Copyright Office AI and Copyright — https://www.copyright.gov/ai/ — human authorship requirement
+- US Court of Appeals AI copyright ruling (March 2025) — confirmed via Soundverse report and US Copyright Office 2025 report
+- COPPA 2025 rule update — FTC official rule, Federal Register (effective 2025-04-22)
+- Cloudflare R2 Data Security — https://developers.cloudflare.com/r2/reference/data-security/ — customer data isolation confirmation
+- Suno Terms of Service — https://suno.com/terms — direct analysis (post-Warner settlement version)
+- Suno Privacy Policy — https://suno.com/privacy — direct analysis
+- Codebase inspection — `src/app/layout.tsx`, `src/components/Footer.tsx`, `src/app/globals.css`, `src/app/tokens/primitives.css` — all inspected directly
 
 ### Secondary (MEDIUM confidence)
-- Core Web Vitals 2026 targets — https://www.digitalapplied.com/blog/core-web-vitals-2026-inp-lcp-cls-optimization-guide — INP thresholds
-- RunPod error handling documentation — https://docs.runpod.io/serverless/workers/handlers/handler-error-handling — persistent pod behavior differs from serverless docs
-- Next.js GitHub Discussion — intercepting server-side fetch in Playwright — page.route() server-side limitation confirmed
-- BetterStack — Avoiding Flaky Tests in Playwright — animation timing patterns
-- Playwright GitHub Issue #4055 — Framer Motion animation waitForAnimation
+
+- Suno ToS analysis post-Warner settlement (Nov 2025) — Medium article; confirms updated ownership language; use as cautionary reference, not template
+- AIVA licensing terms helpdesk — free vs. paid copyright ownership tiers
+- Resend pricing blog — 3,000 emails/month free tier; date of blog post not confirmed current
+- WebSearch — contentlayer maintenance status — consistent community consensus on abandonment since 2023
+- Contact page best practices — SaasFrame, Prosper Marketing; form field count and conversion benchmarks
+- WCAG 2.1 Level AA — accessibility baseline for legal long-form text
 
 ### Tertiary (LOW confidence)
-- Community sources on Framer Motion + Playwright flakiness — consistent across multiple sources; specific fix (reducedMotion media query activating zero-duration path) verified against the codebase's useReducedMotion() hook
+
+- ACE-Step training data provenance ("professionally licensed tracks, public domain music, MIDI-to-audio synthetic data") — from ACE-Step GitHub and HuggingFace model card; sufficient basis for ToS disclaimer language, not independently verified against original dataset documentation
 
 ---
 *Research completed: 2026-03-06*
