@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Completed 28-02-PLAN.md
-last_updated: "2026-03-07T03:16:28.363Z"
+stopped_at: Completed 28-03-PLAN.md
+last_updated: "2026-03-07T03:16:36.740Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
@@ -72,6 +72,9 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 - [Phase 28-02]: signOut exported from login/actions.ts as canonical location for HeaderClient (Plan 03) consumption
 - [Phase 28-02]: Forgot-password shows inline success state (no /sent route) — simpler UX
 - [Phase 28-02]: useTransition used for server action calls — non-blocking, no useActionState complexity
+- [Phase Phase 28-03]: Header split into Server (Header.tsx) and Client (HeaderClient.tsx) to thread auth state from layout without client-side flicker
+- [Phase Phase 28-03]: Avatar dropdown uses form action={signOut} pattern — clean server action invocation without useTransition
+- [Phase Phase 28-03]: Tests updated to import HeaderClient directly (Server Components cannot be rendered in Vitest)
 
 ### Pending Todos
 
@@ -86,7 +89,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07T03:16:19.043Z
-Stopped at: Completed 28-02-PLAN.md
+Last session: 2026-03-07T03:16:36.738Z
+Stopped at: Completed 28-03-PLAN.md
 Resume file: None
 Next action: `/gsd:plan-phase 28`

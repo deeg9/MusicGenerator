@@ -17,7 +17,7 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 - [x] **AUTH-06**: User can sign out
 - [x] **AUTH-07**: Auth callback route handles email confirmation and password reset tokens
 - [x] **AUTH-08**: Auth error page shows graceful message for expired/invalid links
-- [ ] **AUTH-09**: Header nav shows auth state (Sign up/Login when anonymous, My Songs when authenticated)
+- [x] **AUTH-09**: Header nav shows auth state (Sign up/Login when anonymous, My Songs when authenticated)
 
 ### Song Persistence
 
@@ -159,7 +159,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-06 | Phase 28 | Complete |
 | AUTH-07 | Phase 28 | Complete |
 | AUTH-08 | Phase 28 | Complete |
-| AUTH-09 | Phase 28 | Pending |
+| AUTH-09 | Phase 28 | Complete |
 | SONG-01 | Phase 29 | Pending |
 | SONG-02 | Phase 29 | Pending |
 | SONG-03 | Phase 29 | Pending |
