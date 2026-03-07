@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Completed 29-01-PLAN.md (songs table live in Supabase)
-last_updated: "2026-03-07T04:31:14.764Z"
+stopped_at: Completed 29-02-PLAN.md (song persistence pipeline wired into all routes)
+last_updated: "2026-03-07T17:08:14.111Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 17
-  completed_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 | Phase 28-auth-infrastructure P02 | 2m | 2 tasks | 10 files |
 | Phase 28-auth-infrastructure P03 | ~2 minutes | 2 tasks | 4 files |
 | Phase 29-database-schema-song-persistence P01 | 30m | 2 tasks | 3 files |
+| Phase 29-database-schema-song-persistence P02 | 45m | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 - [Phase Phase 28-03]: Tests updated to import HeaderClient directly (Server Components cannot be rendered in Vitest)
 - [Phase 29-01]: drizzle-kit push blocked by Supabase CHECK constraint bug — applied schema via raw SQL in Supabase SQL Editor as equivalent workaround
 - [Phase 29-01]: songs-anon-deny-all RLS policy uses FOR ALL with USING false to block all anonymous operations at the DB level
+- [Phase Phase 29-02]: response.cookies.set() not cookies() store for Route Handler cookies — cookies() from next/headers is read-only in that context
+- [Phase Phase 29-02]: Finalization pipeline errors are non-fatal in poll-job — client sees COMPLETED, errors logged
+- [Phase Phase 29-02]: Use vi.hoisted() for Vitest mock variables referenced inside vi.mock() factory functions to avoid TDZ initialization errors
 
 ### Pending Todos
 
@@ -92,7 +96,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07T04:31:14.762Z
-Stopped at: Completed 29-01-PLAN.md (songs table live in Supabase)
+Last session: 2026-03-07T17:08:14.109Z
+Stopped at: Completed 29-02-PLAN.md (song persistence pipeline wired into all routes)
 Resume file: None
 Next action: `/gsd:plan-phase 28`

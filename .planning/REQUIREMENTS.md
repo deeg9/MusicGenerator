@@ -22,9 +22,9 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 ### Song Persistence
 
 - [x] **SONG-01**: Songs table exists in Supabase with RLS policies (user can only access own songs)
-- [ ] **SONG-02**: Generated songs are saved to database with user_id (if authenticated) or session_token (if anonymous)
+- [x] **SONG-02**: Generated songs are saved to database with user_id (if authenticated) or session_token (if anonymous)
 - [x] **SONG-03**: Quiz context stored on song record (recipient name, relationship, message, genre)
-- [ ] **SONG-04**: Anonymous songs are claimed by user account on sign-up via session_token match
+- [x] **SONG-04**: Anonymous songs are claimed by user account on sign-up via session_token match
 
 ### Email Delivery
 
@@ -161,9 +161,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-08 | Phase 28 | Complete |
 | AUTH-09 | Phase 28 | Complete |
 | SONG-01 | Phase 29 | Complete |
-| SONG-02 | Phase 29 | Pending |
+| SONG-02 | Phase 29 | Complete |
 | SONG-03 | Phase 29 | Complete |
-| SONG-04 | Phase 29 | Pending |
+| SONG-04 | Phase 29 | Complete |
 | EMAIL-01 | Phase 30 | Pending |
 | EMAIL-02 | Phase 30 | Pending |
 | EMAIL-03 | Phase 30 | Pending |
