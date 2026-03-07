@@ -28,7 +28,7 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 
 ### Email Delivery
 
-- [ ] **EMAIL-01**: Resend configured as Supabase SMTP provider for auth emails
+- [x] **EMAIL-01**: Resend configured as Supabase SMTP provider for auth emails
 - [ ] **EMAIL-02**: Creator receives song-ready email with listen/download link after generation
 - [ ] **EMAIL-03**: Recipient receives branded gift delivery email with song context and listen link
 - [ ] **EMAIL-04**: Email templates use Notevra brand styling (baby blue, Libre Baskerville, warm tone)
@@ -164,7 +164,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SONG-02 | Phase 29 | Complete |
 | SONG-03 | Phase 29 | Complete |
 | SONG-04 | Phase 29 | Complete |
-| EMAIL-01 | Phase 30 | Pending |
+| EMAIL-01 | Phase 30 | Complete |
 | EMAIL-02 | Phase 30 | Pending |
 | EMAIL-03 | Phase 30 | Pending |
 | EMAIL-04 | Phase 30 | Pending |

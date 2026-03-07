@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Phase 30 context gathered
-last_updated: "2026-03-07T21:37:24.904Z"
+stopped_at: "Completed 30-01 Task 1 — awaiting human SMTP config (checkpoint:human-action)"
+last_updated: "2026-03-07T22:00:45.275Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
   completed_phases: 8
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 20
+  completed_plans: 18
   percent: 0
 ---
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 | Phase 28-auth-infrastructure P03 | ~2 minutes | 2 tasks | 4 files |
 | Phase 29-database-schema-song-persistence P01 | 30m | 2 tasks | 3 files |
 | Phase 29-database-schema-song-persistence P02 | 45m | 2 tasks | 8 files |
+| Phase 30-email-infrastructure P01 | 2m | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 - [Phase Phase 29-02]: response.cookies.set() not cookies() store for Route Handler cookies — cookies() from next/headers is read-only in that context
 - [Phase Phase 29-02]: Finalization pipeline errors are non-fatal in poll-job — client sees COMPLETED, errors logged
 - [Phase Phase 29-02]: Use vi.hoisted() for Vitest mock variables referenced inside vi.mock() factory functions to avoid TDZ initialization errors
+- [Phase 30-01]: Use process.env.RESEND_API_KEY directly in resend.ts (not getEnv()) to match Supabase client module-scope instantiation pattern
+- [Phase 30-01]: Same Resend API key used for both Supabase SMTP auth emails and SDK transactional emails — Resend's standard guidance
 
 ### Pending Todos
 
@@ -96,7 +99,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07T21:37:24.902Z
-Stopped at: Phase 30 context gathered
-Resume file: .planning/phases/30-email-infrastructure/30-CONTEXT.md
+Last session: 2026-03-07T22:00:45.272Z
+Stopped at: Completed 30-01 Task 1 — awaiting human SMTP config (checkpoint:human-action)
+Resume file: None
 Next action: `/gsd:plan-phase 28`
