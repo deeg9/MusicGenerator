@@ -1,11 +1,46 @@
 # Requirements: Notevra
 
 **Defined:** 2026-03-06
-**Core Value:** Anyone can create a deeply personal, one-of-a-kind song for someone they love — in seconds.
+**Core Value:** Anyone can create a deeply personal, one-of-a-kind song for someone they love — in seconds, no musical skill required.
 
-## v4.0 Requirements
+## v4.1 Requirements
 
-Requirements for testing & optimization milestone. Each maps to roadmap phases.
+Requirements for Legal & Info Pages milestone. Each maps to roadmap phases.
+
+### Contact Page
+
+- [ ] **CONT-01**: User can view contact email address (contact@notevra.com) with mailto link
+- [ ] **CONT-02**: Contact page has proper SEO metadata (title, description)
+- [ ] **CONT-03**: Contact page uses consistent brand styling (Libre Baskerville headings, DM Sans body, baby blue palette)
+
+### Privacy Policy
+
+- [ ] **PRIV-01**: Privacy Policy lists all data collected (quiz answers: relationship, occasion, genre, qualities, memories, message; generated audio; server logs)
+- [ ] **PRIV-02**: Privacy Policy explains how data is used (song generation, service improvement)
+- [ ] **PRIV-03**: Privacy Policy names third-party processors (RunPod, Cloudflare R2, Vercel)
+- [ ] **PRIV-04**: Privacy Policy states data retention policy (indefinite for audio, session-based for quiz data in localStorage)
+- [ ] **PRIV-05**: Privacy Policy includes CCPA/GDPR user rights section (access, deletion, opt-out)
+- [ ] **PRIV-06**: Privacy Policy includes children's privacy section (COPPA — service not intended for under 13)
+- [ ] **PRIV-07**: Privacy Policy includes policy update notification clause
+- [ ] **PRIV-08**: Privacy Policy has proper SEO metadata and "Last Updated" date displayed
+
+### Terms of Service
+
+- [ ] **TOS-01**: ToS defines AI-generated content rights using license language (not ownership)
+- [ ] **TOS-02**: ToS includes acceptable use policy (no illegal content, no impersonation, no harmful use)
+- [ ] **TOS-03**: ToS includes DMCA/copyright section with designated agent contact
+- [ ] **TOS-04**: ToS includes disclaimers (no warranty, AI output not guaranteed unique)
+- [ ] **TOS-05**: ToS includes limitation of liability clause
+- [ ] **TOS-06**: ToS includes governing law and dispute resolution clause
+- [ ] **TOS-07**: ToS includes service modification/termination rights
+- [ ] **TOS-08**: ToS has proper SEO metadata and "Last Updated" date displayed
+
+### Shared Infrastructure
+
+- [ ] **INFRA-01**: Shared LegalLayout component for consistent page structure across all three pages
+- [ ] **INFRA-02**: Legal prose typography styles applied via Tailwind (using existing OKLCH tokens)
+
+## v4.0 Requirements (Complete)
 
 ### Infrastructure
 
@@ -45,8 +80,6 @@ Requirements for testing & optimization milestone. Each maps to roadmap phases.
 
 ## Future Requirements
 
-Deferred to next milestone. Tracked but not in current roadmap.
-
 ### Monetization
 
 - **PAY-01**: Payment/checkout via Stripe
@@ -58,21 +91,25 @@ Deferred to next milestone. Tracked but not in current roadmap.
 - **ANLYT-01**: Analytics/conversion tracking
 - **ADMIN-01**: Admin dashboard for order management
 
-### Test Expansion
+### Email Integration
 
-- **TEST-01**: Accessibility audit with axe-core
-- **TEST-02**: CI/CD integration for automated test runs
-- **TEST-03**: Visual regression testing
+- **EMAIL-02**: Contact form with name, email, message fields
+- **EMAIL-03**: Form submissions sent via Resend or similar service
+
+### Legal Compliance
+
+- **LEGAL-01**: DMCA agent registration with US Copyright Office ($6 filing)
+- **LEGAL-02**: Cookie consent banner (when analytics/ad networks are added)
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Unit test rewrite | Existing vitest unit tests are sufficient; focus on E2E |
-| CI/CD pipeline | Manual testing for v4.0; automate in future milestone |
-| Load/stress testing | Not needed at current scale |
-| Visual regression testing | Adds complexity; defer to future |
-| Cross-browser testing beyond Chromium + Mobile Safari | Two browsers cover 90%+ of users |
+| Contact form | No email sending infrastructure yet — defer to post-payment milestone |
+| Cookie consent banner | No cookies used (localStorage only), no analytics — unnecessary friction |
+| Social media links | No accounts exist yet |
+| MDX for legal content | TSX pages with Tailwind typography are simpler and sufficient |
+| Legal review by attorney | Content will be well-researched but not attorney-reviewed |
 
 ## Traceability
 
@@ -80,33 +117,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 18 | Complete |
-| INFRA-02 | Phase 18 | Complete |
-| INFRA-03 | Phase 18 | Complete |
-| INFRA-04 | Phase 20 | Complete |
-| E2E-01 | Phase 20 | Complete |
-| E2E-02 | Phase 20 | Complete |
-| E2E-03 | Phase 20 | Complete |
-| E2E-04 | Phase 20 | Complete |
-| E2E-05 | Phase 21 | Complete |
-| E2E-06 | Phase 21 | Complete |
-| E2E-07 | Phase 21 | Complete |
-| ERR-01 | Phase 19 | Complete |
-| ERR-02 | Phase 19 | Complete |
-| ERR-03 | Phase 19 | Complete |
-| MOB-01 | Phase 22 | Complete |
-| MOB-02 | Phase 22 | Complete |
-| MOB-03 | Phase 22 | Complete |
-| PERF-01 | Phase 23 | Complete |
-| PERF-02 | Phase 23 | Complete |
-| PERF-03 | Phase 23 | Complete |
-| PERF-04 | Phase 23 | Complete |
+| INFRA-01 (v4.1) | TBD | Pending |
+| INFRA-02 (v4.1) | TBD | Pending |
+| CONT-01 | TBD | Pending |
+| CONT-02 | TBD | Pending |
+| CONT-03 | TBD | Pending |
+| PRIV-01 | TBD | Pending |
+| PRIV-02 | TBD | Pending |
+| PRIV-03 | TBD | Pending |
+| PRIV-04 | TBD | Pending |
+| PRIV-05 | TBD | Pending |
+| PRIV-06 | TBD | Pending |
+| PRIV-07 | TBD | Pending |
+| PRIV-08 | TBD | Pending |
+| TOS-01 | TBD | Pending |
+| TOS-02 | TBD | Pending |
+| TOS-03 | TBD | Pending |
+| TOS-04 | TBD | Pending |
+| TOS-05 | TBD | Pending |
+| TOS-06 | TBD | Pending |
+| TOS-07 | TBD | Pending |
+| TOS-08 | TBD | Pending |
 
 **Coverage:**
-- v4.0 requirements: 21 total
-- Mapped to phases: 21
-- Unmapped: 0 ✓
+- v4.1 requirements: 18 total
+- Mapped to phases: 0
+- Unmapped: 18
 
 ---
 *Requirements defined: 2026-03-06*
-*Last updated: 2026-03-06 after roadmap creation (phases 18-23)*
+*Last updated: 2026-03-06 after v4.1 milestone definition*
