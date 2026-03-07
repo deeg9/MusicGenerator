@@ -245,12 +245,12 @@ Plans:
   3. A user who forgot their password can request a reset link, click it, enter a new password, and log in successfully
   4. A logged-in user can sign out from any page and is returned to anonymous state
   5. The header shows "Sign up / Log in" to anonymous visitors and "My Songs" to authenticated users — the quiz funnel is accessible without any auth prompt
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 28-01: Package install, Supabase client factories, middleware with correct matcher
-- [ ] 28-02: Auth routes (sign-up, login, forgot-password, update-password, confirm callback, error page)
-- [ ] 28-03: Header auth state and sign-out server action
+- [ ] 28-01-PLAN.md — Install @supabase/ssr, create client factories, middleware, and Zod auth schemas
+- [ ] 28-02-PLAN.md — Auth pages: sign-up, login, forgot-password, update-password, PKCE callback, error page
+- [ ] 28-03-PLAN.md — Header auth state (server/client split) and sign-out server action
 
 ### Phase 29: Database Schema + Song Persistence
 **Goal**: Every generated song is saved to the database with its quiz context — authenticated users are linked by user_id, anonymous users by session_token, and anonymous songs can be claimed when the user subsequently signs up
@@ -332,7 +332,7 @@ Plans:
 | 25. Contact Page | v4.1 | 0/TBD | Deferred | - |
 | 26. Privacy Policy | v4.1 | 0/TBD | Deferred | - |
 | 27. Terms of Service | v4.1 | 0/TBD | Deferred | - |
-| 28. Auth Infrastructure | v4.2 | 0/TBD | Not started | - |
+| 28. Auth Infrastructure | v4.2 | 0/3 | In progress | - |
 | 29. Database Schema + Song Persistence | v4.2 | 0/TBD | Not started | - |
 | 30. Email Infrastructure | v4.2 | 0/TBD | Not started | - |
 | 31. Success Page + Dashboard UI | v4.2 | 0/TBD | Not started | - |
