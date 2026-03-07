@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { submitGenerationJob } from '@/lib/heartmula';
 import { quizToPrompt } from '@/lib/quiz-prompt';
 import { classifyError, toErrorResponse } from '@/lib/errors';
+import { createClient } from '@/lib/supabase/server';
+import { db } from '@/db';
+import { songs } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { cookies } from 'next/headers';
 import type { QuizData } from '@/lib/quiz-types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,8 +60,9 @@ function validateQuizData(
  *
  * Design notes:
  * - Single submitGenerationJob call (batch_size=1 — no dual variants)
- * - No DB insert — Phase 16 validates UX only; persistence comes later
- * - No enhancePrompt call — personal content safety per research findings
+ * - Inserts a song row before calling HeartBula so every generation is tracked
+ * - Anonymous users receive a session cookie (notevra_session) for later claim
+ * - Authenticated users have user_id set directly on the song row
  * - Returns { jobId } for the polling phase (Plan 16-03)
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -90,17 +96,90 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // 3. Convert quiz answers to HeartMuLa params
+  // 3. Determine identity (authenticated vs anonymous)
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id ?? null;
+
+  let sessionToken: string | null = null;
+  if (!userId) {
+    // Read existing session cookie or generate a new one
+    const cookieStore = await cookies();
+    const existingSession = cookieStore.get('notevra_session');
+    sessionToken = existingSession?.value ?? crypto.randomUUID();
+  }
+
+  // 4. Insert song row (placeholder heartbulaJobId — back-filled after HeartBula responds)
+  let songId: string;
+  try {
+    const [song] = await db.insert(songs).values({
+      userId,
+      sessionToken,
+      status: 'generating',
+      heartbulaJobId: '',
+      recipientName: validation.data.recipientName,
+      relationship: validation.data.relationshipType ?? '',
+      genre: validation.data.genre,
+      quizData: {
+        qualities: validation.data.qualities,
+        memories: validation.data.memories,
+        message: validation.data.message,
+        voiceGender: validation.data.voicePreference,
+        language: validation.data.language,
+      },
+    }).returning({ id: songs.id });
+    songId = song.id;
+  } catch (rawError) {
+    console.error('[quiz-generate] db.insert(songs) failed:', rawError);
+    return NextResponse.json(
+      { error: { category: 'internal', retryable: false, userMessage: 'Failed to create song record.' } },
+      { status: 500 },
+    );
+  }
+
+  // 5. Convert quiz answers to HeartMuLa params
   const params = quizToPrompt(validation.data);
 
-  // 4. Submit single generation job (batch_size=1)
+  // 6. Submit single generation job (batch_size=1)
+  let jobId: string;
   try {
     const result = await submitGenerationJob(params);
-    return NextResponse.json({ jobId: result.job_id }, { status: 201 });
+    jobId = result.job_id;
   } catch (rawError) {
+    // HeartBula failed — mark the song row as failed
+    try {
+      await db.update(songs).set({ status: 'failed', failedAt: new Date() }).where(eq(songs.id, songId));
+    } catch (updateError) {
+      console.error('[quiz-generate] Failed to mark song as failed:', updateError);
+    }
+
     const classified = classifyError(rawError);
     const errorResponse = toErrorResponse(classified);
     console.error('[quiz-generate] submitGenerationJob failed:', classified.technicalMessage);
     return NextResponse.json(errorResponse, { status: 502 });
   }
+
+  // 7. Back-fill heartbulaJobId on the song row
+  try {
+    await db.update(songs).set({ heartbulaJobId: jobId }).where(eq(songs.id, songId));
+  } catch (updateError) {
+    console.error('[quiz-generate] Failed to back-fill heartbulaJobId:', updateError);
+    // Non-fatal — job is running, don't fail the response
+  }
+
+  // 8. Build response
+  const response = NextResponse.json({ jobId }, { status: 201 });
+
+  // Set session cookie for anonymous users
+  if (sessionToken) {
+    response.cookies.set('notevra_session', sessionToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      secure: process.env.NODE_ENV === 'production',
+    });
+  }
+
+  return response;
 }
