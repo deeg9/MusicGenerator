@@ -2,73 +2,86 @@ import {
   pgTable,
   uuid,
   text,
-  integer,
-  boolean,
   timestamp,
+  jsonb,
   pgEnum,
+  pgPolicy,
   index,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { authenticatedRole, anonRole } from 'drizzle-orm/supabase';
+import { sql } from 'drizzle-orm';
 
-export const generationStatusEnum = pgEnum('generation_status', [
-  'pending',
-  'processing',
+export const songStatusEnum = pgEnum('song_status', [
+  'generating',
   'completed',
   'failed',
 ]);
 
-export const generations = pgTable(
-  'generations',
+export const songs = pgTable(
+  'songs',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    backendJobIds: text('backend_job_ids').array().notNull(),
-    status: generationStatusEnum('status').notNull().default('pending'),
 
-    // Inputs
-    promptText: text('prompt_text').notNull(),
-    lyrics: text('lyrics'),
-    genreTags: text('genre_tags'),
-    duration: integer('duration').notNull().default(120), // seconds
-    instrumental: boolean('instrumental').notNull().default(false),
+    // Auth linkage — one of these is non-null
+    userId: uuid('user_id'),             // Supabase auth.users id; null for anonymous
+    sessionToken: text('session_token'), // anonymous session cookie; null after claim
+
+    // Status tracking
+    status: songStatusEnum('status').notNull().default('generating'),
+    heartbulaJobId: text('heartbula_job_id').notNull(),
+
+    // Quiz fields (top-level for dashboard display/filtering)
+    recipientName: text('recipient_name').notNull(),
+    relationship: text('relationship').notNull(),
+    genre: text('genre').notNull(),
+
+    // Remaining quiz context
+    quizData: jsonb('quiz_data').notNull().$type<{
+      occasion?: string;
+      qualities?: string;
+      memories?: string;
+      message?: string;
+      voiceGender?: string;
+      language?: string;
+    }>(),
+
+    // R2 audio storage
+    r2WavKey: text('r2_wav_key'),   // null until finalized
+    r2Mp3Key: text('r2_mp3_key'),   // null until finalized
 
     // Timing
-    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     failedAt: timestamp('failed_at', { withTimezone: true }),
-
-    // Error tracking
-    errorType: text('error_type'), // 'model_error' | 'timeout' | 'gpu_unavailable' | etc.
-    errorMessage: text('error_message'),
-    retryable: boolean('retryable'),
   },
-  (table) => [
-    index('generations_status_idx').on(table.status),
+  (t) => [
+    // ── RLS: Authenticated users see only their own songs ──────────────────
+    pgPolicy('songs-authenticated-select', {
+      for: 'select',
+      to: authenticatedRole,
+      using: sql`user_id = auth.uid()`,
+    }),
+    pgPolicy('songs-authenticated-update', {
+      for: 'update',
+      to: authenticatedRole,
+      using: sql`user_id = auth.uid()`,
+      withCheck: sql`user_id = auth.uid()`,
+    }),
+    pgPolicy('songs-authenticated-delete', {
+      for: 'delete',
+      to: authenticatedRole,
+      using: sql`user_id = auth.uid()`,
+    }),
+    // ── RLS: anon role cannot read or write songs (all INSERT/UPDATE done
+    //    by trusted server code via postgres role, which bypasses RLS) ──────
+    pgPolicy('songs-anon-deny-all', {
+      for: 'all',
+      to: anonRole,
+      using: sql`false`,
+    }),
+    // ── Indexes ─────────────────────────────────────────────────────────────
+    index('songs_user_id_idx').on(t.userId),
+    index('songs_session_token_idx').on(t.sessionToken),
+    index('songs_status_idx').on(t.status),
   ],
-);
-
-export const outputs = pgTable(
-  'outputs',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    generationId: uuid('generation_id')
-      .notNull()
-      .references(() => generations.id, { onDelete: 'cascade' }),
-    variantIndex: integer('variant_index').notNull(), // 0 or 1
-    r2Key: text('r2_key').notNull(), // e.g. "generations/abc123/output_0.wav"
-    mp3R2Key: text('mp3_r2_key'), // e.g. "generations/abc123/output_0.mp3" (nullable — conversion may fail)
-    mp3FileSizeBytes: integer('mp3_file_size_bytes'), // for displaying file size in UI (nullable)
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [index('outputs_generation_idx').on(table.generationId)],
-);
-
-export const generationsRelations = relations(generations, ({ many }) => ({
-  outputs: many(outputs),
-}));
-
-export const outputsRelations = relations(outputs, ({ one }) => ({
-  generation: one(generations, {
-    fields: [outputs.generationId],
-    references: [generations.id],
-  }),
-}));
+).enableRLS();

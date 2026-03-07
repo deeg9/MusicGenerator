@@ -39,6 +39,26 @@ export function buildR2Mp3Key(generationId: string, variantIndex: number): strin
   return `generations/${generationId}/output_${variantIndex}.mp3`;
 }
 
+/**
+ * Build a deterministic R2 object key for a song WAV file.
+ *
+ * Format: songs/{songId}/audio.wav
+ * Example: songs/d4f2a8b1-3e9c-4a1b-b2c3-d5e6f7a8b9c0/audio.wav
+ */
+export function buildSongR2WavKey(songId: string): string {
+  return `songs/${songId}/audio.wav`;
+}
+
+/**
+ * Build a deterministic R2 object key for a song MP3 file.
+ *
+ * Format: songs/{songId}/audio.mp3
+ * Example: songs/d4f2a8b1-3e9c-4a1b-b2c3-d5e6f7a8b9c0/audio.mp3
+ */
+export function buildSongR2Mp3Key(songId: string): string {
+  return `songs/${songId}/audio.mp3`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Upload
 // ─────────────────────────────────────────────────────────────────────────────
