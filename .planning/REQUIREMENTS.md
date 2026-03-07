@@ -151,36 +151,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | — | Pending |
-| AUTH-02 | — | Pending |
-| AUTH-03 | — | Pending |
-| AUTH-04 | — | Pending |
-| AUTH-05 | — | Pending |
-| AUTH-06 | — | Pending |
-| AUTH-07 | — | Pending |
-| AUTH-08 | — | Pending |
-| AUTH-09 | — | Pending |
-| SONG-01 | — | Pending |
-| SONG-02 | — | Pending |
-| SONG-03 | — | Pending |
-| SONG-04 | — | Pending |
-| EMAIL-01 | — | Pending |
-| EMAIL-02 | — | Pending |
-| EMAIL-03 | — | Pending |
-| EMAIL-04 | — | Pending |
-| DASH-01 | — | Pending |
-| DASH-02 | — | Pending |
-| DASH-03 | — | Pending |
-| DASH-04 | — | Pending |
-| SUCC-01 | — | Pending |
-| SUCC-02 | — | Pending |
-| SUCC-03 | — | Pending |
+| AUTH-01 | Phase 28 | Pending |
+| AUTH-02 | Phase 28 | Pending |
+| AUTH-03 | Phase 28 | Pending |
+| AUTH-04 | Phase 28 | Pending |
+| AUTH-05 | Phase 28 | Pending |
+| AUTH-06 | Phase 28 | Pending |
+| AUTH-07 | Phase 28 | Pending |
+| AUTH-08 | Phase 28 | Pending |
+| AUTH-09 | Phase 28 | Pending |
+| SONG-01 | Phase 29 | Pending |
+| SONG-02 | Phase 29 | Pending |
+| SONG-03 | Phase 29 | Pending |
+| SONG-04 | Phase 29 | Pending |
+| EMAIL-01 | Phase 30 | Pending |
+| EMAIL-02 | Phase 30 | Pending |
+| EMAIL-03 | Phase 30 | Pending |
+| EMAIL-04 | Phase 30 | Pending |
+| DASH-01 | Phase 31 | Pending |
+| DASH-02 | Phase 31 | Pending |
+| DASH-03 | Phase 31 | Pending |
+| DASH-04 | Phase 31 | Pending |
+| SUCC-01 | Phase 31 | Pending |
+| SUCC-02 | Phase 31 | Pending |
+| SUCC-03 | Phase 31 | Pending |
 
 **Coverage:**
 - v4.2 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- Mapped to phases: 24
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-06*
-*Last updated: 2026-03-06 after v4.2 initial definition*
+*Last updated: 2026-03-06 after v4.2 roadmap creation*

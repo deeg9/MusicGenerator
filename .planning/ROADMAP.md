@@ -7,7 +7,8 @@
 - ✅ **v2.0 Suno-Style UX Overhaul** — Phases 9-12 (shipped 2026-03-06)
 - ✅ **v3.0 Notevra Gift Funnel** — Phases 13-17 (shipped 2026-03-06)
 - ✅ **v4.0 Testing & Optimization** — Phases 18-23 (shipped 2026-03-06)
-- 🚧 **v4.1 Legal & Info Pages** — Phases 24-27 (in progress)
+- 📋 **v4.1 Legal & Info Pages** — Phases 24-27 (deferred)
+- 🚧 **v4.2 Auth & Email Delivery** — Phases 28-31 (in progress)
 
 ## Phases
 
@@ -64,14 +65,24 @@
 
 </details>
 
-### v4.1 Legal & Info Pages (In Progress)
-
-**Milestone Goal:** Add Contact, Privacy Policy, and Terms of Service pages tailored to Notevra as an AI music gift service — covering quiz data collection, audio storage, third-party processors, AI content rights, and DMCA compliance.
+<details>
+<summary>📋 v4.1 Legal & Info Pages (Phases 24-27) — DEFERRED</summary>
 
 - [ ] **Phase 24: Shared Legal Infrastructure** - `.prose-legal` CSS block and `LegalLayout` Server Component that all three pages depend on
 - [ ] **Phase 25: Contact Page** - `/contact` route with email display, brand-warm copy, and Footer link validation
 - [ ] **Phase 26: Privacy Policy** - `/privacy` route with full CCPA/GDPR/COPPA-compliant content naming quiz data, retention periods, and user rights
 - [ ] **Phase 27: Terms of Service** - `/terms` route with AI content license, acceptable use, DMCA designation, disclaimers, and liability terms
+
+</details>
+
+### v4.2 Auth & Email Delivery (In Progress)
+
+**Milestone Goal:** Add Supabase Auth for user accounts, song persistence to database, Resend email delivery for creators and recipients, and a song dashboard — while keeping the quiz funnel entirely public and anonymous.
+
+- [ ] **Phase 28: Auth Infrastructure** - Supabase Auth with @supabase/ssr: sign-up, login, password reset, session middleware, callback handler, error page, and header auth state
+- [ ] **Phase 29: Database Schema + Song Persistence** - Songs table with RLS policies, Drizzle schema update, generation pipeline modified to insert song rows, anonymous-to-authenticated claim mechanism via session_token
+- [ ] **Phase 30: Email Infrastructure** - Resend domain verification, Supabase SMTP configuration, React Email branded templates, and send-creator/send-recipient API routes
+- [ ] **Phase 31: Success Page + Dashboard UI** - Non-blocking auth upsell on success page, recipient email form, song claim wiring, /dashboard with playback and re-download, header auth-aware nav
 
 ## Phase Details
 
@@ -162,6 +173,9 @@ Plans:
 
 </details>
 
+<details>
+<summary>📋 v4.1 Phase Details (Phases 24-27) — DEFERRED</summary>
+
 ### Phase 24: Shared Legal Infrastructure
 **Goal**: The prose typography CSS and shared LegalLayout component exist and render correctly — every legal page can be built on top of this foundation without structural rework
 **Depends on**: Nothing (first phase of milestone)
@@ -219,6 +233,74 @@ Plans:
 Plans:
 - [ ] 27-01: Terms of Service page with AI license language, DMCA designation, and liability terms
 
+</details>
+
+### Phase 28: Auth Infrastructure
+**Goal**: Users can create accounts, log in, reset passwords, and have their session persist across browser refreshes — the correct @supabase/ssr package is installed, middleware runs on all protected routes only, and the quiz funnel remains entirely public
+**Depends on**: Nothing (first phase of milestone)
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09
+**Success Criteria** (what must be TRUE):
+  1. A new visitor can sign up with email and password and receive an email confirmation (routed through Resend SMTP)
+  2. A returning user can log in with email and password and remain logged in after closing and reopening the browser
+  3. A user who forgot their password can request a reset link, click it, enter a new password, and log in successfully
+  4. A logged-in user can sign out from any page and is returned to anonymous state
+  5. The header shows "Sign up / Log in" to anonymous visitors and "My Songs" to authenticated users — the quiz funnel is accessible without any auth prompt
+**Plans**: TBD
+
+Plans:
+- [ ] 28-01: Package install, Supabase client factories, middleware with correct matcher
+- [ ] 28-02: Auth routes (sign-up, login, forgot-password, update-password, confirm callback, error page)
+- [ ] 28-03: Header auth state and sign-out server action
+
+### Phase 29: Database Schema + Song Persistence
+**Goal**: Every generated song is saved to the database with its quiz context — authenticated users are linked by user_id, anonymous users by session_token, and anonymous songs can be claimed when the user subsequently signs up
+**Depends on**: Phase 28
+**Requirements**: SONG-01, SONG-02, SONG-03, SONG-04
+**Success Criteria** (what must be TRUE):
+  1. A songs row is inserted into Supabase after every successful HeartBula generation — whether the user is authenticated or anonymous
+  2. An authenticated user's generated songs have their user_id on the row; anonymous songs have a session_token and a null user_id
+  3. Quiz context (recipient name, relationship, message, genre) is stored on the song row and readable from the database
+  4. When an anonymous user signs up after generating a song, their song is claimed and appears in their account — confirmed by querying the songs table
+  5. RLS policies prevent any user from reading or modifying another user's songs — verified by attempting a cross-user query
+**Plans**: TBD
+
+Plans:
+- [ ] 29-01: Drizzle schema update (songs table with RLS), raw SQL migration, pgSchema auth proxy
+- [ ] 29-02: Generation pipeline modification to insert songs row + anonymous claim flow on sign-up
+
+### Phase 30: Email Infrastructure
+**Goal**: Resend is the verified sending domain for Notevra, all Supabase auth emails route through Resend, and two branded React Email templates exist with working API routes that can send song-ready and gift delivery emails
+**Depends on**: Phase 28
+**Requirements**: EMAIL-01, EMAIL-02, EMAIL-03, EMAIL-04
+**Success Criteria** (what must be TRUE):
+  1. Supabase auth emails (email confirmation, password reset) arrive in inbox — not spam — via the verified Resend sending domain
+  2. Calling POST /api/send-creator-email with a song id sends a song-ready email to the creator containing a listen/download link
+  3. Calling POST /api/send-recipient-email with a song id and recipient email sends a gift delivery email containing the recipient name, the quiz message, and a listen link
+  4. Both emails render correctly in Gmail, Apple Mail, and Outlook — baby blue header, Libre Baskerville heading, warm body copy, no broken images or layout
+**Plans**: TBD
+
+Plans:
+- [ ] 30-01: Resend domain verification, Supabase SMTP config, next.config.ts serverExternalPackages addition
+- [ ] 30-02: SongReadyEmail and GiftDeliveryEmail React Email templates
+- [ ] 30-03: /api/send-creator-email and /api/send-recipient-email route handlers
+
+### Phase 31: Success Page + Dashboard UI
+**Goal**: After generation, signed-in users see their song saved to their account; anonymous users are offered a non-blocking sign-up nudge; creators can send a gift email to the recipient; and authenticated users can view, play, and download all their past songs from /dashboard
+**Depends on**: Phase 29, Phase 30
+**Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, SUCC-01, SUCC-02, SUCC-03
+**Success Criteria** (what must be TRUE):
+  1. After song generation, an inline "Sign up to save your song" prompt appears below the audio player — it is never a modal gate and never appears before the song is ready
+  2. A creator can enter a recipient email on the success page and send a gift delivery email — the send button is not active until a song is in COMPLETED state
+  3. The recipient email field displays the privacy framing copy ("Private link — no marketing, ever") beneath the input
+  4. Visiting /dashboard while unauthenticated redirects to the login page with a return URL
+  5. An authenticated user's /dashboard lists all their past songs with recipient name, relationship, genre, and date — each song has a working audio player and a re-download button
+**Plans**: TBD
+
+Plans:
+- [ ] 31-01: AuthPrompt component + RecipientEmailForm + email trigger wiring on success page
+- [ ] 31-02: /dashboard page (Server Component auth guard, song list, SongCard with playback + re-download)
+- [ ] 31-03: Header auth-aware nav integration and end-to-end smoke test of full authenticated flow
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -246,10 +328,14 @@ Plans:
 | 21. Happy Path and Error State E2E | v4.0 | 2/2 | Complete | 2026-03-06 |
 | 22. Mobile Responsiveness | v4.0 | 2/2 | Complete | 2026-03-06 |
 | 23. Performance Audit and Optimization | v4.0 | 2/2 | Complete | 2026-03-06 |
-| 24. Shared Legal Infrastructure | v4.1 | 0/TBD | Not started | - |
-| 25. Contact Page | v4.1 | 0/TBD | Not started | - |
-| 26. Privacy Policy | v4.1 | 0/TBD | Not started | - |
-| 27. Terms of Service | v4.1 | 0/TBD | Not started | - |
+| 24. Shared Legal Infrastructure | v4.1 | 0/TBD | Deferred | - |
+| 25. Contact Page | v4.1 | 0/TBD | Deferred | - |
+| 26. Privacy Policy | v4.1 | 0/TBD | Deferred | - |
+| 27. Terms of Service | v4.1 | 0/TBD | Deferred | - |
+| 28. Auth Infrastructure | v4.2 | 0/TBD | Not started | - |
+| 29. Database Schema + Song Persistence | v4.2 | 0/TBD | Not started | - |
+| 30. Email Infrastructure | v4.2 | 0/TBD | Not started | - |
+| 31. Success Page + Dashboard UI | v4.2 | 0/TBD | Not started | - |
 
 ---
 *See `.planning/milestones/` for detailed phase archives*

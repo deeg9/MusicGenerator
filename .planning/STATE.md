@@ -5,9 +5,9 @@ milestone_name: Auth & Email Delivery
 status: active
 stopped_at: null
 last_updated: "2026-03-06"
-last_activity: 2026-03-06 — Milestone v4.2 started
+last_activity: 2026-03-06 — Roadmap created, Phase 28 ready to plan
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,14 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Anyone can create a deeply personal, one-of-a-kind song for someone they love — in seconds.
-**Current focus:** Defining requirements for v4.2
+**Current focus:** Phase 28 — Auth Infrastructure
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-06 — Milestone v4.2 started
+Phase: 28 of 31 (Auth Infrastructure)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
+
+Progress: [░░░░░░░░░░] 0% (v4.2)
 
 ## Performance Metrics
 
@@ -41,7 +43,10 @@ Last activity: 2026-03-06 — Milestone v4.2 started
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| — | — | — | — |
+| 28. Auth Infrastructure | TBD | - | - |
+| 29. Database Schema + Song Persistence | TBD | - | - |
+| 30. Email Infrastructure | TBD | - | - |
+| 31. Success Page + Dashboard UI | TBD | - | - |
 
 *Updated after each plan completion*
 
@@ -49,15 +54,15 @@ Last activity: 2026-03-06 — Milestone v4.2 started
 
 ### Decisions
 
-- [v4.1]: Contact page is display-only — email address shown, no form (no email infrastructure yet)
-- [v4.1]: Audio retention is indefinite — state this explicitly in Privacy Policy
-- [v4.1]: No social media accounts exist — Contact page falls back to email-only
+- [v4.2 research]: Use `@supabase/ssr` only — `@supabase/auth-helpers-nextjs` is deprecated, causes silent session failures
+- [v4.2 research]: Use `getUser()` in all server code — `getSession()` reads cookie without JWT revalidation and can be spoofed
+- [v4.2 research]: Middleware matcher must exclude static assets to avoid 400 errors and Supabase quota inflation
+- [v4.2 research]: Only protect `/dashboard` in middleware — quiz funnel must remain entirely public
+- [v4.2 research]: Store R2 object keys in songs table, not presigned URLs — presign at read time
+- [v4.2 research]: Disable email confirmation for v4.2 — document re-enable procedure in Phase 28 for future payments milestone
+- [v4.2 research]: Auth upsell on success page is non-blocking inline nudge — never a modal gate, never before COMPLETED state
 - [v4.1]: Legal pages use TSX over MDX — simpler, no new dependencies
 - [v4.1]: No `@tailwindcss/typography` — write `.prose-legal` manually using existing OKLCH tokens
-- [v4.2]: Quiz stays public — auth prompt appears on success page after generation
-- [v4.2]: Full Supabase Auth (email+password) — not just email capture
-- [v4.2]: Gift delivery via Resend — sender enters recipient email on success page
-- [v4.2]: Song dashboard for signed-in users — playback + re-download of past songs
 
 ### Pending Todos
 
@@ -65,11 +70,14 @@ None.
 
 ### Blockers/Concerns
 
-- Corrupt git object 75510b3 prevents push — run `git fsck` to diagnose
+- [Pre-milestone]: Resend domain verification takes 24-48 hours DNS propagation — start before Phase 30 email code
+- [Pre-milestone]: Corrupt git object 75510b3 prevents push — run `git fsck` to diagnose before milestone ships
+- [Phase 28]: PKCE reset links are browser-session-bound — UI must warn user to click on same device (decide copy during planning)
+- [Phase 30]: R2 presigned URL expiration in gift emails must be 7 days minimum, cannot exceed 30-day R2 object lifetime
 
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: Defining requirements for v4.2
+Stopped at: Roadmap created for v4.2 — Phase 28 ready to plan
 Resume file: None
-Next action: Continue milestone setup
+Next action: `/gsd:plan-phase 28`
