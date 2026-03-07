@@ -248,9 +248,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 28-01-PLAN.md — Install @supabase/ssr, create client factories, middleware, and Zod auth schemas
-- [ ] 28-02-PLAN.md — Auth pages: sign-up, login, forgot-password, update-password, PKCE callback, error page
-- [ ] 28-03-PLAN.md — Header auth state (server/client split) and sign-out server action
+- [x] 28-01-PLAN.md — Install @supabase/ssr, create client factories, middleware, and Zod auth schemas
+- [x] 28-02-PLAN.md — Auth pages: sign-up, login, forgot-password, update-password, PKCE callback, error page
+- [x] 28-03-PLAN.md — Header auth state (server/client split) and sign-out server action
 
 ### Phase 29: Database Schema + Song Persistence
 **Goal**: Every generated song is saved to the database with its quiz context — authenticated users are linked by user_id, anonymous users by session_token, and anonymous songs can be claimed when the user subsequently signs up
@@ -262,11 +262,11 @@ Plans:
   3. Quiz context (recipient name, relationship, message, genre) is stored on the song row and readable from the database
   4. When an anonymous user signs up after generating a song, their song is claimed and appears in their account — confirmed by querying the songs table
   5. RLS policies prevent any user from reading or modifying another user's songs — verified by attempting a cross-user query
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 29-01: Drizzle schema update (songs table with RLS), raw SQL migration, pgSchema auth proxy
-- [ ] 29-02: Generation pipeline modification to insert songs row + anonymous claim flow on sign-up
+- [ ] 29-01-PLAN.md — Songs table schema with RLS policies, R2 key helpers, drizzle-kit push to Supabase
+- [ ] 29-02-PLAN.md — Generation pipeline song insert, poll-job finalization, audio R2 fallback, signup claim
 
 ### Phase 30: Email Infrastructure
 **Goal**: Resend is the verified sending domain for Notevra, all Supabase auth emails route through Resend, and two branded React Email templates exist with working API routes that can send song-ready and gift delivery emails
@@ -332,8 +332,8 @@ Plans:
 | 25. Contact Page | v4.1 | 0/TBD | Deferred | - |
 | 26. Privacy Policy | v4.1 | 0/TBD | Deferred | - |
 | 27. Terms of Service | v4.1 | 0/TBD | Deferred | - |
-| 28. Auth Infrastructure | 3/3 | Complete    | 2026-03-07 | - |
-| 29. Database Schema + Song Persistence | v4.2 | 0/TBD | Not started | - |
+| 28. Auth Infrastructure | v4.2 | 3/3 | Complete | 2026-03-07 |
+| 29. Database Schema + Song Persistence | v4.2 | 0/2 | Not started | - |
 | 30. Email Infrastructure | v4.2 | 0/TBD | Not started | - |
 | 31. Success Page + Dashboard UI | v4.2 | 0/TBD | Not started | - |
 
