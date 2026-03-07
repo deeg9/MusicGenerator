@@ -3,6 +3,7 @@ import { DM_Sans, Libre_Baskerville, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { createClient } from '@/lib/supabase/server';
 
 const dmSans = DM_Sans({
   variable: '--font-dm-sans',
@@ -29,15 +30,20 @@ export const metadata: Metadata = {
   description: 'Turn your feelings into a song. Personalized AI music gifts, made with love.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html lang="en">
       <body className={`${dmSans.variable} ${libreBaskerville.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
-        <Header />
+        <Header user={user} />
         <main className="flex-1">{children}</main>
         <Footer />
       </body>
