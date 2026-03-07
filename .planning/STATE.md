@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Phase 29 context gathered
-last_updated: "2026-03-07T03:27:31.491Z"
+stopped_at: Completed 29-01-PLAN.md (songs table live in Supabase)
+last_updated: "2026-03-07T04:31:14.764Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
   completed_phases: 7
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 17
+  completed_plans: 16
   percent: 0
 ---
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 | Phase 28-auth-infrastructure P01 | 10m | 3 tasks | 13 files |
 | Phase 28-auth-infrastructure P02 | 2m | 2 tasks | 10 files |
 | Phase 28-auth-infrastructure P03 | ~2 minutes | 2 tasks | 4 files |
+| Phase 29-database-schema-song-persistence P01 | 30m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 - [Phase Phase 28-03]: Header split into Server (Header.tsx) and Client (HeaderClient.tsx) to thread auth state from layout without client-side flicker
 - [Phase Phase 28-03]: Avatar dropdown uses form action={signOut} pattern — clean server action invocation without useTransition
 - [Phase Phase 28-03]: Tests updated to import HeaderClient directly (Server Components cannot be rendered in Vitest)
+- [Phase 29-01]: drizzle-kit push blocked by Supabase CHECK constraint bug — applied schema via raw SQL in Supabase SQL Editor as equivalent workaround
+- [Phase 29-01]: songs-anon-deny-all RLS policy uses FOR ALL with USING false to block all anonymous operations at the DB level
 
 ### Pending Todos
 
@@ -89,7 +92,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07T03:27:31.489Z
-Stopped at: Phase 29 context gathered
-Resume file: .planning/phases/29-database-schema-song-persistence/29-CONTEXT.md
+Last session: 2026-03-07T04:31:14.762Z
+Stopped at: Completed 29-01-PLAN.md (songs table live in Supabase)
+Resume file: None
 Next action: `/gsd:plan-phase 28`
