@@ -265,8 +265,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 29-01-PLAN.md — Songs table schema with RLS policies, R2 key helpers, drizzle-kit push to Supabase
-- [ ] 29-02-PLAN.md — Generation pipeline song insert, poll-job finalization, audio R2 fallback, signup claim
+- [x] 29-01-PLAN.md — Songs table schema with RLS policies, R2 key helpers, drizzle-kit push to Supabase
+- [x] 29-02-PLAN.md — Generation pipeline song insert, poll-job finalization, audio R2 fallback, signup claim
 
 ### Phase 30: Email Infrastructure
 **Goal**: Resend is the verified sending domain for Notevra, all Supabase auth emails route through Resend, and two branded React Email templates exist with working API routes that can send song-ready and gift delivery emails
@@ -277,12 +277,12 @@ Plans:
   2. Calling POST /api/send-creator-email with a song id sends a song-ready email to the creator containing a listen/download link
   3. Calling POST /api/send-recipient-email with a song id and recipient email sends a gift delivery email containing the recipient name, the quiz message, and a listen link
   4. Both emails render correctly in Gmail, Apple Mail, and Outlook — baby blue header, Libre Baskerville heading, warm body copy, no broken images or layout
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 30-01: Resend domain verification, Supabase SMTP config, next.config.ts serverExternalPackages addition
-- [ ] 30-02: SongReadyEmail and GiftDeliveryEmail React Email templates
-- [ ] 30-03: /api/send-creator-email and /api/send-recipient-email route handlers
+- [ ] 30-01-PLAN.md — Install Resend SDK, create client singleton, update env/config, configure Supabase SMTP
+- [ ] 30-02-PLAN.md — SongReadyEmail and GiftDeliveryEmail React Email templates with smoke tests
+- [ ] 30-03-PLAN.md — /api/send-creator-email and /api/send-recipient-email route handlers with unit tests
 
 ### Phase 31: Success Page + Dashboard UI
 **Goal**: After generation, signed-in users see their song saved to their account; anonymous users are offered a non-blocking sign-up nudge; creators can send a gift email to the recipient; and authenticated users can view, play, and download all their past songs from /dashboard
@@ -333,8 +333,8 @@ Plans:
 | 26. Privacy Policy | v4.1 | 0/TBD | Deferred | - |
 | 27. Terms of Service | v4.1 | 0/TBD | Deferred | - |
 | 28. Auth Infrastructure | v4.2 | 3/3 | Complete | 2026-03-07 |
-| 29. Database Schema + Song Persistence | 2/2 | Complete    | 2026-03-07 | - |
-| 30. Email Infrastructure | v4.2 | 0/TBD | Not started | - |
+| 29. Database Schema + Song Persistence | v4.2 | 2/2 | Complete | 2026-03-07 |
+| 30. Email Infrastructure | v4.2 | 0/3 | Not started | - |
 | 31. Success Page + Dashboard UI | v4.2 | 0/TBD | Not started | - |
 
 ---
