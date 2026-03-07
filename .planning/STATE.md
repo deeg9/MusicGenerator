@@ -5,9 +5,9 @@ milestone_name: Legal & Info Pages
 status: active
 stopped_at: null
 last_updated: "2026-03-06"
-last_activity: 2026-03-06 — Milestone v4.1 started
+last_activity: 2026-03-06 — Roadmap created, Phase 24 ready to plan
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,22 +21,41 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Anyone can create a deeply personal, one-of-a-kind song for someone they love — in seconds.
-**Current focus:** Defining requirements for v4.1 Legal & Info Pages
+**Current focus:** Phase 24 — Shared Legal Infrastructure
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-06 — Milestone v4.1 started
+Phase: 24 of 27 (Shared Legal Infrastructure)
+Plan: — (not started)
+Status: Ready to plan
+Last activity: 2026-03-06 — Roadmap created for v4.1
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0 (this milestone)
+- Average duration: —
+- Total execution time: —
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| — | — | — | — |
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
 ### Decisions
 
-- [v3.0]: A40 pod migration (96y089egxk3xm5) planned but unverified — verify in Phase 18 before any test is written
-- [v4.0]: page.route() cannot intercept server-side HeartMuLa fetch — all generation E2E tests hit the real A40 pod
-- [v4.0]: reducedMotion: reduce in Playwright config disables Framer Motion animations, preventing flaky assertions
+- [v4.1]: Contact page is display-only — email address shown, no form (no email infrastructure yet)
+- [v4.1]: Audio retention is indefinite — state this explicitly in Privacy Policy
+- [v4.1]: No social media accounts exist — Contact page falls back to email-only
+- [v4.1]: Legal pages use TSX over MDX — simpler, no new dependencies
+- [v4.1]: No `@tailwindcss/typography` — write `.prose-legal` manually using existing OKLCH tokens
 
 ### Pending Todos
 
@@ -44,11 +63,12 @@ None.
 
 ### Blockers/Concerns
 
+- DMCA agent registration ($6 at copyright.gov) must happen before Phase 27 (Terms of Service) ships — not a code task but a hard dependency
 - Corrupt git object 75510b3 prevents push — run `git fsck` to diagnose
 
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: null
+Stopped at: Roadmap created — ready to plan Phase 24
 Resume file: None
-Next action: Define requirements
+Next action: `/gsd:plan-phase 24`

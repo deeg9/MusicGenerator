@@ -6,7 +6,8 @@
 - ✅ **v1.1 Brand & Visual Redesign** — Phases 5-8 (shipped 2026-03-05)
 - ✅ **v2.0 Suno-Style UX Overhaul** — Phases 9-12 (shipped 2026-03-06)
 - ✅ **v3.0 Notevra Gift Funnel** — Phases 13-17 (shipped 2026-03-06)
-- 🚧 **v4.0 Testing & Optimization** — Phases 18-23 (in progress)
+- ✅ **v4.0 Testing & Optimization** — Phases 18-23 (shipped 2026-03-06)
+- 🚧 **v4.1 Legal & Info Pages** — Phases 24-27 (in progress)
 
 ## Phases
 
@@ -51,18 +52,31 @@
 
 </details>
 
-### v4.0 Testing & Optimization (In Progress)
+<details>
+<summary>✅ v4.0 Testing & Optimization (Phases 18-23) — SHIPPED 2026-03-06</summary>
 
-**Milestone Goal:** Prove the Notevra funnel works reliably under real conditions — correct quiz validation, stable generation polling, mobile usability, production-quality Core Web Vitals, and error UI that guides users when generation fails.
+- [x] Phase 18: Playwright Setup and Environment (1/1 plan) — completed 2026-03-06
+- [x] Phase 19: Error Boundaries and API Hardening (3/3 plans) — completed 2026-03-06
+- [x] Phase 20: Page Object Models and Smoke Tests (2/2 plans) — completed 2026-03-06
+- [x] Phase 21: Happy Path and Error State E2E (2/2 plans) — completed 2026-03-06
+- [x] Phase 22: Mobile Responsiveness (2/2 plans) — completed 2026-03-06
+- [x] Phase 23: Performance Audit and Optimization (2/2 plans) — completed 2026-03-06
 
-- [x] **Phase 18: Playwright Setup and Environment** - Install Playwright, verify A40 pod connectivity, configure test harness with correct timeouts and animation settings (completed 2026-03-06)
-- [x] **Phase 19: Error Boundaries and API Hardening** - Add error.tsx boundaries at quiz routes, structured JSON error responses, recovery UI for generation timeouts (completed 2026-03-06)
-- [x] **Phase 20: Page Object Models and Smoke Tests** - Build POMs for all three pages, run landing and quiz validation E2E specs without live API (completed 2026-03-06)
-- [x] **Phase 21: Happy Path and Error State E2E** - Full end-to-end generation test against live A40 pod, error state specs for pod offline and failed generation (completed 2026-03-06)
-- [x] **Phase 22: Mobile Responsiveness** - Verify landing, quiz, and success pages at iPhone and iPad viewports with correct touch targets and layout (completed 2026-03-06)
-- [x] **Phase 23: Performance Audit and Optimization** - Bundle analysis, lazy load heavy dependencies, Core Web Vitals audit from production build (completed 2026-03-06)
+</details>
+
+### v4.1 Legal & Info Pages (In Progress)
+
+**Milestone Goal:** Add Contact, Privacy Policy, and Terms of Service pages tailored to Notevra as an AI music gift service — covering quiz data collection, audio storage, third-party processors, AI content rights, and DMCA compliance.
+
+- [ ] **Phase 24: Shared Legal Infrastructure** - `.prose-legal` CSS block and `LegalLayout` Server Component that all three pages depend on
+- [ ] **Phase 25: Contact Page** - `/contact` route with email display, brand-warm copy, and Footer link validation
+- [ ] **Phase 26: Privacy Policy** - `/privacy` route with full CCPA/GDPR/COPPA-compliant content naming quiz data, retention periods, and user rights
+- [ ] **Phase 27: Terms of Service** - `/terms` route with AI content license, acceptable use, DMCA designation, disclaimers, and liability terms
 
 ## Phase Details
+
+<details>
+<summary>✅ v4.0 Phase Details (Phases 18-23) — SHIPPED 2026-03-06</summary>
 
 ### Phase 18: Playwright Setup and Environment
 **Goal**: The Playwright test harness is installed, configured, and confirmed to reach the live A40 pod — every subsequent phase can run without environment surprises
@@ -143,8 +157,67 @@ Plans:
   4. Landing page LCP is below 2.5s and CLS is below 0.1 measured from a production build
 **Plans**: 2 plans
 Plans:
-- [ ] 23-01-PLAN.md — Bundle analysis, lazy load below-fold sections and canvas-confetti
-- [ ] 23-02-PLAN.md — Core Web Vitals measurement with Lighthouse CLI
+- [x] 23-01-PLAN.md — Bundle analysis, lazy load below-fold sections and canvas-confetti
+- [x] 23-02-PLAN.md — Core Web Vitals measurement with Lighthouse CLI
+
+</details>
+
+### Phase 24: Shared Legal Infrastructure
+**Goal**: The prose typography CSS and shared LegalLayout component exist and render correctly — every legal page can be built on top of this foundation without structural rework
+**Depends on**: Nothing (first phase of milestone)
+**Requirements**: INFRA-01 (v4.1), INFRA-02 (v4.1)
+**Success Criteria** (what must be TRUE):
+  1. A `.prose-legal` CSS block exists in `globals.css` that styles headings, body text, lists, and links using existing OKLCH design tokens
+  2. `LegalLayout` renders a page title in Libre Baskerville, a "Last Updated" date, and a prose content slot — visually consistent with Notevra brand
+  3. A developer can wrap any page's content in `<LegalLayout>` and receive correct prose styling without additional CSS
+**Plans**: TBD
+
+Plans:
+- [ ] 24-01: `.prose-legal` CSS block + `LegalLayout` Server Component
+
+### Phase 25: Contact Page
+**Goal**: Visitors can find how to reach Notevra — the `/contact` route exists, Footer links resolve, and the page presents contact information in brand-consistent style
+**Depends on**: Phase 24
+**Requirements**: CONT-01, CONT-02, CONT-03
+**Success Criteria** (what must be TRUE):
+  1. Visiting `/contact` shows the contact email address (contact@notevra.com) as a working mailto link
+  2. The page title and meta description are set correctly for search engines
+  3. The page uses Libre Baskerville headings and DM Sans body text with the baby blue palette — visually indistinguishable in style from the rest of Notevra
+  4. Footer links to `/contact` resolve without 404
+**Plans**: TBD
+
+Plans:
+- [ ] 25-01: Contact page route, content, and Footer link validation
+
+### Phase 26: Privacy Policy
+**Goal**: Users can read a complete, accurate Privacy Policy that names the personal information Notevra collects (including quiz data), explains retention, identifies third-party processors, and provides CCPA/GDPR/COPPA-compliant user rights — all in plain language
+**Depends on**: Phase 24
+**Requirements**: PRIV-01, PRIV-02, PRIV-03, PRIV-04, PRIV-05, PRIV-06, PRIV-07, PRIV-08
+**Success Criteria** (what must be TRUE):
+  1. Visiting `/privacy` shows a complete Privacy Policy with a visible "Last Updated" date and correct SEO metadata
+  2. The policy explicitly names quiz data (relationship, occasion, genre, qualities, memories, message) as personal information collected by the service
+  3. The policy names all three third-party processors (RunPod, Cloudflare R2, Vercel) and describes what data each receives
+  4. The policy states a concrete audio retention period and states that quiz answers are not stored server-side beyond generation
+  5. The policy includes a user rights section (access, deletion, opt-out) with a contact mechanism, a children's privacy section (COPPA, 13+), and a policy update clause
+**Plans**: TBD
+
+Plans:
+- [ ] 26-01: Privacy Policy page with full CCPA/GDPR/COPPA-compliant content
+
+### Phase 27: Terms of Service
+**Goal**: Users can read complete Terms of Service that accurately represent their rights to AI-generated songs using license language, define acceptable use, designate a DMCA agent, and include all standard liability protections
+**Depends on**: Phase 26
+**Requirements**: TOS-01, TOS-02, TOS-03, TOS-04, TOS-05, TOS-06, TOS-07, TOS-08
+**Success Criteria** (what must be TRUE):
+  1. Visiting `/terms` shows complete Terms of Service with a visible "Last Updated" date and correct SEO metadata
+  2. The ToS grants users a license to use, share, and download their song — without claiming the user "owns" the AI-generated work or misrepresenting copyright status
+  3. The ToS includes an acceptable use policy prohibiting illegal content, impersonation, and harmful use
+  4. The ToS names a DMCA designated agent with contact information for copyright notices
+  5. The ToS includes warranty disclaimer, limitation of liability, governing law, and service modification/termination rights sections
+**Plans**: TBD
+
+Plans:
+- [ ] 27-01: Terms of Service page with AI license language, DMCA designation, and liability terms
 
 ## Progress
 
@@ -172,7 +245,11 @@ Plans:
 | 20. Page Object Models and Smoke Tests | v4.0 | 2/2 | Complete | 2026-03-06 |
 | 21. Happy Path and Error State E2E | v4.0 | 2/2 | Complete | 2026-03-06 |
 | 22. Mobile Responsiveness | v4.0 | 2/2 | Complete | 2026-03-06 |
-| 23. Performance Audit and Optimization | 2/2 | Complete    | 2026-03-06 | - |
+| 23. Performance Audit and Optimization | v4.0 | 2/2 | Complete | 2026-03-06 |
+| 24. Shared Legal Infrastructure | v4.1 | 0/TBD | Not started | - |
+| 25. Contact Page | v4.1 | 0/TBD | Not started | - |
+| 26. Privacy Policy | v4.1 | 0/TBD | Not started | - |
+| 27. Terms of Service | v4.1 | 0/TBD | Not started | - |
 
 ---
 *See `.planning/milestones/` for detailed phase archives*

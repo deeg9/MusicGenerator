@@ -117,33 +117,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 (v4.1) | TBD | Pending |
-| INFRA-02 (v4.1) | TBD | Pending |
-| CONT-01 | TBD | Pending |
-| CONT-02 | TBD | Pending |
-| CONT-03 | TBD | Pending |
-| PRIV-01 | TBD | Pending |
-| PRIV-02 | TBD | Pending |
-| PRIV-03 | TBD | Pending |
-| PRIV-04 | TBD | Pending |
-| PRIV-05 | TBD | Pending |
-| PRIV-06 | TBD | Pending |
-| PRIV-07 | TBD | Pending |
-| PRIV-08 | TBD | Pending |
-| TOS-01 | TBD | Pending |
-| TOS-02 | TBD | Pending |
-| TOS-03 | TBD | Pending |
-| TOS-04 | TBD | Pending |
-| TOS-05 | TBD | Pending |
-| TOS-06 | TBD | Pending |
-| TOS-07 | TBD | Pending |
-| TOS-08 | TBD | Pending |
+| INFRA-01 (v4.1) | Phase 24 | Pending |
+| INFRA-02 (v4.1) | Phase 24 | Pending |
+| CONT-01 | Phase 25 | Pending |
+| CONT-02 | Phase 25 | Pending |
+| CONT-03 | Phase 25 | Pending |
+| PRIV-01 | Phase 26 | Pending |
+| PRIV-02 | Phase 26 | Pending |
+| PRIV-03 | Phase 26 | Pending |
+| PRIV-04 | Phase 26 | Pending |
+| PRIV-05 | Phase 26 | Pending |
+| PRIV-06 | Phase 26 | Pending |
+| PRIV-07 | Phase 26 | Pending |
+| PRIV-08 | Phase 26 | Pending |
+| TOS-01 | Phase 27 | Pending |
+| TOS-02 | Phase 27 | Pending |
+| TOS-03 | Phase 27 | Pending |
+| TOS-04 | Phase 27 | Pending |
+| TOS-05 | Phase 27 | Pending |
+| TOS-06 | Phase 27 | Pending |
+| TOS-07 | Phase 27 | Pending |
+| TOS-08 | Phase 27 | Pending |
 
 **Coverage:**
 - v4.1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-06*
-*Last updated: 2026-03-06 after v4.1 milestone definition*
+*Last updated: 2026-03-06 after v4.1 roadmap creation*
