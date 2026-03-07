@@ -2,7 +2,7 @@
 phase: 28
 slug: auth-infrastructure
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-03-06
 ---
@@ -38,15 +38,13 @@ created: 2026-03-06
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 28-01-01 | 01 | 1 | AUTH-05 | unit (mocked) | `npm run test:unit` | ❌ W0 | ⬜ pending |
-| 28-01-02 | 01 | 1 | AUTH-05 | unit (mocked) | `npm run test:unit` | ❌ W0 | ⬜ pending |
-| 28-02-01 | 02 | 2 | AUTH-01 | unit (mocked) | `npm run test:unit` | ❌ W0 | ⬜ pending |
-| 28-02-02 | 02 | 2 | AUTH-03 | unit (mocked) | `npm run test:unit` | ❌ W0 | ⬜ pending |
-| 28-02-03 | 02 | 2 | AUTH-04 | unit (mocked) | `npm run test:unit` | ❌ W0 | ⬜ pending |
-| 28-02-04 | 02 | 2 | AUTH-07 | unit (mocked) | `npm run test:unit` | ❌ W0 | ⬜ pending |
-| 28-02-05 | 02 | 2 | AUTH-08 | unit | `npm run test:unit` | ❌ W0 | ⬜ pending |
-| 28-03-01 | 03 | 2 | AUTH-09 | unit | `npm run test:unit` | ⚠️ Partial | ⬜ pending |
-| 28-03-02 | 03 | 2 | AUTH-06 | unit (mocked) | `npm run test:unit` | ❌ W0 | ⬜ pending |
+| 28-01-01 | 01 | 1 | AUTH-05 | unit (mocked) | `npm run test:unit` | N/A (infra) | ⬜ pending |
+| 28-01-02 | 01 | 1 | AUTH-05 | unit (mocked) | `npm run test:unit` | N/A (schemas) | ⬜ pending |
+| 28-01-03 | 01 | 1 | Wave 0 | test stubs | `npm run test:unit` | ❌ Created by this task | ⬜ pending |
+| 28-02-01 | 02 | 2 | AUTH-01, AUTH-03, AUTH-06 | unit (mocked) | `npm run test:unit` | ⬜ Stub from 28-01-03 | ⬜ pending |
+| 28-02-02 | 02 | 2 | AUTH-04, AUTH-07, AUTH-08 | unit (mocked) | `npm run test:unit` | ⬜ Stub from 28-01-03 | ⬜ pending |
+| 28-03-01 | 03 | 2 | AUTH-09 | unit | `npm run test:unit` | ⚠️ Partial (Header.test.tsx) | ⬜ pending |
+| 28-03-02 | 03 | 2 | AUTH-09 | unit | `npm run test:unit` | ⚠️ Updated by this task | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -54,14 +52,17 @@ created: 2026-03-06
 
 ## Wave 0 Requirements
 
-- [ ] `src/lib/supabase/__mocks__/` — shared mock for createClient (server + browser) to use across all action tests
+All created by Plan 01 Task 3:
+
+- [ ] `src/lib/supabase/__mocks__/server.ts` — shared mock for createClient (server) with all auth method stubs
+- [ ] `src/lib/supabase/__mocks__/client.ts` — shared mock for createClient (browser)
 - [ ] `src/app/signup/actions.test.ts` — unit tests for signup() server action (mock Supabase client)
 - [ ] `src/app/login/actions.test.ts` — unit tests for login() and signOut() server actions
 - [ ] `src/app/forgot-password/actions.test.ts` — unit tests for resetPassword() server action
 - [ ] `src/app/update-password/actions.test.ts` — unit tests for updatePassword() server action
 - [ ] `src/app/auth/confirm/route.test.ts` — unit tests for PKCE callback route handler
 - [ ] `src/app/auth/error/page.test.tsx` — render test for error page with searchParam
-- [ ] Update `src/components/Header.test.tsx` — add `user` prop, add auth state tests
+- [ ] Update `src/components/Header.test.tsx` — add `user` prop, add auth state tests (done in Plan 03 Task 2)
 
 *Existing infrastructure covers test framework — only test files need creation.*
 
@@ -79,11 +80,11 @@ created: 2026-03-06
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 5s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (Plan 01 Task 3)
+- [x] No watch-mode flags
+- [x] Feedback latency < 5s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** pending execution
