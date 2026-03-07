@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RefreshCw, Music } from 'lucide-react';
+import { Download, RefreshCw, Music, Link2 } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ConfettiBlast } from './_components/ConfettiBlast';
 import { SongPlayer } from './_components/SongPlayer';
@@ -13,9 +13,20 @@ import { SharePrompt } from './_components/SharePrompt';
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 120_000; // 2 minutes
-const REASSURANCE_DELAY_MS = 15_000; // 15 seconds
+const POLL_INTERVAL_MS = 5000;
+const POLL_TIMEOUT_MS = 900_000; // 15 minutes
+const STAGE_INTERVAL_MS = 45_000; // rotate stage messages every 45s
+
+const STAGE_MESSAGES = [
+  'Composing your melody...',
+  'Writing the lyrics...',
+  'Arranging the instruments...',
+  'Mixing the harmonies...',
+  'Adding vocal textures...',
+  'Polishing the final mix...',
+  'Putting the finishing touches on your song...',
+  'Almost there — just a little longer...',
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -77,17 +88,20 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [pollKey, setPollKey] = useState(0);
-  const [isStillWorking, setIsStillWorking] = useState(false);
+  const [stageIndex, setStageIndex] = useState(0);
+  const [linkCopied, setLinkCopied] = useState(false);
 
-  // 15-second reassurance subtitle swap
+  // Rotate stage messages every 45s
   useEffect(() => {
     if (pageState !== 'loading') return;
 
-    const timer = setTimeout(() => {
-      setIsStillWorking(true);
-    }, REASSURANCE_DELAY_MS);
+    const interval = setInterval(() => {
+      setStageIndex((prev) =>
+        prev < STAGE_MESSAGES.length - 1 ? prev + 1 : prev,
+      );
+    }, STAGE_INTERVAL_MS);
 
-    return () => clearTimeout(timer);
+    return () => clearInterval(interval);
   }, [pageState, pollKey]);
 
   // Polling state machine
@@ -95,8 +109,8 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
     let cancelled = false;
     const start = Date.now();
 
-    // Reset reassurance state when poll restarts
-    setIsStillWorking(false);
+    // Reset stage when poll restarts
+    setStageIndex(0);
 
     async function poll() {
       while (true) {
@@ -161,7 +175,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
   // Check Again — re-polls same jobId from the start
   function handleCheckAgain() {
     setPageState('loading');
-    setIsStillWorking(false);
+    setStageIndex(0);
     setPollKey((k) => k + 1);
   }
 
@@ -193,9 +207,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
                 : 'Creating your song…'}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {isStillWorking
-                ? 'Still working on it...'
-                : 'This usually takes about 10 seconds. Hang tight!'}
+              {STAGE_MESSAGES[stageIndex]}
             </p>
           </div>
 
@@ -210,6 +222,22 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
               />
             ))}
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            This usually takes around 10 minutes
+          </p>
+
+          <button
+            onClick={async () => {
+              await navigator.clipboard.writeText(window.location.href);
+              setLinkCopied(true);
+              setTimeout(() => setLinkCopied(false), 2000);
+            }}
+            className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+          >
+            <Link2 className="w-4 h-4" />
+            {linkCopied ? 'Link copied!' : 'Copy link to check back later'}
+          </button>
         </div>
       </div>
     );

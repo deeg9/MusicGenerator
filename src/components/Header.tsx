@@ -22,7 +22,6 @@ export function Header() {
         <div className="hidden md:flex items-center gap-8">
           <nav className="flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#how-it-works" className="hover:text-foreground transition-colors">How it Works</a>
-            <a href="#examples" className="hover:text-foreground transition-colors">Examples</a>
             <a href="#reviews" className="hover:text-foreground transition-colors">Reviews</a>
           </nav>
           <Link
@@ -61,13 +60,6 @@ export function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               How it Works
-            </a>
-            <a
-              href="#examples"
-              className="hover:text-foreground transition-colors py-1.5"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Examples
             </a>
             <a
               href="#reviews"

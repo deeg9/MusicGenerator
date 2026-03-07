@@ -12,6 +12,7 @@ export class SuccessPage {
   readonly podDownHeading: Locator;
   readonly tryAgainButton: Locator;
   readonly startOverButton: Locator;
+  readonly copyLinkButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -25,6 +26,7 @@ export class SuccessPage {
     this.podDownHeading = page.getByRole('heading', { name: /our servers are temporarily offline/i });
     this.tryAgainButton = page.getByRole('button', { name: /try again/i });
     this.startOverButton = page.getByRole('button', { name: /start over/i });
+    this.copyLinkButton = page.getByRole('button', { name: /copy link/i });
   }
 
   async goto(jobId: string, name?: string) {

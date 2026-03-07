@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { HeroAudioCard } from './HeroAudioCard';
 
 export function HeroSection() {
   return (
@@ -10,7 +9,7 @@ export function HeroSection() {
             Turn your feelings into a song
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
-            Create a one-of-a-kind personalized song for someone you love — in seconds.
+            Create a one-of-a-kind personalized song for someone you love.
           </p>
           <Link
             href="/quiz"
@@ -18,9 +17,6 @@ export function HeroSection() {
           >
             Create Your Song
           </Link>
-          <div className="mt-2 flex justify-center w-full">
-            <HeroAudioCard />
-          </div>
         </div>
       </section>
     </div>

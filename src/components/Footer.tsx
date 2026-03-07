@@ -11,7 +11,7 @@ export function Footer() {
               Notevra
             </Link>
             <p className="mt-2 text-sm text-muted-foreground">
-              Turn your feelings into a song. Personalized AI music gifts in seconds.
+              Turn your feelings into a song. Personalized AI music gifts, made with love.
             </p>
           </div>
 
@@ -36,11 +36,6 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-3">Company</h3>
             <ul className="space-y-2">
-              <li>
-                <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  About
-                </Link>
-              </li>
               <li>
                 <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Contact

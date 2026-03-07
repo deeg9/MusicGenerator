@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { Zap, Fingerprint, Smile } from 'lucide-react';
+import { Gift, Fingerprint, Smile } from 'lucide-react';
 import { TRUST_BADGES } from './data/landing-data';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Zap,
+  Gift,
   Fingerprint,
   Smile,
 };

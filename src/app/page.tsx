@@ -7,9 +7,6 @@ const HowItWorksSection = dynamic(
 const TestimonialsSection = dynamic(
   () => import('@/components/landing/TestimonialsSection').then((m) => m.TestimonialsSection)
 );
-const VideoSection = dynamic(
-  () => import('@/components/landing/VideoSection').then((m) => m.VideoSection)
-);
 const BottomCtaSection = dynamic(
   () => import('@/components/landing/BottomCtaSection').then((m) => m.BottomCtaSection)
 );
@@ -20,7 +17,6 @@ export default function Home() {
       <HeroSection />
       <HowItWorksSection />
       <TestimonialsSection />
-      <VideoSection />
       <BottomCtaSection />
     </main>
   );

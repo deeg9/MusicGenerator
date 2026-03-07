@@ -26,7 +26,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Notevra',
-  description: 'Turn your feelings into a song. Personalized AI music gifts in seconds.',
+  description: 'Turn your feelings into a song. Personalized AI music gifts, made with love.',
 };
 
 export default function RootLayout({

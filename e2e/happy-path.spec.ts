@@ -11,7 +11,7 @@ test.describe('Happy Path E2E', () => {
 
   test('full funnel: quiz completion to generation to success page with audio', async ({ page }) => {
     test.skip(process.env.POD_AVAILABLE !== 'true', 'A40 pod not reachable -- skipping generation test');
-    test.setTimeout(120_000);
+    test.setTimeout(900_000);
 
     const quiz = new QuizPage(page);
     const success = new SuccessPage(page);

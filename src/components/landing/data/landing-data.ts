@@ -36,7 +36,7 @@ export const STEPS: Step[] = [
     icon: 'Sparkles',
     title: 'Get your song',
     description:
-      'Our AI composes a one-of-a-kind song in seconds. Download it, share it, or play it the moment the candles are blown out.',
+      'Our AI composes a one-of-a-kind song just for them. Download it, share it, or play it the moment the candles are blown out.',
   },
 ];
 
@@ -77,8 +77,8 @@ export const TESTIMONIALS: Testimonial[] = [
 
 export const TRUST_BADGES: TrustBadge[] = [
   {
-    icon: 'Zap',
-    label: 'Instant delivery',
+    icon: 'Gift',
+    label: 'Truly unique gift',
   },
   {
     icon: 'Fingerprint',

@@ -282,12 +282,12 @@ export default function QuizPage() {
             className="flex flex-col flex-1"
           >
             {/* Progress indicator */}
-            <div className="py-8 flex justify-center">
+            <div className="py-4 flex justify-center">
               <QuizProgress currentStep={currentStep} totalSteps={TOTAL_STEPS} />
             </div>
 
             {/* Step content */}
-            <main className="flex-1 flex items-start justify-center px-4 pt-4">
+            <main className="flex items-start justify-center px-4 pt-4">
               <div className="relative overflow-hidden min-h-[400px] w-full max-w-2xl">
                 <AnimatePresence mode="wait" custom={direction}>
                   <motion.div
@@ -310,7 +310,7 @@ export default function QuizPage() {
             </main>
 
             {/* Navigation */}
-            <div className="flex items-center justify-between px-6 py-8 max-w-2xl mx-auto w-full">
+            <div className="flex items-center justify-between px-6 py-4 max-w-2xl mx-auto w-full">
               {/* Back button — hidden on Step 0 */}
               {currentStep > 0 ? (
                 <button

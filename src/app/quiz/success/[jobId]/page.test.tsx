@@ -138,37 +138,37 @@ afterEach(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('SuccessPage', () => {
-  // Test 1: Loading state shows initial subtitle
-  it('shows initial subtitle "This usually takes about 10 seconds" in loading state', async () => {
+  // Test 1: Loading state shows initial stage message and time estimate
+  it('shows initial stage message and "10 minutes" time estimate in loading state', async () => {
     await renderSuccessPage();
 
-    expect(screen.getByText(/this usually takes about 10 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(/composing your melody/i)).toBeInTheDocument();
+    expect(screen.getByText(/this usually takes around 10 minutes/i)).toBeInTheDocument();
   });
 
-  // Test 2: After 15 seconds subtitle swaps to "Still working on it..."
-  it('swaps subtitle to "Still working on it..." after 15 seconds', async () => {
+  // Test 2: Stage messages rotate every 45 seconds
+  it('rotates stage messages after 45 seconds', async () => {
     await renderSuccessPage();
 
-    // Initially shows default subtitle
-    expect(screen.getByText(/this usually takes about 10 seconds/i)).toBeInTheDocument();
+    // Initially shows first stage message
+    expect(screen.getByText(/composing your melody/i)).toBeInTheDocument();
 
-    // Advance to just past 15 seconds
+    // Advance past 45 seconds
     await act(async () => {
-      vi.advanceTimersByTime(15_001);
+      vi.advanceTimersByTime(45_001);
     });
 
-    expect(screen.getByText(/still working on it/i)).toBeInTheDocument();
-    expect(screen.queryByText(/this usually takes about 10 seconds/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/writing the lyrics/i)).toBeInTheDocument();
+    expect(screen.queryByText(/composing your melody/i)).not.toBeInTheDocument();
   });
 
   // Test 3: Timeout state shows both "Check Again" and "Start Over" buttons
   it('shows "Check Again" and "Start Over" buttons when timeout occurs', async () => {
     await renderSuccessPage();
 
-    // Advance past the 2-minute timeout
+    // Advance past the 15-minute timeout
     await act(async () => {
-      // Advance poll timeout (120_000ms) plus a couple of poll intervals (2000ms each)
-      vi.advanceTimersByTime(122_001);
+      vi.advanceTimersByTime(900_001);
     });
 
     expect(screen.getByRole('button', { name: /check again/i })).toBeInTheDocument();
@@ -181,7 +181,7 @@ describe('SuccessPage', () => {
 
     // Trigger timeout
     await act(async () => {
-      vi.advanceTimersByTime(122_001);
+      vi.advanceTimersByTime(900_001);
     });
 
     // Verify in timeout state
@@ -196,13 +196,13 @@ describe('SuccessPage', () => {
     expect(screen.getByText(/creating your song/i)).toBeInTheDocument();
   });
 
-  // Test 5: Clicking "Check Again" resets the 15s subtitle timer
-  it('resets the 15s subtitle timer when "Check Again" is clicked', async () => {
+  // Test 5: Clicking "Check Again" resets stage messages
+  it('resets stage messages when "Check Again" is clicked', async () => {
     await renderSuccessPage();
 
     // Trigger timeout
     await act(async () => {
-      vi.advanceTimersByTime(122_001);
+      vi.advanceTimersByTime(900_001);
     });
 
     expect(screen.getByRole('button', { name: /check again/i })).toBeInTheDocument();
@@ -212,9 +212,8 @@ describe('SuccessPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /check again/i }));
     });
 
-    // Should show original subtitle (not "Still working on it...")
-    expect(screen.getByText(/this usually takes about 10 seconds/i)).toBeInTheDocument();
-    expect(screen.queryByText(/still working on it/i)).not.toBeInTheDocument();
+    // Should show first stage message again
+    expect(screen.getByText(/composing your melody/i)).toBeInTheDocument();
   });
 
   // Test 6: pod-down shows non-retryable message with only "Start Over"
@@ -254,11 +253,18 @@ describe('SuccessPage', () => {
 
     // Trigger timeout
     await act(async () => {
-      vi.advanceTimersByTime(122_001);
+      vi.advanceTimersByTime(900_001);
     });
 
     fireEvent.click(screen.getByRole('button', { name: /start over/i }));
 
     expect(mockPush).toHaveBeenCalledWith('/quiz');
+  });
+
+  // Test 9: Copy link button is visible in loading state
+  it('shows "Copy link to check back later" button in loading state', async () => {
+    await renderSuccessPage();
+
+    expect(screen.getByText(/copy link to check back later/i)).toBeInTheDocument();
   });
 });

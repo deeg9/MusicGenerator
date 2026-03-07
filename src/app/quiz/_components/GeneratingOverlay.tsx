@@ -66,7 +66,7 @@ export function GeneratingOverlay({ recipientName, reducedMotion }: GeneratingOv
       </div>
 
       {/* Subtle timing note */}
-      <p className="text-sm text-muted-foreground">This usually takes about 10 seconds</p>
+      <p className="text-sm text-muted-foreground">This usually takes around 10 minutes — we&apos;ll redirect you when it&apos;s ready</p>
     </div>
   );
 }
