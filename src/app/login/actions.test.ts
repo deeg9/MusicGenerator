@@ -142,7 +142,8 @@ describe('signInWithGoogle', () => {
   it('redirects to /auth/error when origin header is missing', async () => {
     mockHeadersGet.mockReturnValue(null)
 
-    const { redirect } = await import('next/navigation')
+    const navMod = await import('next/navigation')
+    const redirect = vi.mocked(navMod.redirect)
 
     try {
       await signInWithGoogle()
@@ -150,7 +151,7 @@ describe('signInWithGoogle', () => {
       // redirect throws
     }
 
-    const redirectArg = (redirect as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
+    const redirectArg = redirect.mock.calls[0]?.[0] as string
     expect(redirectArg).toContain('/auth/error')
   })
 
@@ -160,7 +161,8 @@ describe('signInWithGoogle', () => {
       error: { message: 'OAuth provider error' },
     })
 
-    const { redirect } = await import('next/navigation')
+    const navMod = await import('next/navigation')
+    const redirect = vi.mocked(navMod.redirect)
 
     try {
       await signInWithGoogle()
@@ -168,7 +170,7 @@ describe('signInWithGoogle', () => {
       // redirect throws
     }
 
-    const redirectArg = (redirect as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
+    const redirectArg = redirect.mock.calls[0]?.[0] as string
     expect(redirectArg).toContain('/auth/error')
   })
 })

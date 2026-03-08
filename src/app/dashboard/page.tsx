@@ -7,6 +7,8 @@ import { getAudioPresignedUrl } from '@/lib/r2';
 import { Music } from 'lucide-react';
 import Link from 'next/link';
 import { SongCard } from './_components/SongCard';
+import { getUserSubscription } from '@/lib/subscription';
+import { SubscriptionCard } from './_components/SubscriptionCard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -36,6 +38,9 @@ export default async function DashboardPage() {
     redirect('/login?next=/dashboard');
   }
 
+  // Fetch subscription info
+  const subscription = await getUserSubscription(user.id);
+
   // Query completed songs for this user (filter null r2Mp3Key at DB level)
   const userSongs = await db
     .select()
@@ -63,6 +68,9 @@ export default async function DashboardPage() {
     <main className="min-h-screen bg-background px-4 py-16">
       <div className="max-w-2xl mx-auto flex flex-col gap-8">
         <h1 className="font-display text-3xl text-foreground">My Songs</h1>
+
+        {/* Subscription status */}
+        <SubscriptionCard subscription={subscription} />
 
         {songsWithUrls.length === 0 ? (
           // Empty state

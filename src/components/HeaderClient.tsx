@@ -53,6 +53,7 @@ export function HeaderClient({ user }: { user: User | null }) {
           <nav className="flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#how-it-works" className="hover:text-foreground transition-colors">How it Works</a>
             <a href="#reviews" className="hover:text-foreground transition-colors">Reviews</a>
+            <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
           </nav>
 
           {/* Auth links or avatar dropdown */}
@@ -90,6 +91,20 @@ export function HeaderClient({ user }: { user: User | null }) {
                   >
                     My Songs
                   </Link>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setDropdownOpen(false);
+                      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+                      if (res.ok) {
+                        const { url } = await res.json();
+                        window.location.href = url;
+                      }
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    Manage Subscription
+                  </button>
                   <div className="border-t border-border/40 my-1" />
                   <form action={signOut}>
                     <button
@@ -148,6 +163,13 @@ export function HeaderClient({ user }: { user: User | null }) {
             >
               Reviews
             </a>
+            <Link
+              href="/pricing"
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-foreground transition-colors py-1.5"
+            >
+              Pricing
+            </Link>
 
             {/* Mobile auth links */}
             {!user ? (

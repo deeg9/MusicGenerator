@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
 import type { ZodTypeAny } from 'zod';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { QuizProgress } from './_components/QuizProgress';
 import { QuizCard } from './_components/QuizCard';
@@ -78,6 +79,31 @@ export default function QuizPage() {
   async function handleCreate() {
     setGenStatus('generating');
     try {
+      // Check auth + subscription before generating
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login?next=/quiz');
+        return;
+      }
+
+      const subCheck = await fetch('/api/subscription/check');
+      if (subCheck.ok) {
+        const subData = await subCheck.json();
+        if (!subData.active) {
+          router.push('/pricing');
+          return;
+        }
+        if (subData.songsPerMonth !== -1 && subData.songsRemaining <= 0) {
+          setGenError('You\'ve used all your song credits this month. Upgrade your plan for more.');
+          setGenStatus('error');
+          return;
+        }
+      } else if (subCheck.status === 404) {
+        router.push('/pricing');
+        return;
+      }
+
       const response = await fetch('/api/quiz-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,12 +111,19 @@ export default function QuizPage() {
       });
       if (!response.ok) {
         const body = (await response.json()) as {
-          error?: { userMessage?: string } | string;
+          error?: { userMessage?: string; code?: string } | string;
         };
-        const message =
-          typeof body.error === 'object'
-            ? (body.error?.userMessage ?? 'Generation failed')
-            : (body.error ?? 'Generation failed');
+        const errorObj = typeof body.error === 'object' ? body.error : null;
+        if (errorObj?.code === 'subscription_required') {
+          router.push('/pricing');
+          return;
+        }
+        if (errorObj?.code === 'credits_exhausted') {
+          setGenError('You\'ve used all your song credits this month. Upgrade your plan for more.');
+          setGenStatus('error');
+          return;
+        }
+        const message = errorObj?.userMessage ?? (typeof body.error === 'string' ? body.error : 'Generation failed');
         throw new Error(message);
       }
       const { jobId, songId } = (await response.json()) as { jobId: string; songId: string };

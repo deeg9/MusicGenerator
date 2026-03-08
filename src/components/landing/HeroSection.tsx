@@ -11,12 +11,20 @@ export function HeroSection() {
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
             Create a one-of-a-kind personalized song for someone you love.
           </p>
-          <Link
-            href="/quiz"
-            className="rounded-full bg-primary text-primary-foreground px-8 py-3.5 font-bold text-lg shadow-medium hover:bg-primary/90 hover:shadow-elevated hover:-translate-y-0.5 transition-all"
-          >
-            Create Your Song
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Link
+              href="/quiz"
+              className="rounded-full bg-primary text-primary-foreground px-8 py-3.5 font-bold text-lg shadow-medium hover:bg-primary/90 hover:shadow-elevated hover:-translate-y-0.5 transition-all"
+            >
+              Create Your Song
+            </Link>
+            <Link
+              href="/pricing"
+              className="rounded-full border border-border/60 bg-white px-8 py-3.5 font-bold text-lg text-foreground hover:bg-muted hover:-translate-y-0.5 transition-all"
+            >
+              View Pricing
+            </Link>
+          </div>
         </div>
       </section>
     </div>

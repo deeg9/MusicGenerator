@@ -8,6 +8,7 @@ import { songs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import type { QuizData } from '@/lib/quiz-types';
+import { canGenerate, decrementSongCredit } from '@/lib/subscription';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Validation
@@ -101,6 +102,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id ?? null;
 
+  // 3b. Subscription gate (server-side enforcement — authoritative check)
+  if (userId) {
+    const allowed = await canGenerate(userId);
+    if (!allowed) {
+      // Check if they have a subscription at all
+      const { getUserSubscription } = await import('@/lib/subscription');
+      const sub = await getUserSubscription(userId);
+      const code = !sub || !sub.active ? 'subscription_required' : 'credits_exhausted';
+      const userMessage = code === 'subscription_required'
+        ? 'An active subscription is required to generate songs.'
+        : 'You have used all your song credits for this billing period.';
+      return NextResponse.json(
+        { error: { code, userMessage } },
+        { status: 402 },
+      );
+    }
+  }
+
   let sessionToken: string | null = null;
   if (!userId) {
     // Read existing session cookie or generate a new one
@@ -167,7 +186,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Non-fatal — job is running, don't fail the response
   }
 
-  // 8. Build response
+  // 8. Decrement song credit (after successful generation)
+  if (userId) {
+    try {
+      await decrementSongCredit(userId);
+    } catch (err) {
+      console.error('[quiz-generate] Failed to decrement song credit:', err);
+      // Non-fatal — song is already generating
+    }
+  }
+
+  // 9. Build response
   const response = NextResponse.json({ jobId, songId }, { status: 201 });
 
   // Set session cookie for anonymous users
