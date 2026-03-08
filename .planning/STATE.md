@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: "Completed 30-01 Task 1 — awaiting human SMTP config (checkpoint:human-action)"
-last_updated: "2026-03-07T22:00:45.275Z"
+stopped_at: Completed 30-01 — Resend SDK + Supabase SMTP fully configured
+last_updated: "2026-03-08T01:45:31.961Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
   completed_phases: 8
   total_plans: 20
-  completed_plans: 18
-  percent: 0
+  completed_plans: 19
+  percent: 96
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: 0 of TBD in current phase
 Status: Ready to plan
 Last activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 
-Progress: [░░░░░░░░░░] 0% (v4.2)
+Progress: [██████████] 96% (v4.2)
 
 ## Performance Metrics
 
@@ -54,7 +54,7 @@ Progress: [░░░░░░░░░░] 0% (v4.2)
 | Phase 28-auth-infrastructure P03 | ~2 minutes | 2 tasks | 4 files |
 | Phase 29-database-schema-song-persistence P01 | 30m | 2 tasks | 3 files |
 | Phase 29-database-schema-song-persistence P02 | 45m | 2 tasks | 8 files |
-| Phase 30-email-infrastructure P01 | 2m | 1 tasks | 5 files |
+| Phase 30-email-infrastructure P01 | ~2m auto + human dashboard config | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -92,14 +92,14 @@ None.
 
 ### Blockers/Concerns
 
-- [Pre-milestone]: Resend domain verification takes 24-48 hours DNS propagation — start before Phase 30 email code
+- [RESOLVED 2026-03-07]: Resend domain notevra.net verified, Supabase SMTP configured — 30-01 complete
 - [Pre-milestone]: Corrupt git object 75510b3 prevents push — run `git fsck` to diagnose before milestone ships
 - [Phase 28]: PKCE reset links are browser-session-bound — UI must warn user to click on same device (decide copy during planning)
 - [Phase 30]: R2 presigned URL expiration in gift emails must be 7 days minimum, cannot exceed 30-day R2 object lifetime
 
 ## Session Continuity
 
-Last session: 2026-03-07T22:00:45.272Z
-Stopped at: Completed 30-01 Task 1 — awaiting human SMTP config (checkpoint:human-action)
+Last session: 2026-03-07T23:30:00.000Z
+Stopped at: Completed 30-01 — Resend SDK + Supabase SMTP fully configured
 Resume file: None
-Next action: `/gsd:plan-phase 28`
+Next action: Execute 30-02 (React Email templates)
