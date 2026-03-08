@@ -337,5 +337,16 @@ Plans:
 | 30. Email Infrastructure | v4.2 | 3/3 | Complete | 2026-03-08 |
 | 31. Success Page + Dashboard UI | 3/3 | Complete    | 2026-03-08 | - |
 
+### Phase 32: Google OAuth sign-in integration
+
+**Goal:** Users can sign in with Google as an alternative to email/password — the OAuth flow initiates from login/signup pages, exchanges code for session, and claims anonymous songs on first sign-in
+**Requirements**: OAUTH-01, OAUTH-02, OAUTH-03, OAUTH-04, OAUTH-05, OAUTH-06
+**Depends on:** Phase 31
+**Plans:** 2 plans
+
+Plans:
+- [ ] 32-01-PLAN.md — signInWithGoogle action, /auth/callback route, Google buttons on login/signup pages
+- [ ] 32-02-PLAN.md — Google Cloud Console + Supabase Dashboard config and end-to-end verification
+
 ---
 *See `.planning/milestones/` for detailed phase archives*
