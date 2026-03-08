@@ -281,8 +281,8 @@ Plans:
 
 Plans:
 - [x] 30-01-PLAN.md — Install Resend SDK, create client singleton, update env/config, configure Supabase SMTP (completed 2026-03-07)
-- [ ] 30-02-PLAN.md — SongReadyEmail and GiftDeliveryEmail React Email templates with smoke tests
-- [ ] 30-03-PLAN.md — /api/send-creator-email and /api/send-recipient-email route handlers with unit tests
+- [x] 30-02-PLAN.md — SongReadyEmail and GiftDeliveryEmail React Email templates with smoke tests
+- [x] 30-03-PLAN.md — /api/send-creator-email and /api/send-recipient-email route handlers with unit tests
 
 ### Phase 31: Success Page + Dashboard UI
 **Goal**: After generation, signed-in users see their song saved to their account; anonymous users are offered a non-blocking sign-up nudge; creators can send a gift email to the recipient; and authenticated users can view, play, and download all their past songs from /dashboard
@@ -294,12 +294,12 @@ Plans:
   3. The recipient email field displays the privacy framing copy ("Private link — no marketing, ever") beneath the input
   4. Visiting /dashboard while unauthenticated redirects to the login page with a return URL
   5. An authenticated user's /dashboard lists all their past songs with recipient name, relationship, genre, and date — each song has a working audio player and a re-download button
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 31-01: AuthPrompt component + RecipientEmailForm + email trigger wiring on success page
-- [ ] 31-02: /dashboard page (Server Component auth guard, song list, SongCard with playback + re-download)
-- [ ] 31-03: Header auth-aware nav integration and end-to-end smoke test of full authenticated flow
+- [ ] 31-01-PLAN.md — AuthPrompt + RecipientEmailForm + songId flow wiring on success page
+- [ ] 31-02-PLAN.md — Dashboard page with auth guard, song list, SongCard with playback + re-download
+- [ ] 31-03-PLAN.md — Integration verification and human-verified end-to-end authenticated flow check
 
 ## Progress
 
@@ -334,8 +334,8 @@ Plans:
 | 27. Terms of Service | v4.1 | 0/TBD | Deferred | - |
 | 28. Auth Infrastructure | v4.2 | 3/3 | Complete | 2026-03-07 |
 | 29. Database Schema + Song Persistence | v4.2 | 2/2 | Complete | 2026-03-07 |
-| 30. Email Infrastructure | 3/3 | Complete    | 2026-03-08 | - |
-| 31. Success Page + Dashboard UI | v4.2 | 0/TBD | Not started | - |
+| 30. Email Infrastructure | v4.2 | 3/3 | Complete | 2026-03-08 |
+| 31. Success Page + Dashboard UI | v4.2 | 0/3 | Not started | - |
 
 ---
 *See `.planning/milestones/` for detailed phase archives*
