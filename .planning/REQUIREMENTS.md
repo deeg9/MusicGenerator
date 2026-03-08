@@ -25,7 +25,7 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 - [x] **OAUTH-02**: /auth/callback route exchanges OAuth code for session
 - [x] **OAUTH-03**: Anonymous songs are claimed during OAuth callback via session_token
 - [x] **OAUTH-04**: Login page renders "Continue with Google" button above email form
-- [ ] **OAUTH-05**: Google Cloud Console and Supabase Dashboard configured with OAuth credentials
+- [x] **OAUTH-05**: Google Cloud Console and Supabase Dashboard configured with OAuth credentials
 - [x] **OAUTH-06**: Signup page renders "Continue with Google" button above email form
 
 ### Song Persistence
