@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
 export async function login(formData: FormData) {
@@ -28,4 +29,35 @@ export async function signOut() {
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
   redirect('/')
+}
+
+export async function signInWithGoogle(next?: string) {
+  const headerStore = await headers()
+  const origin = headerStore.get('origin')
+
+  if (!origin) {
+    redirect('/auth/error?error=Missing+origin')
+  }
+
+  const callbackUrl = new URL('/auth/callback', origin)
+  if (next) {
+    callbackUrl.searchParams.set('next', next)
+  }
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: callbackUrl.toString(),
+    },
+  })
+
+  if (error) {
+    redirect(`/auth/error?error=${encodeURIComponent(error.message)}`)
+  }
+
+  if (data.url) {
+    redirect(data.url)
+  }
 }
