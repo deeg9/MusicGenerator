@@ -35,10 +35,10 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 
 ### Dashboard
 
-- [ ] **DASH-01**: Authenticated users can access /dashboard (redirects to login if unauthenticated)
-- [ ] **DASH-02**: Dashboard lists all user's past songs with recipient name, relationship, genre, and date
-- [ ] **DASH-03**: User can play songs in dashboard via native audio player with R2 presigned URLs
-- [ ] **DASH-04**: User can re-download songs from dashboard
+- [x] **DASH-01**: Authenticated users can access /dashboard (redirects to login if unauthenticated)
+- [x] **DASH-02**: Dashboard lists all user's past songs with recipient name, relationship, genre, and date
+- [x] **DASH-03**: User can play songs in dashboard via native audio player with R2 presigned URLs
+- [x] **DASH-04**: User can re-download songs from dashboard
 
 ### Success Page
 
@@ -168,10 +168,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EMAIL-02 | Phase 30 | Complete |
 | EMAIL-03 | Phase 30 | Complete |
 | EMAIL-04 | Phase 30 | Complete |
-| DASH-01 | Phase 31 | Pending |
-| DASH-02 | Phase 31 | Pending |
-| DASH-03 | Phase 31 | Pending |
-| DASH-04 | Phase 31 | Pending |
+| DASH-01 | Phase 31 | Complete |
+| DASH-02 | Phase 31 | Complete |
+| DASH-03 | Phase 31 | Complete |
+| DASH-04 | Phase 31 | Complete |
 | SUCC-01 | Phase 31 | Complete |
 | SUCC-02 | Phase 31 | Complete |
 | SUCC-03 | Phase 31 | Complete |

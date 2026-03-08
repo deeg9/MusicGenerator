@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Completed 31-01 — AuthPrompt + RecipientEmailForm on success page
-last_updated: "2026-03-08T03:44:02.500Z"
+stopped_at: Completed 31-02 — Dashboard page + SongCard component
+last_updated: "2026-03-08T03:44:25.802Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
@@ -58,6 +58,7 @@ Progress: [██████████] 96% (v4.2)
 | Phase 30-email-infrastructure P02 | 28m | 2 tasks | 4 files |
 | Phase 30-email-infrastructure P03 | 9m | 2 tasks | 4 files |
 | Phase 31-success-page-dashboard-ui P01 | 15m | 1 tasks | 7 files |
+| Phase 31-success-page-dashboard-ui P02 | 10m | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,9 @@ Progress: [██████████] 96% (v4.2)
 - [Phase 31-01]: AuthPrompt renders null while isAnon is null (checking) — prevents layout shift and flash before auth check
 - [Phase 31-01]: songId flows via URL search param (?songId=) alongside ?name= — consistent pattern, no localStorage needed
 - [Phase 31-01]: RecipientEmailForm checks response body for 'not finalized' to show contextual error vs generic error
+- [Phase 31-02]: Dashboard filtering uses isNotNull at Drizzle query level AND JS filter before Promise.all for defense in depth
+- [Phase 31-02]: createdAt prop on SongCard typed as string (not Date) — Server Component prop boundary serializes to JSON, formatted with new Date(createdAt).toLocaleDateString() in component
+- [Phase 31-02]: SongPlayer imported via @/ alias cross-route — left in quiz route tree, alias is stable
 
 ### Pending Todos
 
@@ -109,7 +113,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T03:44:02.497Z
-Stopped at: Completed 31-01 — AuthPrompt + RecipientEmailForm on success page
+Last session: 2026-03-08T03:44:25.799Z
+Stopped at: Completed 31-02 — Dashboard page + SongCard component
 Resume file: None
 Next action: Execute 30-02 (React Email templates)
