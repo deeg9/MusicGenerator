@@ -8,6 +8,8 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ConfettiBlast } from './_components/ConfettiBlast';
 import { SongPlayer } from './_components/SongPlayer';
 import { SharePrompt } from './_components/SharePrompt';
+import { AuthPrompt } from './_components/AuthPrompt';
+import { RecipientEmailForm } from './_components/RecipientEmailForm';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -52,7 +54,7 @@ interface PodDownResponse {
 
 interface SuccessPageProps {
   params: Promise<{ jobId: string }>;
-  searchParams: Promise<{ name?: string }>;
+  searchParams: Promise<{ name?: string; songId?: string }>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -80,7 +82,7 @@ function sleep(ms: number): Promise<void> {
 
 export default function SuccessPage({ params, searchParams }: SuccessPageProps) {
   const { jobId } = use(params);
-  const { name: recipientName = '' } = use(searchParams);
+  const { name: recipientName = '', songId = '' } = use(searchParams);
 
   const router = useRouter();
   const reducedMotion = useReducedMotion();
@@ -390,6 +392,12 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
 
           {/* Share prompt */}
           <SharePrompt />
+
+          {/* Auth upsell — only renders for anonymous users */}
+          <AuthPrompt jobId={jobId} />
+
+          {/* Gift email form — only show if songId is available */}
+          {songId && <RecipientEmailForm songId={songId} />}
         </motion.div>
       </AnimatePresence>
     </div>

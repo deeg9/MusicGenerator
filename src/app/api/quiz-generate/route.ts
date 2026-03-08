@@ -168,7 +168,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // 8. Build response
-  const response = NextResponse.json({ jobId }, { status: 201 });
+  const response = NextResponse.json({ jobId, songId }, { status: 201 });
 
   // Set session cookie for anonymous users
   if (sessionToken) {

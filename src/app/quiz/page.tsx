@@ -64,27 +64,14 @@ export default function QuizPage() {
   const [genStatus, setGenStatus] = useState<'idle' | 'generating' | 'error'>('idle');
   const [genError, setGenError] = useState<string | null>(null);
 
-  // Read from localStorage on mount (client-side only)
+  // Clear quiz state on mount — fresh start on every page load
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(QUIZ_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as Partial<QuizData>;
-        setData((prev) => ({ ...prev, ...parsed }));
-      }
+      localStorage.removeItem(QUIZ_STORAGE_KEY);
     } catch {
-      // Ignore corrupt or missing storage
+      // Ignore storage errors
     }
   }, []);
-
-  // Write to localStorage whenever data changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      // Ignore storage quota errors
-    }
-  }, [data]);
 
   // ─── Generation ──────────────────────────────────────────────────────────────
 
@@ -106,10 +93,10 @@ export default function QuizPage() {
             : (body.error ?? 'Generation failed');
         throw new Error(message);
       }
-      const { jobId } = (await response.json()) as { jobId: string };
+      const { jobId, songId } = (await response.json()) as { jobId: string; songId: string };
       // Only clear localStorage after successful response
       localStorage.removeItem(QUIZ_STORAGE_KEY);
-      router.push(`/quiz/success/${jobId}?name=${encodeURIComponent(data.recipientName)}`);
+      router.push(`/quiz/success/${jobId}?name=${encodeURIComponent(data.recipientName)}&songId=${songId}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Generation failed';
       setGenError(message);
