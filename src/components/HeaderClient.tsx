@@ -46,9 +46,9 @@ export function HeaderClient({ user }: { user: User | null }) {
           <Image
             src="/logo-horizontal.png"
             alt="Notevra"
-            width={160}
-            height={40}
-            className="h-10 w-auto group-hover:opacity-90 transition-opacity"
+            width={200}
+            height={200}
+            className="h-28 w-auto -my-6 group-hover:opacity-90 transition-opacity"
             priority
           />
         </Link>
