@@ -82,7 +82,7 @@
 - [x] **Phase 28: Auth Infrastructure** - Supabase Auth with @supabase/ssr: sign-up, login, password reset, session middleware, callback handler, error page, and header auth state (completed 2026-03-07)
 - [x] **Phase 29: Database Schema + Song Persistence** - Songs table with RLS policies, Drizzle schema update, generation pipeline modified to insert song rows, anonymous-to-authenticated claim mechanism via session_token (completed 2026-03-07)
 - [x] **Phase 30: Email Infrastructure** - Resend domain verification, Supabase SMTP configuration, React Email branded templates, and send-creator/send-recipient API routes (completed 2026-03-08)
-- [ ] **Phase 31: Success Page + Dashboard UI** - Non-blocking auth upsell on success page, recipient email form, song claim wiring, /dashboard with playback and re-download, header auth-aware nav
+- [x] **Phase 31: Success Page + Dashboard UI** - Non-blocking auth upsell on success page, recipient email form, song claim wiring, /dashboard with playback and re-download, header auth-aware nav (completed 2026-03-08)
 
 ## Phase Details
 
@@ -335,7 +335,7 @@ Plans:
 | 28. Auth Infrastructure | v4.2 | 3/3 | Complete | 2026-03-07 |
 | 29. Database Schema + Song Persistence | v4.2 | 2/2 | Complete | 2026-03-07 |
 | 30. Email Infrastructure | v4.2 | 3/3 | Complete | 2026-03-08 |
-| 31. Success Page + Dashboard UI | 2/3 | In Progress|  | - |
+| 31. Success Page + Dashboard UI | 3/3 | Complete   | 2026-03-08 | - |
 
 ---
 *See `.planning/milestones/` for detailed phase archives*
