@@ -19,6 +19,15 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 - [x] **AUTH-08**: Auth error page shows graceful message for expired/invalid links
 - [x] **AUTH-09**: Header nav shows auth state (Sign up/Login when anonymous, My Songs when authenticated)
 
+### Google OAuth
+
+- [ ] **OAUTH-01**: signInWithGoogle server action calls signInWithOAuth with provider 'google'
+- [ ] **OAUTH-02**: /auth/callback route exchanges OAuth code for session
+- [ ] **OAUTH-03**: Anonymous songs are claimed during OAuth callback via session_token
+- [ ] **OAUTH-04**: Login page renders "Continue with Google" button above email form
+- [ ] **OAUTH-05**: Google Cloud Console and Supabase Dashboard configured with OAuth credentials
+- [ ] **OAUTH-06**: Signup page renders "Continue with Google" button above email form
+
 ### Song Persistence
 
 - [x] **SONG-01**: Songs table exists in Supabase with RLS policies (user can only access own songs)
@@ -136,7 +145,6 @@ Deferred legal pages — not started, skipped in favor of v4.2.
 
 | Feature | Reason |
 |---------|--------|
-| Social login (Google/GitHub OAuth) | Email+password sufficient for gift service; OAuth adds account-linking complexity |
 | Mandatory auth before generation | Kills quiz funnel conversion — auth must come after generation |
 | Hard email verification gate | Users should see dashboard immediately; soft banner for unconfirmed |
 | Passwordless / magic link only | Breaks immediate "save my song" momentum with inbox-checking wait |
@@ -160,6 +168,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-07 | Phase 28 | Complete |
 | AUTH-08 | Phase 28 | Complete |
 | AUTH-09 | Phase 28 | Complete |
+| OAUTH-01 | Phase 32 | Planned |
+| OAUTH-02 | Phase 32 | Planned |
+| OAUTH-03 | Phase 32 | Planned |
+| OAUTH-04 | Phase 32 | Planned |
+| OAUTH-05 | Phase 32 | Planned |
+| OAUTH-06 | Phase 32 | Planned |
 | SONG-01 | Phase 29 | Complete |
 | SONG-02 | Phase 29 | Complete |
 | SONG-03 | Phase 29 | Complete |
@@ -177,10 +191,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SUCC-03 | Phase 31 | Complete |
 
 **Coverage:**
-- v4.2 requirements: 24 total
-- Mapped to phases: 24
-- Unmapped: 0 ✓
+- v4.2 requirements: 30 total (24 auth/email/dashboard + 6 OAuth)
+- Mapped to phases: 30
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-06*
-*Last updated: 2026-03-06 after v4.2 roadmap creation*
+*Last updated: 2026-03-08 after Phase 32 Google OAuth planning*
