@@ -42,9 +42,9 @@ Requirements for Auth & Email Delivery milestone. Each maps to roadmap phases.
 
 ### Success Page
 
-- [ ] **SUCC-01**: Non-blocking auth upsell appears on success page after generation ("Sign up to save your song")
-- [ ] **SUCC-02**: User can enter recipient email on success page to send gift delivery email
-- [ ] **SUCC-03**: Recipient email field includes privacy framing ("Private link — no marketing, ever")
+- [x] **SUCC-01**: Non-blocking auth upsell appears on success page after generation ("Sign up to save your song")
+- [x] **SUCC-02**: User can enter recipient email on success page to send gift delivery email
+- [x] **SUCC-03**: Recipient email field includes privacy framing ("Private link — no marketing, ever")
 
 ## v4.1 Requirements (Deferred)
 
@@ -172,9 +172,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-02 | Phase 31 | Pending |
 | DASH-03 | Phase 31 | Pending |
 | DASH-04 | Phase 31 | Pending |
-| SUCC-01 | Phase 31 | Pending |
-| SUCC-02 | Phase 31 | Pending |
-| SUCC-03 | Phase 31 | Pending |
+| SUCC-01 | Phase 31 | Complete |
+| SUCC-02 | Phase 31 | Complete |
+| SUCC-03 | Phase 31 | Complete |
 
 **Coverage:**
 - v4.2 requirements: 24 total
