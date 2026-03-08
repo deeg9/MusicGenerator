@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Completed 31-03 — Phase 31 integration verification
-last_updated: "2026-03-08T05:20:12.901Z"
+stopped_at: Completed 32-01 — Google OAuth sign-in integration
+last_updated: "2026-03-08T06:32:19.744Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
-  total_phases: 14
+  total_phases: 15
   completed_phases: 10
-  total_plans: 23
-  completed_plans: 23
+  total_plans: 25
+  completed_plans: 24
   percent: 96
 ---
 
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 
 ## Current Position
 
-Phase: 28 of 31 (Auth Infrastructure)
+Phase: 28 of 32 (Auth Infrastructure)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
 Last activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
@@ -60,6 +60,7 @@ Progress: [██████████] 96% (v4.2)
 | Phase 31-success-page-dashboard-ui P01 | 15m | 1 tasks | 7 files |
 | Phase 31-success-page-dashboard-ui P02 | 10m | 2 tasks | 4 files |
 | Phase 31-success-page-dashboard-ui P03 | 10m | 2 tasks | 2 files |
+| Phase 32-google-oauth-sign-in-integration P01 | 20m | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,13 @@ Progress: [██████████] 96% (v4.2)
 - [Phase 31-02]: createdAt prop on SongCard typed as string (not Date) — Server Component prop boundary serializes to JSON, formatted with new Date(createdAt).toLocaleDateString() in component
 - [Phase 31-02]: SongPlayer imported via @/ alias cross-route — left in quiz route tree, alias is stable
 - [Phase Phase 31-03]: RESEND_API_KEY made optional in env.ts so builds without email credentials succeed — consistent with Supabase client pattern
+- [Phase Phase 32-01]: signInWithGoogle lives in login/actions.ts — shared by both login and signup pages via cross-route import
+- [Phase Phase 32-01]: origin read from headers() not NEXT_PUBLIC_SITE_URL — real origin needed for correct OAuth callback domain
+- [Phase Phase 32-01]: next param sanitized in /auth/callback (must start with /) to prevent open redirect
+
+### Roadmap Evolution
+
+- Phase 32 added: Google OAuth sign-in integration
 
 ### Pending Todos
 
@@ -115,7 +123,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T04:53:45.955Z
-Stopped at: Completed 31-03 — Phase 31 integration verification
+Last session: 2026-03-08T06:32:19.743Z
+Stopped at: Completed 32-01 — Google OAuth sign-in integration
 Resume file: None
 Next action: Execute 30-02 (React Email templates)

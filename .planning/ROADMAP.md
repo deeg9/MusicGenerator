@@ -342,7 +342,7 @@ Plans:
 **Goal:** Users can sign in with Google as an alternative to email/password — the OAuth flow initiates from login/signup pages, exchanges code for session, and claims anonymous songs on first sign-in
 **Requirements**: OAUTH-01, OAUTH-02, OAUTH-03, OAUTH-04, OAUTH-05, OAUTH-06
 **Depends on:** Phase 31
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 32-01-PLAN.md — signInWithGoogle action, /auth/callback route, Google buttons on login/signup pages
