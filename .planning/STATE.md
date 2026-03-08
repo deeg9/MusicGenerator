@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.2
 milestone_name: Auth & Email Delivery
 status: planning
-stopped_at: Completed 30-02 — React Email templates SongReadyEmail + GiftDeliveryEmail
-last_updated: "2026-03-08T02:39:12.786Z"
+stopped_at: Completed 30-03 — Email route handlers send-creator-email + send-recipient-email
+last_updated: "2026-03-08T02:58:04.900Z"
 last_activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
 progress:
   total_phases: 14
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 20
-  completed_plans: 19
+  completed_plans: 20
   percent: 96
 ---
 
@@ -56,6 +56,7 @@ Progress: [██████████] 96% (v4.2)
 | Phase 29-database-schema-song-persistence P02 | 45m | 2 tasks | 8 files |
 | Phase 30-email-infrastructure P01 | ~2m auto + human dashboard config | 2 tasks | 5 files |
 | Phase 30-email-infrastructure P02 | 28m | 2 tasks | 4 files |
+| Phase 30-email-infrastructure P03 | 9m | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Progress: [██████████] 96% (v4.2)
 - [Phase 30-01]: Same Resend API key used for both Supabase SMTP auth emails and SDK transactional emails — Resend's standard guidance
 - [Phase Phase 30-02]: render() from @react-email/components v1.0.8 is async — must use await render() in tests
 - [Phase Phase 30-02]: React Email PreviewProps static property added to both templates for dev server preview support
+- [Phase Phase 30-03]: Anonymous songs use 'Someone' as creatorFirstName — no Supabase admin lookup needed for recipient email
+- [Phase Phase 30-03]: First name extracted from user_metadata.full_name (split on space), falling back to email prefix
 
 ### Pending Todos
 
@@ -102,7 +105,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08T02:39:12.784Z
-Stopped at: Completed 30-02 — React Email templates SongReadyEmail + GiftDeliveryEmail
+Last session: 2026-03-08T02:58:04.898Z
+Stopped at: Completed 30-03 — Email route handlers send-creator-email + send-recipient-email
 Resume file: None
 Next action: Execute 30-02 (React Email templates)
