@@ -213,14 +213,12 @@ describe('POST /api/send-creator-email', () => {
     await POST(req as Parameters<typeof POST>[0]);
 
     expect(mockEmailsSend).toHaveBeenCalledTimes(1);
-    expect(mockEmailsSend).toHaveBeenCalledWith(
-      expect.objectContaining({
-        from: 'Notevra <hello@notevra.com>',
-        to: ['creator@example.com'],
-        subject: `Your song for ${MOCK_SONG.recipientName} is ready`,
-        react: expect.anything(),
-      }),
-    );
+    const callArgs = mockEmailsSend.mock.calls[0][0] as Record<string, unknown>;
+    expect(callArgs.from).toBe('Notevra <hello@notevra.com>');
+    expect(callArgs.to).toEqual(['creator@example.com']);
+    expect(callArgs.subject).toBe(`Your song for ${MOCK_SONG.recipientName} is ready`);
+    // react prop is the result of calling SongReadyEmail (mocked to return null in tests)
+    expect('react' in callArgs).toBe(true);
   });
 
   // Test 6: on success — returns 200 with { id } from Resend
