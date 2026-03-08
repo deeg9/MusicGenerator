@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function Footer() {
   return (
@@ -7,8 +8,15 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand column — spans 2 on mobile */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="font-display font-bold text-xl text-foreground">
-              Notevra
+            <Link href="/" className="inline-flex items-center gap-2 group">
+              <Image
+                src="/logo-icon.png"
+                alt="Notevra"
+                width={32}
+                height={32}
+                className="h-8 w-8 group-hover:opacity-90 transition-opacity"
+              />
+              <span className="font-display font-bold text-xl text-foreground">Notevra</span>
             </Link>
             <p className="mt-2 text-sm text-muted-foreground">
               Turn your feelings into a song. Personalized AI music gifts, made with love.

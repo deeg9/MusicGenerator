@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
@@ -41,11 +42,15 @@ export function HeaderClient({ user }: { user: User | null }) {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md group-hover:scale-105 transition-transform">
-            <span className="font-display font-bold text-sm">N</span>
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight text-foreground">Notevra</span>
+        <Link href="/" className="flex items-center group">
+          <Image
+            src="/logo-horizontal.png"
+            alt="Notevra"
+            width={160}
+            height={40}
+            className="h-10 w-auto group-hover:opacity-90 transition-opacity"
+            priority
+          />
         </Link>
 
         {/* Desktop nav */}

@@ -28,6 +28,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Notevra',
   description: 'Turn your feelings into a song. Personalized AI music gifts, made with love.',
+  openGraph: {
+    title: 'Notevra',
+    description: 'Turn your feelings into a song. Personalized AI music gifts, made with love.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Notevra' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Notevra',
+    description: 'Turn your feelings into a song. Personalized AI music gifts, made with love.',
+    images: ['/og-image.png'],
+  },
 };
 
 export default async function RootLayout({
