@@ -1,5 +1,6 @@
 import type { QuizData } from './quiz-types';
 import type { SubmitJobParams } from './heartmula';
+import { generateContent, RateLimitError } from './gemini';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -138,4 +139,121 @@ export function quizToPrompt(data: QuizData): SubmitJobParams {
     duration_ms: GIFT_SONG_DURATION_MS,
     tags,
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gemini-enhanced prompt generation
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SONG_WRITER_SYSTEM_PROMPT = `You are a professional songwriter and emotional interpreter. Your job is to take personal details about a gift recipient and craft beautiful, professional song lyrics.
+
+## Your Process
+
+1. **Interpret the Emotional Story**: Analyze the quiz answers to understand:
+   - The relationship dynamic and emotional depth
+   - The mood, imagery, and unspoken feelings behind their words
+   - What makes this person and relationship truly special
+   - The core emotional message the gift-giver wants to convey
+
+2. **Write Professional Song Lyrics** following these rules:
+   - Use this exact structure: [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus]
+   - Create strong rhyme schemes (ABAB or AABB) with natural, conversational language
+   - Use vivid imagery and storytelling — show, don't tell
+   - Weave the recipient's name naturally into the lyrics (1-3 times, not forced)
+   - Transform their specific memories and qualities into poetic lyrics
+   - Write a memorable, repeating chorus with a radio-ready hook
+   - Keep language warm and authentic — avoid clichés like "through thick and thin"
+   - Each verse should be 4-6 lines, chorus 4-6 lines, bridge 2-4 lines
+
+3. **Output Format** — You MUST output in exactly this format:
+\`\`\`
+PROMPT: A [genre] song — [2-3 word mood]. Written as a personal gift.
+LYRICS:
+[Verse 1]
+(lyrics here)
+
+[Chorus]
+(lyrics here)
+
+[Verse 2]
+(lyrics here)
+
+[Chorus]
+(lyrics here)
+
+[Bridge]
+(lyrics here)
+
+[Chorus]
+(lyrics here)
+\`\`\`
+
+Write the lyrics in the language specified by the user. If no language is specified, default to English.`;
+
+/**
+ * Format quiz answers into the user message string for Gemini.
+ */
+function formatQuizForGemini(data: QuizData): string {
+  const lines = [
+    `Recipient Name: ${data.recipientName}`,
+    `Relationship: ${data.relationshipType || 'Someone special'}`,
+    `Genre: ${data.genre}`,
+    `Voice Preference: ${data.voicePreference || 'No Preference'}`,
+    `What makes them special: ${data.qualities || '(not provided)'}`,
+    `A special memory: ${data.memories || '(not provided)'}`,
+    `Message from the heart: ${data.message || '(not provided)'}`,
+    `Language: ${data.language || 'English'}`,
+  ];
+  return lines.join('\n');
+}
+
+/**
+ * Parse Gemini's response into prompt and lyrics sections.
+ * Throws if the response doesn't contain the expected format.
+ */
+function parseGeminiResponse(response: string): { prompt: string; lyrics: string } {
+  // Extract PROMPT line
+  const promptMatch = response.match(/PROMPT:\s*(.+)/i);
+  if (!promptMatch) throw new Error('Missing PROMPT section in Gemini response');
+
+  // Extract LYRICS section (everything after "LYRICS:")
+  const lyricsMatch = response.match(/LYRICS:\s*\n([\s\S]+)/i);
+  if (!lyricsMatch) throw new Error('Missing LYRICS section in Gemini response');
+
+  const lyrics = lyricsMatch[1].trim();
+  if (lyrics.length < 50) throw new Error('Lyrics too short — likely incomplete');
+
+  return {
+    prompt: promptMatch[1].trim(),
+    lyrics,
+  };
+}
+
+/**
+ * Enhanced quiz-to-prompt using Gemini Flash for professional lyrics.
+ * Falls back to quizToPrompt() on any failure.
+ */
+export async function enhanceQuizPrompt(data: QuizData, ip?: string | null): Promise<SubmitJobParams> {
+  try {
+    const userMessage = formatQuizForGemini(data);
+    const response = await generateContent(SONG_WRITER_SYSTEM_PROMPT, userMessage, ip);
+    const parsed = parseGeminiResponse(response);
+
+    // Tags come from OUR lookup tables, not Gemini (prevents hallucinated tags)
+    const tags = buildTags(data);
+
+    console.log('[quiz-prompt] Gemini enhanced lyrics generated successfully');
+
+    return {
+      prompt: parsed.prompt,
+      lyrics: parsed.lyrics,
+      duration_ms: GIFT_SONG_DURATION_MS,
+      tags,
+    };
+  } catch (error) {
+    // Let rate limit errors bubble up so the route can return 429
+    if (error instanceof RateLimitError) throw error;
+    console.warn('[quiz-prompt] Gemini enhancement failed, falling back to template:', error);
+    return quizToPrompt(data);
+  }
 }

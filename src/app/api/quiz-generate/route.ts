@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { submitGenerationJob } from '@/lib/heartmula';
-import { quizToPrompt } from '@/lib/quiz-prompt';
+import { quizToPrompt, enhanceQuizPrompt } from '@/lib/quiz-prompt';
 import { classifyError, toErrorResponse } from '@/lib/errors';
 import { createClient } from '@/lib/supabase/server';
 import { db } from '@/db';
@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import type { QuizData } from '@/lib/quiz-types';
 import { canGenerate, decrementSongCredit } from '@/lib/subscription';
+import { RateLimitError } from '@/lib/gemini';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Validation
@@ -156,13 +157,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // 5. Convert quiz answers to HeartMuLa params
-  const params = quizToPrompt(validation.data);
+  // 5. Convert quiz answers to HeartMuLa params (Gemini-enhanced with template fallback)
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? request.headers.get('x-real-ip')
+    ?? 'unknown';
+  const rawParams = quizToPrompt(validation.data);
+  let params: typeof rawParams;
+  try {
+    params = await enhanceQuizPrompt(validation.data, clientIp);
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: { code: 'rate_limited', userMessage: 'Too many requests. Please try again later.' } },
+        { status: 429, headers: { 'Retry-After': '60' } },
+      );
+    }
+    // Other errors are already handled inside enhanceQuizPrompt (fallback)
+    params = rawParams;
+  }
 
   // 6. Submit single generation job (batch_size=1)
   let jobId: string;
   try {
-    const result = await submitGenerationJob(params);
+    const result = await submitGenerationJob(params, songId);
     jobId = result.job_id;
   } catch (rawError) {
     // HeartBula failed — mark the song row as failed
@@ -178,9 +195,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(errorResponse, { status: 502 });
   }
 
-  // 7. Back-fill heartbulaJobId on the song row
+  // 7. Back-fill heartbulaJobId and log raw vs enhanced lyrics
   try {
-    await db.update(songs).set({ heartbulaJobId: jobId }).where(eq(songs.id, songId));
+    await db.update(songs).set({
+      heartbulaJobId: jobId,
+      rawQuizPrompt: rawParams.lyrics,
+      enhancedLyrics: params.lyrics,
+    }).where(eq(songs.id, songId));
   } catch (updateError) {
     console.error('[quiz-generate] Failed to back-fill heartbulaJobId:', updateError);
     // Non-fatal — job is running, don't fail the response

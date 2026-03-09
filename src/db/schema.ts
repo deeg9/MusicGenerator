@@ -47,6 +47,10 @@ export const songs = pgTable(
       language?: string;
     }>(),
 
+    // Lyrics logging (raw template vs Gemini-enhanced)
+    rawQuizPrompt: text('raw_quiz_prompt'),
+    enhancedLyrics: text('enhanced_lyrics'),
+
     // R2 audio storage
     r2WavKey: text('r2_wav_key'),   // null until finalized
     r2Mp3Key: text('r2_mp3_key'),   // null until finalized
