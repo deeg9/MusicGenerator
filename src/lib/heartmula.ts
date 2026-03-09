@@ -1,4 +1,4 @@
-import { env } from '@/env';
+import { getEnv } from '@/env';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -30,13 +30,22 @@ export interface JobStatusResponse {
 // RunPod Serverless API
 // ─────────────────────────────────────────────────────────────────────────────
 
-const RUNPOD_BASE = () =>
-  `https://api.runpod.ai/v2/${env.RUNPOD_ENDPOINT_ID}`;
+const RUNPOD_BASE = () => {
+  const endpointId = getEnv().RUNPOD_ENDPOINT_ID;
+  if (!endpointId) {
+    throw new Error('RUNPOD_ENDPOINT_ID is not set. Music generation is unavailable in this environment.');
+  }
+  return `https://api.runpod.ai/v2/${endpointId}`;
+};
 
 function runpodHeaders(): HeadersInit {
+  const apiKey = getEnv().RUNPOD_API_KEY;
+  if (!apiKey) {
+    throw new Error('RUNPOD_API_KEY is not set. Music generation is unavailable in this environment.');
+  }
   return {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${env.RUNPOD_API_KEY}`,
+    Authorization: `Bearer ${apiKey}`,
   };
 }
 

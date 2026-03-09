@@ -1,19 +1,28 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { env } from '@/env';
+import { getEnv } from '@/env';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// S3Client singleton (Cloudflare R2 is S3-compatible)
+// S3Client singleton (Cloudflare R2 is S3-compatible) — lazy init to avoid
+// eager env validation at module scope (breaks Vercel build)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: env.R2_ACCESS_KEY_ID,
-    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
-  },
-});
+let _r2Client: S3Client | undefined;
+
+function getR2Client(): S3Client {
+  if (!_r2Client) {
+    const env = getEnv();
+    _r2Client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: env.R2_ACCESS_KEY_ID,
+        secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+      },
+    });
+  }
+  return _r2Client;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Key naming
@@ -75,7 +84,8 @@ export async function uploadAudioToR2(
   buffer: Buffer,
   contentType = 'audio/wav',
 ): Promise<void> {
-  await r2Client.send(
+  const env = getEnv();
+  await getR2Client().send(
     new PutObjectCommand({
       Bucket: env.R2_BUCKET_NAME,
       Key: key,
@@ -104,8 +114,9 @@ export async function getAudioPresignedUrl(
   expiresIn = 86400,
   downloadFilename?: string,
 ): Promise<string> {
+  const env = getEnv();
   return getSignedUrl(
-    r2Client,
+    getR2Client(),
     new GetObjectCommand({
       Bucket: env.R2_BUCKET_NAME,
       Key: key,
