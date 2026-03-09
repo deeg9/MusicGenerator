@@ -56,8 +56,8 @@ export function HeaderClient({ user }: { user: User | null }) {
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
           <nav className="flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">How it Works</a>
-            <a href="#reviews" className="hover:text-foreground transition-colors">Reviews</a>
+            <Link href="/#how-it-works" className="hover:text-foreground transition-colors">How it Works</Link>
+            <Link href="/#reviews" className="hover:text-foreground transition-colors">Reviews</Link>
             <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
           </nav>
 
@@ -154,20 +154,20 @@ export function HeaderClient({ user }: { user: User | null }) {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-border/40 bg-white px-6 py-4">
           <nav className="flex flex-col gap-3 text-sm font-medium text-muted-foreground">
-            <a
-              href="#how-it-works"
+            <Link
+              href="/#how-it-works"
               className="hover:text-foreground transition-colors py-1.5"
               onClick={() => setMobileMenuOpen(false)}
             >
               How it Works
-            </a>
-            <a
-              href="#reviews"
+            </Link>
+            <Link
+              href="/#reviews"
               className="hover:text-foreground transition-colors py-1.5"
               onClick={() => setMobileMenuOpen(false)}
             >
               Reviews
-            </a>
+            </Link>
             <Link
               href="/pricing"
               onClick={() => setMobileMenuOpen(false)}
