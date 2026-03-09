@@ -63,20 +63,12 @@ export function HeaderClient({ user }: { user: User | null }) {
 
           {/* Auth links or avatar dropdown */}
           {!user ? (
-            <div className="flex items-center gap-4">
-              <Link
-                href="/signup"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Sign Up
-              </Link>
-              <Link
-                href="/login"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Log In
-              </Link>
-            </div>
+            <Link
+              href="/login"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Log In
+            </Link>
           ) : (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -178,22 +170,13 @@ export function HeaderClient({ user }: { user: User | null }) {
 
             {/* Mobile auth links */}
             {!user ? (
-              <>
-                <Link
-                  href="/signup"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="hover:text-foreground transition-colors py-1.5"
-                >
-                  Sign Up
-                </Link>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="hover:text-foreground transition-colors py-1.5"
-                >
-                  Log In
-                </Link>
-              </>
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-foreground transition-colors py-1.5"
+              >
+                Log In
+              </Link>
             ) : (
               <>
                 <Link
