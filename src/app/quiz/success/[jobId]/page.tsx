@@ -3,13 +3,16 @@
 import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RefreshCw, Music, Link2 } from 'lucide-react';
+import { Download, RefreshCw, Music, Link2, Lock } from 'lucide-react';
+import Link from 'next/link';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { createClient } from '@/lib/supabase/client';
 import { ConfettiBlast } from './_components/ConfettiBlast';
 import { SongPlayer } from './_components/SongPlayer';
 import { SharePrompt } from './_components/SharePrompt';
 import { AuthPrompt } from './_components/AuthPrompt';
 import { RecipientEmailForm } from './_components/RecipientEmailForm';
+import { PreviewBanner, PreviewCTA } from './_components/PreviewPaywall';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -93,6 +96,10 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
   const [stageIndex, setStageIndex] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Preview paywall — default to true (restrict first, unlock after subscription check)
+  const [isPreview, setIsPreview] = useState(true);
+  const [previewEnded, setPreviewEnded] = useState(false);
+
   // Rotate stage messages every 45s
   useEffect(() => {
     if (pageState !== 'loading') return;
@@ -173,6 +180,31 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
       cancelled = true;
     };
   }, [jobId, pollKey]);
+
+  // Subscription check — runs once on mount to determine if user has an active subscription
+  useEffect(() => {
+    async function checkSubscription() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Anonymous users remain in preview mode
+      if (!user) return;
+
+      try {
+        const res = await fetch('/api/subscription/check');
+        if (res.ok) {
+          const data = (await res.json()) as { active: boolean };
+          if (data.active === true) {
+            setIsPreview(false);
+          }
+        }
+      } catch {
+        // Network error — keep preview mode as safe default
+      }
+    }
+
+    void checkSubscription();
+  }, []);
 
   // Check Again — re-polls same jobId from the start
   function handleCheckAgain() {
@@ -364,21 +396,43 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
             )}
           </div>
 
+          {/* Preview banner — visible to preview users above the player */}
+          <PreviewBanner isPreview={isPreview} />
+
           {/* Player */}
-          {audioUrl && <SongPlayer src={audioUrl} />}
+          {audioUrl && (
+            <SongPlayer
+              src={audioUrl}
+              isPreview={isPreview}
+              onPreviewEnd={() => setPreviewEnded(true)}
+            />
+          )}
+
+          {/* Preview CTA — shows nudge or "Unlock Full Song" button below player */}
+          <PreviewCTA isPreview={isPreview} previewEnded={previewEnded} />
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
-            {/* Download */}
+            {/* Download — gated for preview users */}
             {audioUrl && (
-              <a
-                href={audioUrl}
-                download={buildGiftFilename(recipientName)}
-                className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
-              >
-                <Download className="w-4 h-4" />
-                Download Song
-              </a>
+              isPreview ? (
+                <Link
+                  href="/pricing"
+                  className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
+                >
+                  <Lock className="w-4 h-4" />
+                  Subscribe to Download
+                </Link>
+              ) : (
+                <a
+                  href={audioUrl}
+                  download={buildGiftFilename(recipientName)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Song
+                </a>
+              )
             )}
 
             {/* Create Another */}
