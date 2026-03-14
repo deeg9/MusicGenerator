@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 Phase: 28 of 32 (Auth Infrastructure)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-03-06 — v4.2 roadmap created (4 phases, 24 requirements mapped)
+Last activity: 2026-03-14 - Completed quick task 1: 30s preview paywall with Unlock Full Song CTA linking to /pricing
 
 Progress: [██████████] 96% (v4.2)
 
@@ -121,6 +121,12 @@ None.
 - [Pre-milestone]: Corrupt git object 75510b3 prevents push — run `git fsck` to diagnose before milestone ships
 - [Phase 28]: PKCE reset links are browser-session-bound — UI must warn user to click on same device (decide copy during planning)
 - [Phase 30]: R2 presigned URL expiration in gift emails must be 7 days minimum, cannot exceed 30-day R2 object lifetime
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | 30s preview paywall with Unlock Full Song CTA linking to /pricing | 2026-03-14 | 5e42af5 | [1-30s-preview-paywall-with-unlock-full-son](./quick/1-30s-preview-paywall-with-unlock-full-son/) |
 
 ## Session Continuity
 
