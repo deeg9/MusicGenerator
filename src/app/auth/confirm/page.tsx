@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { claimSongsForCurrentUser } from './actions';
 
 /**
  * Two-step email confirmation page.
@@ -43,6 +44,15 @@ export default function ConfirmPage() {
     }
 
     setStatus('success');
+
+    // Claim anonymous songs for new signups (non-fatal)
+    if (type === 'signup') {
+      try {
+        await claimSongsForCurrentUser();
+      } catch {
+        // Non-fatal — confirmation succeeded, don't block redirect
+      }
+    }
 
     if (type === 'recovery') {
       router.push('/update-password');

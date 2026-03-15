@@ -1,9 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { db } from '@/db'
-import { songs } from '@/db/schema'
-import { eq, and, isNull } from 'drizzle-orm'
+import { claimAnonymousSongs } from '@/lib/auth/claim-anonymous-songs'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -39,15 +36,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (user) {
-      const cookieStore = await cookies()
-      const sessionToken = cookieStore.get('notevra_session')?.value
-
-      if (sessionToken) {
-        await db
-          .update(songs)
-          .set({ userId: user.id, sessionToken: null })
-          .where(and(eq(songs.sessionToken, sessionToken), isNull(songs.userId)))
-      }
+      await claimAnonymousSongs(user.id)
     }
   } catch (claimError) {
     // Non-fatal — OAuth succeeded, don't block the redirect
