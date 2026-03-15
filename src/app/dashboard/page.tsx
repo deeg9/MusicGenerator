@@ -7,7 +7,7 @@ import { getAudioPresignedUrl } from '@/lib/r2';
 import { Music } from 'lucide-react';
 import Link from 'next/link';
 import { SongCard } from './_components/SongCard';
-import { getUserSubscription } from '@/lib/subscription';
+import { getUserSubscription, type SubscriptionInfo } from '@/lib/subscription';
 import { SubscriptionCard } from './_components/SubscriptionCard';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,31 +38,47 @@ export default async function DashboardPage() {
     redirect('/login?next=/dashboard');
   }
 
-  // Fetch subscription info
-  const subscription = await getUserSubscription(user.id);
+  // Fetch subscription info — graceful fallback on DB timeout
+  let subscription: SubscriptionInfo | null = null;
+  try {
+    subscription = await getUserSubscription(user.id);
+  } catch {
+    // Connection timeout — show "no subscription" gracefully
+  }
 
-  // Query completed songs for this user (filter null r2Mp3Key at DB level)
-  const userSongs = await db
-    .select()
-    .from(songs)
-    .where(and(eq(songs.userId, user.id), isNotNull(songs.r2Mp3Key)))
-    .orderBy(desc(songs.createdAt));
+  // Query completed songs — graceful fallback on DB timeout
+  let songsWithUrls: Array<{
+    id: string;
+    recipientName: string;
+    relationship: string;
+    genre: string;
+    createdAt: Date;
+    audioUrl: string;
+    downloadFilename: string;
+  }> = [];
+  try {
+    const userSongs = await db
+      .select()
+      .from(songs)
+      .where(and(eq(songs.userId, user.id), isNotNull(songs.r2Mp3Key)))
+      .orderBy(desc(songs.createdAt));
 
-  // Generate presigned URLs in parallel — also filter in JS as safety guard
-  // (Drizzle query already filters with isNotNull, but be explicit here too)
-  const completedSongs = userSongs.filter((s) => s.r2Mp3Key !== null);
+    const completedSongs = userSongs.filter((s) => s.r2Mp3Key !== null);
 
-  const songsWithUrls = await Promise.all(
-    completedSongs.map(async (song) => {
-      const downloadFilename = buildDownloadFilename(song.recipientName);
-      const audioUrl = await getAudioPresignedUrl(song.r2Mp3Key!, 3600, downloadFilename);
-      return {
-        ...song,
-        audioUrl,
-        downloadFilename,
-      };
-    }),
-  );
+    songsWithUrls = await Promise.all(
+      completedSongs.map(async (song) => {
+        const downloadFilename = buildDownloadFilename(song.recipientName);
+        const audioUrl = await getAudioPresignedUrl(song.r2Mp3Key!, 3600, downloadFilename);
+        return {
+          ...song,
+          audioUrl,
+          downloadFilename,
+        };
+      }),
+    );
+  } catch {
+    // Connection timeout — show empty song list gracefully
+  }
 
   return (
     <main className="min-h-screen bg-background px-4 py-16">
