@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { Suspense, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -31,7 +31,7 @@ function GoogleIcon() {
   )
 }
 
-export default function SignupPage() {
+function SignupContent() {
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? ''
 
@@ -171,5 +171,13 @@ export default function SignupPage() {
         </p>
       </div>
     </main>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupContent />
+    </Suspense>
   )
 }

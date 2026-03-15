@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { claimSongsForCurrentUser } from './actions';
@@ -16,7 +16,8 @@ import { claimSongsForCurrentUser } from './actions';
  * Supabase email template should use:
  *   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup
  */
-export default function ConfirmPage() {
+
+function ConfirmContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'idle' | 'confirming' | 'success' | 'error'>('idle');
@@ -134,5 +135,21 @@ export default function ConfirmPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background flex items-center justify-center px-4">
+          <div className="max-w-md w-full text-center">
+            <h1 className="font-display text-2xl text-foreground mb-2">Loading...</h1>
+          </div>
+        </main>
+      }
+    >
+      <ConfirmContent />
+    </Suspense>
   );
 }

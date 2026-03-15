@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Check, Sparkles } from 'lucide-react';
 import Link from 'next/link';
@@ -50,7 +50,7 @@ const PLANS = [
   },
 ] as const;
 
-export default function PricingPage() {
+function PricingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
@@ -184,5 +184,13 @@ export default function PricingPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense>
+      <PricingContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { Suspense, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -30,7 +30,7 @@ function GoogleIcon() {
   )
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? ''
 
@@ -178,5 +178,13 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   )
 }

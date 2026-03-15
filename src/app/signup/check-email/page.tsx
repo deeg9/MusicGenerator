@@ -1,9 +1,10 @@
 'use client'
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
-export default function CheckEmailPage() {
+function CheckEmailContent() {
   const searchParams = useSearchParams()
   const email = searchParams.get('email')
 
@@ -36,5 +37,21 @@ export default function CheckEmailPage() {
         </Link>
       </div>
     </main>
+  )
+}
+
+export default function CheckEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-[60vh] flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md bg-card rounded-[var(--radius-lg)] shadow-[var(--shadow-medium)] p-8 text-center">
+            <h1 className="font-display text-2xl font-bold text-foreground mb-3">Loading...</h1>
+          </div>
+        </main>
+      }
+    >
+      <CheckEmailContent />
+    </Suspense>
   )
 }
