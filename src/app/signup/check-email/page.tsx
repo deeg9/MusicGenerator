@@ -2,14 +2,12 @@
 
 import { Suspense, useState, useRef, useTransition } from 'react'
 import Link from 'next/link'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { claimSongsForCurrentUser } from '@/app/auth/confirm/actions'
+import { verifySignupOtp } from '@/app/signup/actions'
 
 function CheckEmailContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const email = searchParams.get('email') ?? ''
   const next = searchParams.get('next') ?? '/dashboard'
 
@@ -20,32 +18,13 @@ function CheckEmailContent() {
 
   function submitCode(otp: string) {
     startTransition(async () => {
-      const supabase = createClient()
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'signup',
-      })
-
-      if (verifyError) {
-        setError(verifyError.message === 'Token has expired or is invalid'
-          ? 'Invalid or expired code. Please try again.'
-          : verifyError.message
-        )
+      const result = await verifySignupOtp(email, otp, next)
+      // redirect() throws NEXT_REDIRECT on success, so we only reach here on error
+      if (result?.error) {
+        setError(result.error)
         setCode('')
         inputRef.current?.focus()
-        return
       }
-
-      // Claim anonymous songs (non-fatal)
-      try {
-        await claimSongsForCurrentUser()
-      } catch {
-        // Non-fatal
-      }
-
-      const safeNext = next.startsWith('/') ? next : '/dashboard'
-      router.push(safeNext)
     })
   }
 
