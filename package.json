@@ -12,7 +12,11 @@
     "test:e2e:mobile": "playwright test e2e/mobile-*.spec.ts --project=mobile-iphone --project=mobile-ipad",
     "test:unit": "vitest run",
     "analyze": "ANALYZE=true next build --webpack",
-    "email": "email dev --dir src/emails --port 3001"
+    "email": "email dev --dir src/emails --port 3001",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1001.0",
