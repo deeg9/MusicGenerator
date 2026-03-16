@@ -4,7 +4,6 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { songs } from '@/db/schema';
 import { resend } from '@/lib/resend';
-import { getAudioPresignedUrl } from '@/lib/r2';
 import { GiftDeliveryEmail } from '@/emails/GiftDeliveryEmail';
 import { render } from '@react-email/components';
 
@@ -80,8 +79,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const message = (song.quizData as { message?: string })?.message ?? '';
 
-  // 5. Generate presigned URL (7-day maximum — R2 hard cap)
-  const listenUrl = await getAudioPresignedUrl(song.r2Mp3Key, 604800);
+  // 5. Build app URL for listen page (no presigned R2 URL — branded page instead)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const listenUrl = `${siteUrl}/listen/${song.id}`;
 
   // 6. Send email via Resend
   const html = await render(GiftDeliveryEmail({

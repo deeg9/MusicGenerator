@@ -4,7 +4,6 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { songs } from '@/db/schema';
 import { resend } from '@/lib/resend';
-import { getAudioPresignedUrl } from '@/lib/r2';
 import { SongReadyEmail } from '@/emails/SongReadyEmail';
 import { render } from '@react-email/components';
 
@@ -80,11 +79,10 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
     recipientEmail = user.email;
   }
 
-  // 5. Generate presigned URLs (24h expiry for creator)
-  const [listenUrl, downloadUrl] = await Promise.all([
-    getAudioPresignedUrl(song.r2Mp3Key, 86400),
-    getAudioPresignedUrl(song.r2Mp3Key, 86400, `${song.recipientName}-song.mp3`),
-  ]);
+  // 5. Build app URLs (no presigned R2 URLs — branded pages instead)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const listenUrl = `${siteUrl}/quiz/success/${song.heartbulaJobId}?name=${encodeURIComponent(song.recipientName)}&songId=${song.id}`;
+  const downloadUrl = `${siteUrl}/api/audio/${song.heartbulaJobId}?download=true&name=${encodeURIComponent(`${song.recipientName}-song.mp3`)}`;
 
   // 6. Send email via Resend
   const html = await render(SongReadyEmail({
