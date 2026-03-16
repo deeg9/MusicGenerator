@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/server';
 import { db } from '@/db';
 import { songs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { cookies } from 'next/headers';
 import type { QuizData } from '@/lib/quiz-types';
 import { RateLimitError } from '@/lib/gemini';
 
@@ -98,28 +97,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // 3. Determine identity (authenticated vs anonymous)
+  // 3. Require authentication
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const userId = user?.id ?? null;
 
-  // 3b. Credit check — only enforce limits for subscribed users
-  // (Free users can generate but get 30s preview only)
-
-  let sessionToken: string | null = null;
-  if (!userId) {
-    // Read existing session cookie or generate a new one
-    const cookieStore = await cookies();
-    const existingSession = cookieStore.get('notevra_session');
-    sessionToken = existingSession?.value ?? crypto.randomUUID();
+  if (!user) {
+    return NextResponse.json(
+      { error: { code: 'unauthenticated', userMessage: 'You must be signed in to generate a song.' } },
+      { status: 401 },
+    );
   }
+
+  const userId = user.id;
 
   // 4. Insert song row (placeholder heartbulaJobId — back-filled after HeartBula responds)
   let songId: string;
   try {
     const [song] = await db.insert(songs).values({
       userId,
-      sessionToken,
       status: 'generating',
       heartbulaJobId: '',
       recipientName: validation.data.recipientName,
@@ -196,18 +191,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // 8. Build response
-  const response = NextResponse.json({ jobId, songId }, { status: 201 });
-
-  // Set session cookie for anonymous users
-  if (sessionToken) {
-    response.cookies.set('notevra_session', sessionToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      secure: process.env.NODE_ENV === 'production',
-    });
-  }
-
-  return response;
+  return NextResponse.json({ jobId, songId }, { status: 201 });
 }

@@ -279,7 +279,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
     if (!user) {
       // Redirect to login
       const returnTo = window.location.pathname + window.location.search;
-      router.push(`/login?next=${encodeURIComponent(returnTo)}`);
+      router.push(`/signup?next=${encodeURIComponent(returnTo)}`);
       setModalLoading(false);
       return;
     }

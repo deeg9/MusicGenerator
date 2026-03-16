@@ -120,7 +120,7 @@ export default function QuizPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/login?next=/quiz');
+        router.push('/signup?next=/quiz');
         return;
       }
 

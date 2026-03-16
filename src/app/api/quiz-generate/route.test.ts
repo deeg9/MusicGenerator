@@ -15,7 +15,6 @@ const {
   mockUpdateWhere,
   mockGetUser,
   mockCreateClient,
-  mockCookiesGet,
 } = vi.hoisted(() => {
   const mockInsertReturning = vi.fn();
   const mockInsertValues = vi.fn(() => ({ returning: mockInsertReturning }));
@@ -25,12 +24,10 @@ const {
   const mockUpdateSet = vi.fn(() => ({ where: mockUpdateWhere }));
   const mockUpdate = vi.fn(() => ({ set: mockUpdateSet }));
 
-  const mockGetUser = vi.fn(() => Promise.resolve({ data: { user: null } }));
+  const mockGetUser = vi.fn(() => Promise.resolve({ data: { user: { id: 'user-id-5678' } } }));
   const mockCreateClient = vi.fn(() => Promise.resolve({
     auth: { getUser: mockGetUser },
   }));
-
-  const mockCookiesGet = vi.fn(() => undefined);
 
   return {
     mockInsert,
@@ -41,7 +38,6 @@ const {
     mockUpdateWhere,
     mockGetUser,
     mockCreateClient,
-    mockCookiesGet,
   };
 });
 
@@ -55,6 +51,7 @@ vi.mock('@/lib/heartmula', () => ({
 
 vi.mock('@/lib/quiz-prompt', () => ({
   quizToPrompt: vi.fn(),
+  enhanceQuizPrompt: vi.fn(),
 }));
 
 vi.mock('@/lib/errors', () => ({
@@ -91,19 +88,13 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: mockCreateClient,
 }));
 
-vi.mock('next/headers', () => ({
-  cookies: vi.fn(() => ({
-    get: mockCookiesGet,
-  })),
-}));
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Imports — after mocks are declared
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { POST } from './route';
 import { submitGenerationJob } from '@/lib/heartmula';
-import { quizToPrompt } from '@/lib/quiz-prompt';
+import { quizToPrompt, enhanceQuizPrompt } from '@/lib/quiz-prompt';
 import type { QuizData } from '@/lib/quiz-types';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -157,11 +148,11 @@ function makeMalformedRequest(): Request {
 beforeEach(() => {
   vi.clearAllMocks();
   (quizToPrompt as Mock).mockReturnValue(MOCK_SUBMIT_PARAMS);
+  (enhanceQuizPrompt as Mock).mockResolvedValue(MOCK_SUBMIT_PARAMS);
   (submitGenerationJob as Mock).mockResolvedValue({ job_id: 'job-abc-123', status: 'QUEUED' });
 
-  // Default: anonymous user, no existing session cookie
-  mockGetUser.mockResolvedValue({ data: { user: null } });
-  mockCookiesGet.mockReturnValue(undefined);
+  // Default: authenticated user
+  mockGetUser.mockResolvedValue({ data: { user: { id: 'user-id-5678' } } });
 
   // Default: DB insert returns a song id
   mockInsertReturning.mockResolvedValue([{ id: 'song-uuid-1234' }]);
@@ -173,8 +164,6 @@ beforeEach(() => {
   mockUpdate.mockReturnValue({ set: mockUpdateSet });
   mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
 
-  // Stub crypto.randomUUID for deterministic session tokens
-  vi.stubGlobal('crypto', { randomUUID: () => 'test-uuid-1234' });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -214,7 +203,7 @@ describe('POST /api/quiz-generate', () => {
       const req = makeRequest(COMPLETE_QUIZ);
       await POST(req as Parameters<typeof POST>[0]);
 
-      expect(submitGenerationJob).toHaveBeenCalledWith(MOCK_SUBMIT_PARAMS);
+      expect(submitGenerationJob).toHaveBeenCalledWith(MOCK_SUBMIT_PARAMS, 'song-uuid-1234');
     });
   });
 
@@ -238,7 +227,7 @@ describe('POST /api/quiz-generate', () => {
 
       // First update call is the heartbulaJobId back-fill
       expect(mockUpdate).toHaveBeenCalled();
-      expect(mockUpdateSet).toHaveBeenCalledWith({ heartbulaJobId: 'job-abc-123' });
+      expect(mockUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ heartbulaJobId: 'job-abc-123' }));
     });
 
     it('returns 500 when db.insert fails', async () => {
@@ -251,68 +240,38 @@ describe('POST /api/quiz-generate', () => {
     });
   });
 
-  // Anonymous user + session cookie
-  describe('anonymous user (no auth)', () => {
-    it('sets notevra_session HTTP-only cookie for anonymous user', async () => {
+  // Unauthenticated user
+  describe('unauthenticated user', () => {
+    it('returns 401 when user is not authenticated', async () => {
+      mockGetUser.mockResolvedValue({ data: { user: null } });
+
       const req = makeRequest(COMPLETE_QUIZ);
       const res = await POST(req as Parameters<typeof POST>[0]);
 
-      const setCookieHeader = res.headers.get('set-cookie');
-      expect(setCookieHeader).not.toBeNull();
-      expect(setCookieHeader).toContain('notevra_session');
+      expect(res.status).toBe(401);
+      const body = await res.json() as Record<string, unknown>;
+      expect(body).toHaveProperty('error');
     });
 
-    it('uses new UUID as session_token when no existing cookie', async () => {
-      mockCookiesGet.mockReturnValue(undefined);
+    it('does NOT call submitGenerationJob for unauthenticated user', async () => {
+      mockGetUser.mockResolvedValue({ data: { user: null } });
 
       const req = makeRequest(COMPLETE_QUIZ);
       await POST(req as Parameters<typeof POST>[0]);
 
-      expect(mockInsertValues).toHaveBeenCalledWith(expect.objectContaining({
-        sessionToken: 'test-uuid-1234',
-        userId: null,
-      }));
-    });
-
-    it('reuses existing notevra_session cookie value as session_token', async () => {
-      mockCookiesGet.mockReturnValue({ value: 'existing-session-abc' });
-
-      const req = makeRequest(COMPLETE_QUIZ);
-      await POST(req as Parameters<typeof POST>[0]);
-
-      expect(mockInsertValues).toHaveBeenCalledWith(expect.objectContaining({
-        sessionToken: 'existing-session-abc',
-      }));
+      expect(submitGenerationJob).not.toHaveBeenCalled();
     });
   });
 
   // Authenticated user
   describe('authenticated user', () => {
-    beforeEach(() => {
-      mockGetUser.mockResolvedValue({ data: { user: { id: 'user-id-5678' } } });
-    });
-
     it('sets userId on song row for authenticated user', async () => {
       const req = makeRequest(COMPLETE_QUIZ);
       await POST(req as Parameters<typeof POST>[0]);
 
       expect(mockInsertValues).toHaveBeenCalledWith(expect.objectContaining({
         userId: 'user-id-5678',
-        sessionToken: null,
       }));
-    });
-
-    it('does NOT set session cookie for authenticated user', async () => {
-      const req = makeRequest(COMPLETE_QUIZ);
-      const res = await POST(req as Parameters<typeof POST>[0]);
-
-      const setCookieHeader = res.headers.get('set-cookie');
-      // Either no set-cookie header, or it doesn't contain notevra_session
-      if (setCookieHeader) {
-        expect(setCookieHeader).not.toContain('notevra_session');
-      } else {
-        expect(setCookieHeader).toBeNull();
-      }
     });
   });
 

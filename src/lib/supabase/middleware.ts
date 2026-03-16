@@ -31,7 +31,15 @@ export async function updateSession(request: NextRequest) {
 
   // Use getUser() — NOT getSession() which can be spoofed
   // This triggers token refresh on every non-static request
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Protect /quiz routes — redirect unauthenticated users to signup
+  if (request.nextUrl.pathname.startsWith('/quiz') && !user) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/signup'
+    redirectUrl.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
+    return NextResponse.redirect(redirectUrl)
+  }
 
   return supabaseResponse
 }
