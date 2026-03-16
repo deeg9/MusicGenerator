@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 Phase: 28 of 32 (Auth Infrastructure)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-03-14 - Completed quick task 1: 30s preview paywall with Unlock Full Song CTA linking to /pricing
+Last activity: 2026-03-16 - Completed quick task 2: auto-send creator email when song finishes generating
 
 Progress: [██████████] 96% (v4.2)
 
@@ -127,6 +127,7 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | 30s preview paywall with Unlock Full Song CTA linking to /pricing | 2026-03-14 | 5e42af5 | [1-30s-preview-paywall-with-unlock-full-son](./quick/1-30s-preview-paywall-with-unlock-full-son/) |
+| 2 | Auto-send creator email when song finishes generating | 2026-03-16 | a4d8f27 | [2-email-notifications-when-songs-are-ready](./quick/2-email-notifications-when-songs-are-ready/) |
 
 ## Session Continuity
 
