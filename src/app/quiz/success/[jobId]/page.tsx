@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, RefreshCw, Music, Link2 } from 'lucide-react';
@@ -13,6 +13,7 @@ import { AuthPrompt } from './_components/AuthPrompt';
 import { RecipientEmailForm } from './_components/RecipientEmailForm';
 import { PreviewBanner, PreviewCTA } from './_components/PreviewPaywall';
 import { SubscribeToDownload } from './_components/SubscribeToDownload';
+import { UnlockModal, type CreditState } from './_components/UnlockModal';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -42,6 +43,7 @@ type PageState = 'loading' | 'ready' | 'error' | 'timeout' | 'pod-down';
 interface PollResponse {
   status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   error: string | null;
+  unlockedAt: string | null;
 }
 
 interface PodDownResponse {
@@ -96,9 +98,15 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
   const [stageIndex, setStageIndex] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // Preview paywall — default to true (restrict first, unlock after subscription check)
+  // Preview paywall — default to true (restrict first, unlock after check)
   const [isPreview, setIsPreview] = useState(true);
   const [previewEnded, setPreviewEnded] = useState(false);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [creditState, setCreditState] = useState<CreditState | null>(null);
+  const [unlockLoading, setUnlockLoading] = useState(false);
 
   // Rotate stage messages every 45s
   useEffect(() => {
@@ -161,6 +169,12 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
               } catch {
                 setAudioUrl(`/api/audio/${jobId}`);
               }
+
+              // If song is already unlocked (e.g. from a previous session), skip preview
+              if (data.unlockedAt) {
+                setIsPreview(false);
+              }
+
               setPageState('ready');
             }
             return;
@@ -187,9 +201,9 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
     };
   }, [jobId, pollKey]);
 
-  // Subscription check — runs once on mount to determine if user has an active subscription
+  // Subscription check + auto-unlock for unlimited tier
   useEffect(() => {
-    async function checkSubscription() {
+    async function checkAndAutoUnlock() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -198,34 +212,123 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
 
       try {
         const res = await fetch('/api/subscription/check');
-        if (res.ok) {
-          const data = (await res.json()) as { active: boolean };
-          if (data.active === true) {
-            setIsPreview(false);
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        // Unlimited tier: auto-unlock without modal
+        if (data.active && data.songsPerMonth === -1 && songId) {
+          try {
+            const unlockRes = await fetch(`/api/songs/${songId}/unlock`, { method: 'POST' });
+            if (unlockRes.ok) {
+              setIsPreview(false);
+              return;
+            }
+          } catch {
+            // Fall through to normal check
           }
         }
+
+        // Already unlocked is handled by poll response (unlockedAt check above)
+        // For non-unlimited active subscribers, stay in preview until they click unlock
       } catch {
         // Network error — keep preview mode as safe default
       }
     }
 
-    void checkSubscription();
-  }, []);
+    void checkAndAutoUnlock();
+  }, [songId]);
 
-  // Check Again — re-polls same jobId from the start
-  function handleCheckAgain() {
-    setPageState('loading');
-    setStageIndex(0);
-    setPollKey((k) => k + 1);
-  }
+  // Handle unlock button click — fetch credit state and show modal
+  const handleUnlockClick = useCallback(async () => {
+    setModalLoading(true);
 
-  // Create Another Song handler
-  function handleCreateAnother() {
+    // Check if user is authenticated
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      // Redirect to login
+      const returnTo = window.location.pathname + window.location.search;
+      router.push(`/login?next=${encodeURIComponent(returnTo)}`);
+      setModalLoading(false);
+      return;
+    }
+
     try {
-      localStorage.removeItem('notevra_quiz_v1');
-    } catch {}
-    router.push('/quiz');
-  }
+      const res = await fetch('/api/subscription/check');
+      const data = await res.json();
+
+      if (!res.ok || !data.active) {
+        // No subscription
+        setCreditState({ type: 'no-subscription' });
+        setModalOpen(true);
+        setModalLoading(false);
+        return;
+      }
+
+      // Unlimited tier — auto-unlock, no modal
+      if (data.songsPerMonth === -1) {
+        setUnlockLoading(true);
+        try {
+          const unlockRes = await fetch(`/api/songs/${songId}/unlock`, { method: 'POST' });
+          if (unlockRes.ok) {
+            setIsPreview(false);
+          }
+        } catch { /* no-op */ }
+        setUnlockLoading(false);
+        setModalLoading(false);
+        return;
+      }
+
+      if (data.songsRemaining > 0) {
+        setCreditState({
+          type: 'has-credits',
+          songsRemaining: data.songsRemaining,
+          songsPerMonth: data.songsPerMonth,
+          tier: data.tier,
+        });
+      } else {
+        setCreditState({
+          type: 'no-credits',
+          songsPerMonth: data.songsPerMonth,
+          tier: data.tier,
+          currentPeriodEnd: data.currentPeriodEnd,
+        });
+      }
+
+      setModalOpen(true);
+    } catch {
+      // Network error
+    }
+
+    setModalLoading(false);
+  }, [songId, router]);
+
+  // Handle modal confirm (spend credit)
+  const handleModalConfirm = useCallback(async () => {
+    setUnlockLoading(true);
+    try {
+      const res = await fetch(`/api/songs/${songId}/unlock`, { method: 'POST' });
+      const data = await res.json();
+
+      if (data.unlocked) {
+        setIsPreview(false);
+        setModalOpen(false);
+      } else if (data.error === 'insufficient_credits') {
+        // Credits ran out between check and confirm — show no-credits state
+        setCreditState({
+          type: 'no-credits',
+          songsPerMonth: data.songsPerMonth,
+          tier: data.tier,
+          currentPeriodEnd: data.currentPeriodEnd,
+        });
+      }
+    } catch {
+      // Network error
+    }
+    setUnlockLoading(false);
+  }, [songId]);
 
   // ─── Loading state ─────────────────────────────────────────────────────────
   if (pageState === 'loading') {
@@ -296,7 +399,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
               Something went wrong creating your song
             </h1>
             <p className="text-muted-foreground text-sm">
-              Our music AI had a hiccup. Your quiz answers are safe — just try again and it'll
+              Our music AI had a hiccup. Your quiz answers are safe — just try again and it&apos;ll
               usually work right away.
             </p>
           </div>
@@ -331,7 +434,11 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={handleCheckAgain}
+              onClick={() => {
+                setPageState('loading');
+                setStageIndex(0);
+                setPollKey((k) => k + 1);
+              }}
               className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
             >
               <RefreshCw className="w-4 h-4" />
@@ -362,7 +469,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
               Our servers are temporarily offline
             </h1>
             <p className="text-muted-foreground text-sm">
-              We're experiencing technical difficulties. Please try again later — your quiz answers
+              We&apos;re experiencing technical difficulties. Please try again later — your quiz answers
               are saved.
             </p>
           </div>
@@ -415,14 +522,22 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
           )}
 
           {/* Preview CTA — shows nudge or "Unlock Full Song" button below player */}
-          <PreviewCTA isPreview={isPreview} previewEnded={previewEnded} />
+          <PreviewCTA
+            isPreview={isPreview}
+            previewEnded={previewEnded}
+            onUnlockClick={handleUnlockClick}
+            loading={modalLoading}
+          />
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             {/* Download — gated for preview users */}
             {audioUrl && (
               isPreview ? (
-                <SubscribeToDownload />
+                <SubscribeToDownload
+                  onUnlockClick={handleUnlockClick}
+                  loading={modalLoading}
+                />
               ) : (
                 <a
                   href={`/api/audio/${jobId}?download=true&name=${encodeURIComponent(buildGiftFilename(recipientName))}`}
@@ -436,7 +551,10 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
 
             {/* Create Another */}
             <button
-              onClick={handleCreateAnother}
+              onClick={() => {
+                try { localStorage.removeItem('notevra_quiz_v1'); } catch {}
+                router.push('/quiz');
+              }}
               className="flex-1 inline-flex items-center justify-center gap-2 border border-border text-foreground px-6 py-3 rounded-xl font-medium hover:bg-muted transition-colors"
             >
               Create Another Song
@@ -453,6 +571,17 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
           {songId && <RecipientEmailForm songId={songId} />}
         </motion.div>
       </AnimatePresence>
+
+      {/* Unlock modal */}
+      {creditState && (
+        <UnlockModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onConfirm={handleModalConfirm}
+          confirming={unlockLoading}
+          creditState={creditState}
+        />
+      )}
     </div>
   );
 }

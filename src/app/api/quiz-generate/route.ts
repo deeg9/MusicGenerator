@@ -8,7 +8,6 @@ import { songs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import type { QuizData } from '@/lib/quiz-types';
-import { getUserSubscription, decrementSongCredit } from '@/lib/subscription';
 import { RateLimitError } from '@/lib/gemini';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,20 +195,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Non-fatal — job is running, don't fail the response
   }
 
-  // 8. Decrement song credit (only for subscribed users)
-  if (userId) {
-    try {
-      const sub = await getUserSubscription(userId);
-      if (sub?.active) {
-        await decrementSongCredit(userId);
-      }
-    } catch (err) {
-      console.error('[quiz-generate] Failed to decrement song credit:', err);
-      // Non-fatal — song is already generating
-    }
-  }
-
-  // 9. Build response
+  // 8. Build response
   const response = NextResponse.json({ jobId, songId }, { status: 201 });
 
   // Set session cookie for anonymous users

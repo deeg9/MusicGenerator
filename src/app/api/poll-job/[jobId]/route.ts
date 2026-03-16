@@ -64,13 +64,13 @@ export async function GET(
   // DB already has the completed/failed state from a previous poll.
   try {
     const [existingSong] = await db
-      .select({ status: songs.status, r2Mp3Key: songs.r2Mp3Key })
+      .select({ status: songs.status, r2Mp3Key: songs.r2Mp3Key, unlockedAt: songs.unlockedAt })
       .from(songs)
       .where(eq(songs.heartbulaJobId, jobId))
       .limit(1);
 
     if (existingSong?.status === 'completed' && existingSong.r2Mp3Key) {
-      return NextResponse.json({ status: 'COMPLETED', error: null });
+      return NextResponse.json({ status: 'COMPLETED', error: null, unlockedAt: existingSong.unlockedAt?.toISOString() ?? null });
     }
     if (existingSong?.status === 'failed') {
       return NextResponse.json({ status: 'FAILED', error: 'Song generation failed.' });
@@ -150,7 +150,20 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ status: result.status, error: result.error_msg ?? null });
+    // Include unlockedAt for COMPLETED status
+    let unlockedAt: string | null = null;
+    if (result.status === 'COMPLETED') {
+      try {
+        const [songRow] = await db
+          .select({ unlockedAt: songs.unlockedAt })
+          .from(songs)
+          .where(eq(songs.heartbulaJobId, jobId))
+          .limit(1);
+        unlockedAt = songRow?.unlockedAt?.toISOString() ?? null;
+      } catch { /* non-fatal */ }
+    }
+
+    return NextResponse.json({ status: result.status, error: result.error_msg ?? null, unlockedAt });
   } catch (rawError) {
     const classified = classifyError(rawError);
     console.error('[poll-job] queryJobStatus failed:', classified.technicalMessage);

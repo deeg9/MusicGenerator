@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { subscriptions } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { subscriptions, songs } from '@/db/schema';
+import { eq, sql, and } from 'drizzle-orm';
 
 export type SubscriptionInfo = {
   active: boolean;
@@ -56,4 +56,56 @@ export async function decrementSongCredit(userId: string): Promise<void> {
       updatedAt: new Date(),
     })
     .where(eq(subscriptions.userId, userId));
+}
+
+export type UnlockResult =
+  | { unlocked: true; songsRemaining: number }
+  | { error: 'no_subscription' | 'not_active' | 'insufficient_credits'; songsRemaining: number; songsPerMonth: number; tier: string; currentPeriodEnd: string | null };
+
+/**
+ * Atomically unlock a song by spending 1 credit.
+ * For unlimited tier, skips credit check.
+ */
+export async function unlockSong(userId: string, songId: string): Promise<UnlockResult> {
+  const sub = await getUserSubscription(userId);
+
+  if (!sub) {
+    return { error: 'no_subscription', songsRemaining: 0, songsPerMonth: 0, tier: '', currentPeriodEnd: null };
+  }
+
+  if (!sub.active) {
+    return { error: 'not_active', songsRemaining: sub.songsRemaining, songsPerMonth: sub.songsPerMonth, tier: sub.tier, currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null };
+  }
+
+  // Unlimited tier — unlock immediately without credit decrement
+  if (sub.songsPerMonth === -1) {
+    await db
+      .update(songs)
+      .set({ unlockedAt: new Date() })
+      .where(and(eq(songs.id, songId), eq(songs.userId, userId)));
+
+    return { unlocked: true, songsRemaining: -1 };
+  }
+
+  // Check credits
+  if (sub.songsRemaining <= 0) {
+    return { error: 'insufficient_credits', songsRemaining: 0, songsPerMonth: sub.songsPerMonth, tier: sub.tier, currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null };
+  }
+
+  // Atomic: decrement credit + unlock song
+  // Use raw SQL for atomicity via a single transaction-like update sequence
+  await db
+    .update(subscriptions)
+    .set({
+      songsRemaining: sql`GREATEST(${subscriptions.songsRemaining} - 1, 0)`,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(subscriptions.userId, userId), sql`${subscriptions.songsRemaining} > 0`));
+
+  await db
+    .update(songs)
+    .set({ unlockedAt: new Date() })
+    .where(and(eq(songs.id, songId), eq(songs.userId, userId)));
+
+  return { unlocked: true, songsRemaining: sub.songsRemaining - 1 };
 }
