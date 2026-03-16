@@ -4,75 +4,18 @@ import { db } from '@/db';
 import { subscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type Stripe from 'stripe';
+import {
+  upsertSubscription,
+  mapStripeStatus,
+  getPeriodDates,
+  type SubscriptionWithPeriod,
+} from '@/lib/stripe-sync';
 
 export const dynamic = 'force-dynamic';
-
-// Stripe's newer API versions may not expose these on the TS types,
-// but they're still present at runtime in webhook payloads.
-type SubscriptionWithPeriod = Stripe.Subscription & {
-  current_period_start?: number;
-  current_period_end?: number;
-};
 
 type InvoiceWithSubscription = Stripe.Invoice & {
   subscription?: string | null;
 };
-
-function getPeriodDates(sub: SubscriptionWithPeriod) {
-  return {
-    start: sub.current_period_start ? new Date(sub.current_period_start * 1000) : null,
-    end: sub.current_period_end ? new Date(sub.current_period_end * 1000) : null,
-  };
-}
-
-async function upsertSubscription(
-  stripeSubscription: SubscriptionWithPeriod,
-  userId: string,
-  customerId: string,
-) {
-  const priceId = stripeSubscription.items.data[0]?.price.id;
-  const tier = tierFromPriceId(priceId ?? '') ?? 'starter';
-  const config = TIER_CONFIG[tier];
-  const period = getPeriodDates(stripeSubscription);
-
-  const values = {
-    userId,
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: stripeSubscription.id,
-    stripePriceId: priceId ?? null,
-    tier: tier as 'starter' | 'pro' | 'unlimited',
-    status: mapStripeStatus(stripeSubscription.status),
-    songsPerMonth: config.songsPerMonth,
-    songsRemaining: config.songsPerMonth,
-    currentPeriodStart: period.start,
-    currentPeriodEnd: period.end,
-    cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-    updatedAt: new Date(),
-  };
-
-  const [existing] = await db
-    .select({ id: subscriptions.id })
-    .from(subscriptions)
-    .where(eq(subscriptions.userId, userId))
-    .limit(1);
-
-  if (existing) {
-    await db.update(subscriptions).set(values).where(eq(subscriptions.id, existing.id));
-  } else {
-    await db.insert(subscriptions).values(values);
-  }
-}
-
-function mapStripeStatus(status: Stripe.Subscription.Status): 'active' | 'canceled' | 'past_due' | 'trialing' | 'inactive' {
-  switch (status) {
-    case 'active': return 'active';
-    case 'trialing': return 'trialing';
-    case 'past_due': return 'past_due';
-    case 'canceled':
-    case 'unpaid': return 'canceled';
-    default: return 'inactive';
-  }
-}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const body = await request.text();

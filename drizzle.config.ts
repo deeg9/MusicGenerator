@@ -8,7 +8,16 @@ export default defineConfig({
   out: './drizzle',
   schema: './src/db/schema.ts',
   dialect: 'postgresql',
+  schemaFilter: ['public'],
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    // Use DIRECT_URL (session pooler, port 5432) for migrations/push if available,
+    // otherwise fall back to DATABASE_URL (transaction pooler, port 6543).
+    // Transaction pooler is slow for introspection; session pooler supports it properly.
+    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL!,
+  },
+  entities: {
+    roles: {
+      provider: 'supabase',
+    },
   },
 });

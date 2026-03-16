@@ -1,6 +1,7 @@
 import { db } from '@/db';
 import { subscriptions, songs } from '@/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
+import { syncSubscriptionFromStripe } from '@/lib/stripe-sync';
 
 export type SubscriptionInfo = {
   active: boolean;
@@ -18,7 +19,30 @@ export async function getUserSubscription(userId: string): Promise<SubscriptionI
     .where(eq(subscriptions.userId, userId))
     .limit(1);
 
-  if (!sub) return null;
+  if (!sub) {
+    // No local record — try syncing from Stripe (self-healing for missed webhooks)
+    const synced = await syncSubscriptionFromStripe(userId);
+    if (synced) {
+      // Re-query after backfill
+      const [backfilled] = await db
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.userId, userId))
+        .limit(1);
+
+      if (backfilled) {
+        return {
+          active: backfilled.status === 'active' || backfilled.status === 'trialing',
+          tier: backfilled.tier,
+          songsRemaining: backfilled.songsRemaining,
+          songsPerMonth: backfilled.songsPerMonth,
+          cancelAtPeriodEnd: backfilled.cancelAtPeriodEnd,
+          currentPeriodEnd: backfilled.currentPeriodEnd,
+        };
+      }
+    }
+    return null;
+  }
 
   return {
     active: sub.status === 'active' || sub.status === 'trialing',
