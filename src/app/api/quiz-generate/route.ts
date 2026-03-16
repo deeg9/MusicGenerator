@@ -136,8 +136,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     songId = song.id;
   } catch (rawError) {
     console.error('[quiz-generate] db.insert(songs) failed:', rawError);
+    const detail = rawError instanceof Error ? rawError.message : String(rawError);
     return NextResponse.json(
-      { error: { category: 'internal', retryable: false, userMessage: 'Failed to create song record.' } },
+      { error: { category: 'internal', retryable: false, userMessage: 'Failed to create song record.', detail } },
       { status: 500 },
     );
   }
