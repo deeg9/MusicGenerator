@@ -59,6 +59,7 @@ export const songs = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     failedAt: timestamp('failed_at', { withTimezone: true }),
+    creatorEmailSentAt: timestamp('creator_email_sent_at', { withTimezone: true }),
   },
   (t) => [
     // ── RLS: Authenticated users see only their own songs ──────────────────
