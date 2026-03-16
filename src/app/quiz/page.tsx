@@ -65,14 +65,35 @@ export default function QuizPage() {
   const [genStatus, setGenStatus] = useState<'idle' | 'generating' | 'error'>('idle');
   const [genError, setGenError] = useState<string | null>(null);
 
-  // Clear quiz state on mount — fresh start on every page load
+  // Restore quiz state from localStorage on mount (survives refresh)
   useEffect(() => {
     try {
-      localStorage.removeItem(QUIZ_STORAGE_KEY);
+      const saved = localStorage.getItem(QUIZ_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { data?: Partial<QuizData>; step?: number };
+        if (parsed.data) setData((prev) => ({ ...prev, ...parsed.data }));
+        if (typeof parsed.step === 'number' && parsed.step >= 0 && parsed.step < TOTAL_STEPS) {
+          setCurrentStep(parsed.step);
+        }
+      }
     } catch {
-      // Ignore storage errors
+      // Ignore corrupt/missing storage
     }
   }, []);
+
+  // Persist quiz state to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify({ data, step: currentStep }));
+    } catch {
+      // Ignore storage errors (quota exceeded, private browsing, etc.)
+    }
+  }, [data, currentStep]);
+
+  // Scroll to top on step change (fixes mobile viewport starting mid-page)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentStep]);
 
   // ─── Generation ──────────────────────────────────────────────────────────────
 
