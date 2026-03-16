@@ -47,6 +47,8 @@ export default async function DashboardPage() {
   }
 
   // Query all user songs — graceful fallback on DB timeout
+  const isUnlimitedTier = !!subscription?.active && subscription.songsPerMonth === -1;
+
   let userSongsWithUrls: Array<{
     id: string;
     recipientName: string;
@@ -57,6 +59,7 @@ export default async function DashboardPage() {
     audioUrl: string | null;
     downloadUrl: string | null;
     downloadFilename: string;
+    isUnlocked: boolean;
   }> = [];
   try {
     const userSongs = await db
@@ -82,6 +85,7 @@ export default async function DashboardPage() {
           audioUrl,
           downloadUrl,
           downloadFilename,
+          isUnlocked: !!song.unlockedAt,
         };
       }),
     );
@@ -133,6 +137,8 @@ export default async function DashboardPage() {
                 downloadUrl={song.downloadUrl}
                 downloadFilename={song.downloadFilename}
                 hasSubscription={!!subscription?.active}
+                isUnlocked={song.isUnlocked}
+                isUnlimitedTier={isUnlimitedTier}
               />
             ))}
           </div>

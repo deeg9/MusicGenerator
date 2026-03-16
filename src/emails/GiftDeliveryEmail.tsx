@@ -205,7 +205,7 @@ export function GiftDeliveryEmail({
                 margin: 0,
               }}
             >
-              noreply@notevra.com · notevra.com
+              noreply@notevra.net · notevra.net
             </Text>
           </Section>
         </Container>

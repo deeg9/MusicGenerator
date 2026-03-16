@@ -14,6 +14,8 @@ interface SongCardProps {
   downloadUrl: string | null;
   downloadFilename: string;
   hasSubscription?: boolean;
+  isUnlocked?: boolean;
+  isUnlimitedTier?: boolean;
 }
 
 export function SongCard({
@@ -26,7 +28,10 @@ export function SongCard({
   downloadUrl,
   downloadFilename,
   hasSubscription = false,
+  isUnlocked = false,
+  isUnlimitedTier = false,
 }: SongCardProps) {
+  const showFull = !!(isUnlocked || isUnlimitedTier);
   const formattedDate = new Date(createdAt).toLocaleDateString();
 
   return (
@@ -36,7 +41,7 @@ export function SongCard({
           <h2 className="font-display text-xl text-foreground">
             A song for {recipientName}
           </h2>
-          {status === 'completed' && !hasSubscription && (
+          {status === 'completed' && !showFull && (
             <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
               30s Preview
             </span>
@@ -60,7 +65,7 @@ export function SongCard({
       </div>
 
       {status === 'completed' && audioUrl && (
-        <SongPlayer src={audioUrl} isPreview={!hasSubscription} />
+        <SongPlayer src={audioUrl} isPreview={!showFull} />
       )}
 
       {status === 'generating' && (
@@ -78,7 +83,7 @@ export function SongCard({
       )}
 
       {status === 'completed' && (
-        hasSubscription ? (
+        showFull ? (
           <a
             href={downloadUrl ?? '#'}
             download={downloadFilename}

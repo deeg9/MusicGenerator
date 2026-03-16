@@ -69,6 +69,9 @@ export function Step1Relationship({ data, errors, updateData }: Step1Relationshi
           maxLength={50}
           className="w-full rounded-lg border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
+        <p className="mt-1.5 text-xs text-muted-foreground italic">
+          Unique name? Add how it sounds — e.g. Siobhan (shih-VAWN)
+        </p>
         {errors.recipientName && (
           <p className="mt-2 text-destructive text-sm" role="alert">
             {errors.recipientName}

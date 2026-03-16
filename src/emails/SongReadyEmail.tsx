@@ -154,7 +154,7 @@ export function SongReadyEmail({
                 margin: '0 0 4px 0',
               }}
             >
-              noreply@notevra.com · notevra.com
+              noreply@notevra.net · notevra.net
             </Text>
             <Text
               style={{

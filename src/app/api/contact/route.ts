@@ -28,8 +28,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const fromLine = email ? `${name} <${email}>` : name;
 
   const { error } = await resend.emails.send({
-    from: 'Notevra Contact <hello@notevra.com>',
-    to: ['hello@notevra.com'],
+    from: 'Notevra Contact <hello@notevra.net>',
+    to: ['hello@notevra.net'],
     subject: `Contact form: ${name}`,
     replyTo,
     text: `From: ${fromLine}\n\n${message}`,

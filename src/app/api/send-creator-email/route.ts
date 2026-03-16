@@ -80,7 +80,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // 6. Send email via Resend
   const { data, error } = await resend.emails.send({
-    from: 'Notevra <hello@notevra.com>',
+    from: 'Notevra <hello@notevra.net>',
     to: [recipientEmail],
     subject: `Your song for ${song.recipientName} is ready`,
     react: SongReadyEmail({
