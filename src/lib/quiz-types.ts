@@ -23,6 +23,7 @@ export interface QuizData {
   // Step 6 — Language & email (optional)
   language: string;
   email: string;
+  emailOptIn: boolean;
 }
 
 export const INITIAL_QUIZ_DATA: QuizData = {
@@ -35,4 +36,5 @@ export const INITIAL_QUIZ_DATA: QuizData = {
   message: '',
   language: 'English',
   email: '',
+  emailOptIn: false,
 };

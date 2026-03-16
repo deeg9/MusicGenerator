@@ -3,8 +3,7 @@
 import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RefreshCw, Music, Link2, Lock } from 'lucide-react';
-import Link from 'next/link';
+import { Download, RefreshCw, Music, Link2 } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { createClient } from '@/lib/supabase/client';
 import { ConfettiBlast } from './_components/ConfettiBlast';
@@ -13,6 +12,7 @@ import { SharePrompt } from './_components/SharePrompt';
 import { AuthPrompt } from './_components/AuthPrompt';
 import { RecipientEmailForm } from './_components/RecipientEmailForm';
 import { PreviewBanner, PreviewCTA } from './_components/PreviewPaywall';
+import { SubscribeToDownload } from './_components/SubscribeToDownload';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -422,13 +422,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
             {/* Download — gated for preview users */}
             {audioUrl && (
               isPreview ? (
-                <Link
-                  href="/pricing"
-                  className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
-                >
-                  <Lock className="w-4 h-4" />
-                  Subscribe to Download
-                </Link>
+                <SubscribeToDownload />
               ) : (
                 <a
                   href={`/api/audio/${jobId}?download=true&name=${encodeURIComponent(buildGiftFilename(recipientName))}`}

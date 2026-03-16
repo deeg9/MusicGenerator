@@ -10,9 +10,11 @@ import { SongReadyEmail } from '@/emails/SongReadyEmail';
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // 1. Parse and validate request body
   let songId: string | undefined;
+  let creatorEmail: string | undefined;
   try {
     const body = await request.json() as Record<string, unknown>;
     songId = typeof body.songId === 'string' ? body.songId : undefined;
+    creatorEmail = typeof body.creatorEmail === 'string' ? body.creatorEmail : undefined;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
@@ -34,15 +36,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const song = rows[0];
 
-  // 3. Validate song is owned by an authenticated user
-  if (!song.userId) {
-    return NextResponse.json(
-      { error: 'Song has no userId — anonymous songs cannot receive creator emails' },
-      { status: 400 },
-    );
-  }
-
-  // 4. Validate song has been finalized
+  // 3. Validate song has been finalized
   if (!song.r2Mp3Key) {
     return NextResponse.json(
       { error: 'Song is not finalized — r2Mp3Key is null' },
@@ -50,31 +44,44 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // 5. Look up creator email via Supabase admin client (service role)
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  // 4. Resolve creator email: use provided creatorEmail, or look up via Supabase for authenticated users
+  let recipientEmail = creatorEmail;
 
-  const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(song.userId);
+  if (!recipientEmail) {
+    if (!song.userId) {
+      return NextResponse.json(
+        { error: 'Song has no userId and no creatorEmail provided' },
+        { status: 400 },
+      );
+    }
 
-  if (!user || !user.email) {
-    return NextResponse.json(
-      { error: 'Creator user not found or has no email' },
-      { status: 500 },
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
+
+    const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(song.userId);
+
+    if (!user || !user.email) {
+      return NextResponse.json(
+        { error: 'Creator user not found or has no email' },
+        { status: 500 },
+      );
+    }
+
+    recipientEmail = user.email;
   }
 
-  // 6. Generate presigned URLs (24h expiry for creator)
+  // 5. Generate presigned URLs (24h expiry for creator)
   const [listenUrl, downloadUrl] = await Promise.all([
     getAudioPresignedUrl(song.r2Mp3Key, 86400),
     getAudioPresignedUrl(song.r2Mp3Key, 86400, `${song.recipientName}-song.mp3`),
   ]);
 
-  // 7. Send email via Resend
+  // 6. Send email via Resend
   const { data, error } = await resend.emails.send({
     from: 'Notevra <hello@notevra.com>',
-    to: [user.email],
+    to: [recipientEmail],
     subject: `Your song for ${song.recipientName} is ready`,
     react: SongReadyEmail({
       recipientName: song.recipientName,

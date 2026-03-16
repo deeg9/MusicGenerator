@@ -93,26 +93,44 @@ export async function GET(
       // Send creator email — non-blocking, failures must never break the poll response
       try {
         const [songForEmail] = await db
-          .select({ id: songs.id, userId: songs.userId, creatorEmailSentAt: songs.creatorEmailSentAt })
+          .select({
+            id: songs.id,
+            userId: songs.userId,
+            quizData: songs.quizData,
+            creatorEmailSentAt: songs.creatorEmailSentAt,
+          })
           .from(songs)
           .where(eq(songs.heartbulaJobId, jobId))
           .limit(1);
 
-        if (songForEmail && songForEmail.userId && !songForEmail.creatorEmailSentAt) {
-          const emailResponse = await fetch(
-            new URL('/api/send-creator-email', request.url),
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ songId: songForEmail.id }),
-            },
-          );
+        if (songForEmail && !songForEmail.creatorEmailSentAt) {
+          // Determine if we should send and build the request body
+          let emailBody: Record<string, string> | null = null;
 
-          if (emailResponse.ok) {
-            await db
-              .update(songs)
-              .set({ creatorEmailSentAt: new Date() })
-              .where(eq(songs.id, songForEmail.id));
+          if (songForEmail.userId) {
+            // Authenticated user — look up email via Supabase
+            emailBody = { songId: songForEmail.id };
+          } else if (songForEmail.quizData?.emailOptIn && songForEmail.quizData?.email) {
+            // Anonymous user who opted in — pass email directly
+            emailBody = { songId: songForEmail.id, creatorEmail: songForEmail.quizData.email };
+          }
+
+          if (emailBody) {
+            const emailResponse = await fetch(
+              new URL('/api/send-creator-email', request.url),
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(emailBody),
+              },
+            );
+
+            if (emailResponse.ok) {
+              await db
+                .update(songs)
+                .set({ creatorEmailSentAt: new Date() })
+                .where(eq(songs.id, songForEmail.id));
+            }
           }
         }
       } catch (emailError) {

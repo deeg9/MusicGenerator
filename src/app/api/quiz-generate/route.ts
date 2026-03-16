@@ -49,6 +49,7 @@ function validateQuizData(
       message: typeof obj.message === 'string' ? obj.message : '',
       language: typeof obj.language === 'string' ? obj.language : 'English',
       email: typeof obj.email === 'string' ? obj.email : '',
+      emailOptIn: obj.emailOptIn === true,
     },
   };
 }
@@ -131,6 +132,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         message: validation.data.message,
         voiceGender: validation.data.voicePreference,
         language: validation.data.language,
+        email: validation.data.emailOptIn ? validation.data.email : undefined,
+        emailOptIn: validation.data.emailOptIn,
       },
     }).returning({ id: songs.id });
     songId = song.id;

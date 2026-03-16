@@ -120,6 +120,7 @@ const COMPLETE_QUIZ: QuizData = {
   message: 'Thank you for everything',
   language: 'English',
   email: 'test@example.com',
+  emailOptIn: false,
 };
 
 const MOCK_SUBMIT_PARAMS = {

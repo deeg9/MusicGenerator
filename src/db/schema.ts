@@ -45,6 +45,8 @@ export const songs = pgTable(
       message?: string;
       voiceGender?: string;
       language?: string;
+      email?: string;
+      emailOptIn?: boolean;
     }>(),
 
     // Lyrics logging (raw template vs Gemini-enhanced)

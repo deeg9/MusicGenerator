@@ -58,8 +58,10 @@ function PricingContent() {
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
-      setToast({ type: 'success', message: 'Subscription activated! Redirecting to create your song...' });
-      const timer = setTimeout(() => router.push('/quiz'), 2000);
+      const returnTo = searchParams.get('returnTo');
+      const destination = returnTo && returnTo.startsWith('/') ? returnTo : '/quiz';
+      setToast({ type: 'success', message: 'Subscription activated! Redirecting...' });
+      const timer = setTimeout(() => router.push(destination), 2000);
       return () => clearTimeout(timer);
     }
     if (searchParams.get('canceled') === 'true') {

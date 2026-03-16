@@ -86,15 +86,23 @@ export async function createCheckoutSession(
   customerId: string,
   priceId: string,
   userId: string,
+  returnPath?: string,
 ): Promise<string> {
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+  const successUrl = returnPath
+    ? `${origin}${returnPath}`
+    : `${origin}/pricing?success=true`;
+  const cancelUrl = returnPath
+    ? `${origin}${returnPath}`
+    : `${origin}/pricing?canceled=true`;
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${origin}/pricing?success=true`,
-    cancel_url: `${origin}/pricing?canceled=true`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     subscription_data: {
       metadata: { userId },
     },

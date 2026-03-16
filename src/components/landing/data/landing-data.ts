@@ -33,7 +33,7 @@ export const STEPS: Step[] = [
       'Pick a music genre and mood that fits. From a heartfelt folk ballad to an upbeat pop anthem — you decide the feel.',
   },
   {
-    icon: 'Sparkles',
+    icon: 'Gift',
     title: 'Get your song',
     description:
       'Our AI composes a one-of-a-kind song just for them. Download it, share it, or play it the moment the candles are blown out.',
