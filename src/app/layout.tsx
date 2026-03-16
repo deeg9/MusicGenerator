@@ -3,6 +3,7 @@ import { DM_Sans, Libre_Baskerville, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { CookieConsent } from '@/components/CookieConsent';
 import { createClient } from '@/lib/supabase/server';
 
 const dmSans = DM_Sans({
@@ -58,6 +59,7 @@ export default async function RootLayout({
         <Header user={user} />
         <main className="flex-1">{children}</main>
         <Footer />
+        <CookieConsent />
       </body>
     </html>
   );
