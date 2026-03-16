@@ -7,6 +7,8 @@ import { Footer } from '@/components/Footer';
 import { CookieConsent } from '@/components/CookieConsent';
 import { Analytics } from '@vercel/analytics/next';
 import { createClient } from '@/lib/supabase/server';
+import { PostHogProvider } from './providers';
+import { PostHogPageView } from './PostHogPageView';
 
 const dmSans = DM_Sans({
   variable: '--font-dm-sans',
@@ -86,20 +88,23 @@ export default async function RootLayout({
         </Script>
       </head>
       <body className={`${dmSans.variable} ${libreBaskerville.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: 'none' }}
-            src="https://www.facebook.com/tr?id=949118214118377&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
-        <Header user={user} />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <CookieConsent />
-        <Analytics />
+        <PostHogProvider>
+          <PostHogPageView />
+          <noscript>
+            <img
+              height="1"
+              width="1"
+              style={{ display: 'none' }}
+              src="https://www.facebook.com/tr?id=949118214118377&ev=PageView&noscript=1"
+              alt=""
+            />
+          </noscript>
+          <Header user={user} />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <CookieConsent />
+          <Analytics />
+        </PostHogProvider>
       </body>
     </html>
   );
