@@ -92,20 +92,36 @@ export async function unlockSong(userId: string, songId: string): Promise<Unlock
     return { error: 'insufficient_credits', songsRemaining: 0, songsPerMonth: sub.songsPerMonth, tier: sub.tier, currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null };
   }
 
-  // Atomic: decrement credit + unlock song
-  // Use raw SQL for atomicity via a single transaction-like update sequence
-  await db
-    .update(subscriptions)
-    .set({
-      songsRemaining: sql`GREATEST(${subscriptions.songsRemaining} - 1, 0)`,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(subscriptions.userId, userId), sql`${subscriptions.songsRemaining} > 0`));
+  // Atomic: decrement credit + unlock song in a single transaction
+  try {
+    const newRemaining = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(subscriptions)
+        .set({
+          songsRemaining: sql`GREATEST(${subscriptions.songsRemaining} - 1, 0)`,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(subscriptions.userId, userId), sql`${subscriptions.songsRemaining} > 0`))
+        .returning({ songsRemaining: subscriptions.songsRemaining });
 
-  await db
-    .update(songs)
-    .set({ unlockedAt: new Date() })
-    .where(and(eq(songs.id, songId), eq(songs.userId, userId)));
+      if (!updated) {
+        throw new Error('insufficient_credits');
+      }
 
-  return { unlocked: true, songsRemaining: sub.songsRemaining - 1 };
+      await tx
+        .update(songs)
+        .set({ unlockedAt: new Date() })
+        .where(and(eq(songs.id, songId), eq(songs.userId, userId)));
+
+      return updated.songsRemaining;
+    });
+
+    return { unlocked: true, songsRemaining: newRemaining };
+  } catch (err) {
+    // Race condition: credits consumed between check and transaction
+    if (err instanceof Error && err.message === 'insufficient_credits') {
+      return { error: 'insufficient_credits', songsRemaining: 0, songsPerMonth: sub.songsPerMonth, tier: sub.tier, currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null };
+    }
+    throw err;
+  }
 }
