@@ -2,11 +2,17 @@
 
 import { useState } from 'react';
 import { Video, Heart, Copy, Check } from 'lucide-react';
+import { trackSongShared } from '@/lib/analytics';
 
-export function SharePrompt() {
+interface SharePromptProps {
+  songId?: string;
+}
+
+export function SharePrompt({ songId = '' }: SharePromptProps) {
   const [copied, setCopied] = useState(false);
 
   function handleCopyLink() {
+    trackSongShared(songId);
     void navigator.clipboard.writeText(window.location.href).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

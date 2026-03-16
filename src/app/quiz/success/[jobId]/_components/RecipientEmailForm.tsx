@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Loader2, Send } from 'lucide-react';
+import { trackEmailFormSubmitted } from '@/lib/analytics';
 
 interface RecipientEmailFormProps {
   songId: string; // UUID from songs table — must be provided by parent
@@ -27,6 +28,7 @@ export function RecipientEmailForm({ songId }: RecipientEmailFormProps) {
       });
 
       if (res.ok) {
+        trackEmailFormSubmitted(songId);
         setSent(true);
       } else {
         // Check for "not finalized" in response body

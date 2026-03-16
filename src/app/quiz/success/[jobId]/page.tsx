@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect, useCallback } from 'react';
+import { use, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, RefreshCw, Music, Link2 } from 'lucide-react';
@@ -14,6 +14,12 @@ import { RecipientEmailForm } from './_components/RecipientEmailForm';
 import { PreviewBanner, PreviewCTA } from './_components/PreviewPaywall';
 import { SubscribeToDownload } from './_components/SubscribeToDownload';
 import { UnlockModal, type CreditState } from './_components/UnlockModal';
+import {
+  trackSongGenerationStarted,
+  trackSongGenerationCompleted,
+  trackSongGenerationFailed,
+  trackSongDownloaded,
+} from '@/lib/analytics';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -98,6 +104,17 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
   const [stageIndex, setStageIndex] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Analytics: track generation lifecycle
+  const pageMountTimeRef = useRef(Date.now());
+  const generationTrackedRef = useRef(false);
+
+  // Track generation started on mount
+  useEffect(() => {
+    if (jobId && songId) {
+      trackSongGenerationStarted(jobId, songId);
+    }
+  }, [jobId, songId]);
+
   // Preview paywall — default to true (restrict first, unlock after check)
   const [isPreview, setIsPreview] = useState(true);
   const [previewEnded, setPreviewEnded] = useState(false);
@@ -162,6 +179,15 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
 
           if (data.status === 'COMPLETED') {
             if (!cancelled) {
+              // Track generation completed
+              if (!generationTrackedRef.current) {
+                generationTrackedRef.current = true;
+                trackSongGenerationCompleted(
+                  songId,
+                  Date.now() - pageMountTimeRef.current,
+                );
+              }
+
               try {
                 const audioRes = await fetch(`/api/audio/${jobId}`);
                 const { url } = await audioRes.json();
@@ -181,7 +207,10 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
           }
 
           if (data.status === 'FAILED') {
-            if (!cancelled) setPageState('error');
+            if (!cancelled) {
+              trackSongGenerationFailed(data.error ?? 'unknown');
+              setPageState('error');
+            }
             return;
           }
 
@@ -518,6 +547,8 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
               src={audioUrl}
               isPreview={isPreview}
               onPreviewEnd={() => setPreviewEnded(true)}
+              songId={songId}
+              source="success_page"
             />
           )}
 
@@ -541,6 +572,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
               ) : (
                 <a
                   href={`/api/audio/${jobId}?download=true&name=${encodeURIComponent(buildGiftFilename(recipientName))}`}
+                  onClick={() => trackSongDownloaded(songId)}
                   className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
                 >
                   <Download className="w-4 h-4" />
@@ -562,7 +594,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
           </div>
 
           {/* Share prompt */}
-          <SharePrompt />
+          <SharePrompt songId={songId} />
 
           {/* Auth upsell — only renders for anonymous users */}
           <AuthPrompt jobId={jobId} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
 import type { ZodTypeAny } from 'zod';
@@ -18,11 +18,18 @@ import { Step5Message, step5Schema } from './_components/Step5Message';
 import { Step6Language, step6Schema } from './_components/Step6Language';
 import type { QuizData } from '@/lib/quiz-types';
 import { INITIAL_QUIZ_DATA } from '@/lib/quiz-types';
+import {
+  trackQuizStarted,
+  trackQuizStepCompleted,
+  trackQuizStepBack,
+  trackQuizCompleted,
+} from '@/lib/analytics';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const QUIZ_STORAGE_KEY = 'notevra_quiz_v1';
 const TOTAL_STEPS = 6;
+const STEP_NAMES = ['relationship', 'genre_voice', 'qualities', 'memories', 'message', 'language'];
 
 // ─── Per-step Zod schemas (null = no validation yet) ─────────────────────────
 
@@ -65,6 +72,10 @@ export default function QuizPage() {
   const [genStatus, setGenStatus] = useState<'idle' | 'generating' | 'error'>('idle');
   const [genError, setGenError] = useState<string | null>(null);
 
+  // Analytics timing refs
+  const quizStartTimeRef = useRef(Date.now());
+  const stepStartTimeRef = useRef(Date.now());
+
   // Restore quiz state from localStorage on mount (survives refresh)
   useEffect(() => {
     try {
@@ -79,6 +90,11 @@ export default function QuizPage() {
     } catch {
       // Ignore corrupt/missing storage
     }
+  }, []);
+
+  // Track quiz_started on mount (fires once regardless of localStorage restore)
+  useEffect(() => {
+    trackQuizStarted();
   }, []);
 
   // Persist quiz state to localStorage on every change
@@ -160,17 +176,34 @@ export default function QuizPage() {
       }
     }
     setErrors({});
+
+    // Track step completion with timing
+    trackQuizStepCompleted(
+      currentStep + 1,
+      STEP_NAMES[currentStep],
+      Date.now() - stepStartTimeRef.current,
+    );
+    stepStartTimeRef.current = Date.now();
+
     if (currentStep < TOTAL_STEPS - 1) {
       setDirection(1);
       setCurrentStep((s) => s + 1);
     } else {
-      // Final step — trigger generation
+      // Final step — track quiz completion, then trigger generation
+      trackQuizCompleted({
+        totalTimeMs: Date.now() - quizStartTimeRef.current,
+        occasion: data.relationshipType,
+        genre: data.genre,
+        voice: data.voicePreference,
+        language: data.language,
+      });
       void handleCreate();
     }
   }
 
   function goBack() {
     if (currentStep > 0) {
+      trackQuizStepBack(currentStep + 1, STEP_NAMES[currentStep]);
       setDirection(-1);
       setCurrentStep((s) => s - 1);
     }

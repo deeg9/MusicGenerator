@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
+import { trackCtaClicked } from '@/lib/analytics';
 
 export function BottomCtaSection() {
   return (
@@ -13,6 +16,7 @@ export function BottomCtaSection() {
         </p>
         <Link
           href="/quiz"
+          onClick={() => trackCtaClicked('bottom_cta', 'Yes! Start Song Now')}
           className="inline-block bg-primary text-primary-foreground font-bold rounded-full px-8 py-3 hover:bg-primary/90 transition-colors"
         >
           Yes! Start Song Now

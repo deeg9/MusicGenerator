@@ -148,7 +148,7 @@ export default async function ListenPage({ params }: ListenPageProps) {
           </span>
 
           {/* Audio player */}
-          <ListenPlayer src={audioUrl} />
+          <ListenPlayer src={audioUrl} songId={song.id} />
         </div>
 
         {/* Footer */}

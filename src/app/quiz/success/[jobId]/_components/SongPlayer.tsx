@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Play, Pause } from 'lucide-react';
+import { trackSongPlayed, trackSongPlayCompleted } from '@/lib/analytics';
 
 const PREVIEW_LIMIT_S = 30;
 
@@ -9,6 +10,8 @@ interface SongPlayerProps {
   src: string;
   isPreview?: boolean;
   onPreviewEnd?: () => void;
+  songId?: string;
+  source?: 'success_page' | 'listen_page' | 'dashboard';
 }
 
 function formatTime(seconds: number): string {
@@ -18,7 +21,7 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function SongPlayer({ src, isPreview = false, onPreviewEnd }: SongPlayerProps) {
+export function SongPlayer({ src, isPreview = false, onPreviewEnd, songId = '', source = 'success_page' }: SongPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -27,6 +30,7 @@ export function SongPlayer({ src, isPreview = false, onPreviewEnd }: SongPlayerP
   const [duration, setDuration] = useState(0);
   const [previewEnded, setPreviewEnded] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const hasTrackedPlay = useRef(false);
 
   // In preview mode: cap display to PREVIEW_LIMIT_S
   const displayDuration = isPreview ? PREVIEW_LIMIT_S : duration;
@@ -66,7 +70,10 @@ export function SongPlayer({ src, isPreview = false, onPreviewEnd }: SongPlayerP
       }
     };
     const handleLoadedMetadata = () => setDuration(audio.duration);
-    const handleEnded = () => setIsPlaying(false);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      if (songId) trackSongPlayCompleted(songId, source);
+    };
     const handleCanPlay = () => {
       if (audio.duration && isFinite(audio.duration)) {
         setDuration(audio.duration);
@@ -98,6 +105,12 @@ export function SongPlayer({ src, isPreview = false, onPreviewEnd }: SongPlayerP
         audio.currentTime = 0;
         setCurrentTime(0);
         setPreviewEnded(false);
+        hasTrackedPlay.current = false;
+      }
+      // Track first play or play from beginning
+      if (!hasTrackedPlay.current && songId) {
+        hasTrackedPlay.current = true;
+        trackSongPlayed(songId, source);
       }
       void audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }

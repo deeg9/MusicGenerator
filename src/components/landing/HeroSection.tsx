@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Star, Heart, Volume2, VolumeX } from 'lucide-react';
 import { HeroAudioCard } from './HeroAudioCard';
+import { trackCtaClicked } from '@/lib/analytics';
 
 export function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -75,6 +76,7 @@ export function HeroSection() {
             <div className="flex flex-col gap-4 items-center lg:items-start">
               <Link
                 href="/quiz"
+                onClick={() => trackCtaClicked('hero', "OMG Yes! Let's Go")}
                 className="rounded-full bg-primary text-primary-foreground px-8 py-3.5 font-bold text-lg shadow-medium hover:bg-primary/90 hover:shadow-elevated hover:-translate-y-0.5 transition-all w-fit"
               >
                 OMG Yes! Let&apos;s Go
@@ -122,6 +124,7 @@ export function HeroSection() {
             {/* CTA below image */}
             <Link
               href="/quiz"
+              onClick={() => trackCtaClicked('hero_right', 'Create My Song Please!')}
               className="mt-8 rounded-full bg-primary text-primary-foreground px-8 py-3.5 font-bold text-lg shadow-medium hover:bg-primary/90 hover:shadow-elevated hover:-translate-y-0.5 transition-all"
             >
               Create My Song Please!
