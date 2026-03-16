@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 Phase: 28 of 32 (Auth Infrastructure)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-03-16 - Completed quick task 4: Validate Audible-style credit system for song unlocks
+Last activity: 2026-03-16 - Completed quick task 7: PostHog analytics instrumentation + dashboards
 
 Progress: [██████████] 96% (v4.2)
 
@@ -131,10 +131,11 @@ None.
 | 3 | Professional privacy policy, terms of service, and cookie consent banner (GDPR/CCPA) | 2026-03-16 | 23d9cad | [3-research-and-create-professional-privacy](./quick/3-research-and-create-professional-privacy/) |
 | 4 | Validate Audible-style credit system across 9 files | 2026-03-16 | 1821179 | [4-validate-audible-style-credit-system-for](./quick/4-validate-audible-style-credit-system-for/) |
 | 6 | Fix email links — app pages instead of raw R2 URLs + new /listen/[songId] page | 2026-03-16 | 6a9f6d7 | [6-fix-email-links-app-pages-instead-of-raw](./quick/6-fix-email-links-app-pages-instead-of-raw/) |
+| 7 | PostHog analytics instrumentation + dashboard creation script | 2026-03-16 | e0b27a5 | [7-research-and-set-up-posthog-dashboards-a](./quick/7-research-and-set-up-posthog-dashboards-a/) |
 
 ## Session Continuity
 
-Last session: 2026-03-16T07:00:00Z
-Stopped at: Completed quick task 6 — email links now use app URLs, new /listen/[songId] page created
+Last session: 2026-03-16T23:22:00Z
+Stopped at: Completed quick task 7 — PostHog analytics instrumentation across all app touchpoints
 Resume file: None
 Next action: Execute 30-02 (React Email templates)
