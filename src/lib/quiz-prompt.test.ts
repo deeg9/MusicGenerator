@@ -23,8 +23,8 @@ const BASE_QUIZ: QuizData = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('GIFT_SONG_DURATION_MS', () => {
-  it('equals 90000 ms (90 seconds)', () => {
-    expect(GIFT_SONG_DURATION_MS).toBe(90_000);
+  it('equals 210000 ms (3.5 minutes)', () => {
+    expect(GIFT_SONG_DURATION_MS).toBe(210_000);
   });
 });
 
@@ -41,9 +41,9 @@ describe('quizToPrompt — output shape', () => {
     expect(result).toHaveProperty('tags');
   });
 
-  it('sets duration_ms to GIFT_SONG_DURATION_MS (90000)', () => {
+  it('sets duration_ms to GIFT_SONG_DURATION_MS (210000)', () => {
     const result = quizToPrompt(BASE_QUIZ);
-    expect(result.duration_ms).toBe(90_000);
+    expect(result.duration_ms).toBe(210_000);
   });
 });
 
@@ -109,10 +109,11 @@ describe('quizToPrompt — lyrics field', () => {
     expect(result.lyrics).toContain('pancakes');
   });
 
-  it('uses ACE-Step structural tags [Verse], [Chorus], [Outro]', () => {
+  it('uses structural tags [Verse], [Chorus], [Bridge], [Outro]', () => {
     const result = quizToPrompt(BASE_QUIZ);
     expect(result.lyrics).toContain('[Verse]');
     expect(result.lyrics).toContain('[Chorus]');
+    expect(result.lyrics).toContain('[Bridge]');
     expect(result.lyrics).toContain('[Outro]');
   });
 

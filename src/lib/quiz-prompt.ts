@@ -6,8 +6,8 @@ import { generateContent, RateLimitError } from './gemini';
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Default gift song duration: 90 seconds */
-export const GIFT_SONG_DURATION_MS = 90_000;
+/** Default gift song duration: 3.5 minutes */
+export const GIFT_SONG_DURATION_MS = 210_000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Lookup tables
@@ -48,13 +48,15 @@ export const GENRE_TAG_MAP: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Build the lyrics string from quiz data using ACE-Step structural tags.
+ * Build the lyrics string from quiz data using structural tags.
  *
  * Structure:
  *   [Verse]   — qualities about the recipient
  *   [Chorus]  — personal message (if provided)
  *   [Verse]   — memories (only if provided)
- *   [Outro]   — closing with recipient's name
+ *   [Bridge]  — reflective/emotional pivot
+ *   [Chorus]  — repeat chorus
+ *   [Outro]   — soft closing with recipient's name
  */
 function buildLyrics(data: QuizData): string {
   const name = data.recipientName.trim() || 'you';
@@ -69,12 +71,10 @@ function buildLyrics(data: QuizData): string {
 
   // Chorus — message (if present)
   const message = data.message.trim();
-  if (message) {
-    sections.push(`[Chorus]\n${message}`);
-  } else {
-    // Generic chorus fallback so there's always a chorus
-    sections.push(`[Chorus]\nThis song is for ${name}, every word is true`);
-  }
+  const chorusContent = message
+    ? message
+    : `This song is for ${name}, every word is true`;
+  sections.push(`[Chorus]\n${chorusContent}`);
 
   // Verse 2 — memories (only if provided)
   const memories = data.memories.trim();
@@ -82,8 +82,14 @@ function buildLyrics(data: QuizData): string {
     sections.push(`[Verse]\n${memories}`);
   }
 
-  // Outro — closing with name
-  sections.push(`[Outro]\nThis is for ${name} — with all my love`);
+  // Bridge — reflective emotional pivot
+  sections.push(`[Bridge]\nThrough every moment, ${name}, you mean the world to me`);
+
+  // Repeat chorus
+  sections.push(`[Chorus]\n${chorusContent}`);
+
+  // Outro — soft closing with name
+  sections.push(`[Outro]\nSoftly now, this is for ${name} — always and forever`);
 
   return sections.join('\n\n');
 }
@@ -109,6 +115,8 @@ function buildTags(data: QuizData): string {
     parts.push('female vocals');
   }
 
+  parts.push('full song', 'natural ending');
+
   return parts.join(', ');
 }
 
@@ -123,7 +131,7 @@ function buildTags(data: QuizData): string {
  * - `prompt` is genre/mood only — no personal content (prevents LLM stripping)
  * - `lyrics` carries all personal content (name, qualities, memories, message)
  * - `enhancePrompt` is NOT called — personal content risk
- * - `duration_ms` is always GIFT_SONG_DURATION_MS (90s)
+ * - `duration_ms` is always GIFT_SONG_DURATION_MS (3.5 min)
  */
 export function quizToPrompt(data: QuizData): SubmitJobParams {
   const mood = RELATIONSHIP_MOOD[data.relationshipType] ?? 'heartfelt and personal';
@@ -156,14 +164,15 @@ const SONG_WRITER_SYSTEM_PROMPT = `You are a professional songwriter and emotion
    - The core emotional message the gift-giver wants to convey
 
 2. **Write Professional Song Lyrics** following these rules:
-   - Use this exact structure: [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus]
+   - Use this exact structure: [Verse 1], [Chorus], [Verse 2], [Chorus], [Bridge], [Chorus], [Outro]
    - Create strong rhyme schemes (ABAB or AABB) with natural, conversational language
    - Use vivid imagery and storytelling — show, don't tell
    - Weave the recipient's name naturally into the lyrics (1-3 times, not forced)
    - Transform their specific memories and qualities into poetic lyrics
    - Write a memorable, repeating chorus with a radio-ready hook
    - Keep language warm and authentic — avoid clichés like "through thick and thin"
-   - Each verse should be 4-6 lines, chorus 4-6 lines, bridge 2-4 lines
+   - Each verse should be 4-6 lines, chorus 4-6 lines, bridge 2-4 lines, outro 2-4 lines
+   - The [Outro] should feel like a natural wind-down — use softer language, repetition, or a fade-out feeling
 
 3. **Output Format** — You MUST output in exactly this format:
 \`\`\`
@@ -185,6 +194,9 @@ LYRICS:
 (lyrics here)
 
 [Chorus]
+(lyrics here)
+
+[Outro]
 (lyrics here)
 \`\`\`
 

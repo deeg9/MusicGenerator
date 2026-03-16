@@ -126,7 +126,7 @@ const COMPLETE_QUIZ: QuizData = {
 const MOCK_SUBMIT_PARAMS = {
   prompt: 'A Pop song — warm, nurturing. Written as a personal gift.',
   lyrics: '[Verse]\ncaring, patient\n\n[Chorus]\nThank you\n\n[Outro]\nFor Sarah',
-  duration_ms: 90_000,
+  duration_ms: 210_000,
   tags: 'pop, female vocals',
 };
 
