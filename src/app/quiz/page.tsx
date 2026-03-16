@@ -87,23 +87,6 @@ export default function QuizPage() {
         return;
       }
 
-      const subCheck = await fetch('/api/subscription/check');
-      if (subCheck.ok) {
-        const subData = await subCheck.json();
-        if (!subData.active) {
-          router.push('/pricing');
-          return;
-        }
-        if (subData.songsPerMonth !== -1 && subData.songsRemaining <= 0) {
-          setGenError('You\'ve used all your song credits this month. Upgrade your plan for more.');
-          setGenStatus('error');
-          return;
-        }
-      } else if (subCheck.status === 404) {
-        router.push('/pricing');
-        return;
-      }
-
       const response = await fetch('/api/quiz-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

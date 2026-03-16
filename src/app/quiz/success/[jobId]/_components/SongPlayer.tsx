@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Play, Pause } from 'lucide-react';
 
 const PREVIEW_LIMIT_S = 30;
@@ -21,16 +21,39 @@ function formatTime(seconds: number): string {
 export function SongPlayer({ src, isPreview = false, onPreviewEnd }: SongPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [previewEnded, setPreviewEnded] = useState(false);
+  const [dragging, setDragging] = useState(false);
+
+  // In preview mode: cap display to PREVIEW_LIMIT_S
+  const displayDuration = isPreview ? PREVIEW_LIMIT_S : duration;
+
+  /** Calculate time from a clientX position relative to the progress bar */
+  const getTimeFromX = useCallback((clientX: number): number | null => {
+    const bar = progressRef.current;
+    if (!bar || !displayDuration) return null;
+    const rect = bar.getBoundingClientRect();
+    const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return fraction * displayDuration;
+  }, [displayDuration]);
+
+  /** Seek audio to a given time */
+  const seekTo = useCallback((time: number) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = time;
+    setCurrentTime(time);
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const handleTimeUpdate = () => {
+      if (isDragging.current) return;
       if (isPreview && audio.currentTime >= PREVIEW_LIMIT_S) {
         audio.pause();
         audio.currentTime = PREVIEW_LIMIT_S;
@@ -72,7 +95,6 @@ export function SongPlayer({ src, isPreview = false, onPreviewEnd }: SongPlayerP
       setIsPlaying(false);
     } else {
       if (previewEnded) {
-        // Allow replay of the 30s preview from the beginning
         audio.currentTime = 0;
         setCurrentTime(0);
         setPreviewEnded(false);
@@ -81,25 +103,53 @@ export function SongPlayer({ src, isPreview = false, onPreviewEnd }: SongPlayerP
     }
   }
 
-  function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
-    const audio = audioRef.current;
-    const bar = progressRef.current;
-    if (!audio || !bar || !duration) return;
-
-    const rect = bar.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const fraction = Math.max(0, Math.min(1, x / rect.width));
-
-    if (isPreview) {
-      audio.currentTime = Math.min(fraction * duration, PREVIEW_LIMIT_S);
-    } else {
-      audio.currentTime = fraction * duration;
-    }
-    setCurrentTime(audio.currentTime);
+  /** Start drag from mouse or touch */
+  function handleDragStart(clientX: number) {
+    isDragging.current = true;
+    setDragging(true);
+    const time = getTimeFromX(clientX);
+    if (time !== null) seekTo(time);
   }
 
-  // In preview mode: cap display to PREVIEW_LIMIT_S
-  const displayDuration = isPreview ? PREVIEW_LIMIT_S : duration;
+  function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    e.preventDefault();
+    handleDragStart(e.clientX);
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const time = getTimeFromX(ev.clientX);
+      if (time !== null) seekTo(time);
+    };
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      setDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }
+
+  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    const touch = e.touches[0];
+    if (!touch) return;
+    handleDragStart(touch.clientX);
+
+    const handleTouchMove = (ev: TouchEvent) => {
+      const t = ev.touches[0];
+      if (!t) return;
+      const time = getTimeFromX(t.clientX);
+      if (time !== null) seekTo(time);
+    };
+    const handleTouchEnd = () => {
+      isDragging.current = false;
+      setDragging(false);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+  }
+
   const progressPercent = displayDuration > 0 ? (currentTime / displayDuration) * 100 : 0;
 
   return (
@@ -125,17 +175,27 @@ export function SongPlayer({ src, isPreview = false, onPreviewEnd }: SongPlayerP
         <div className="w-full flex flex-col gap-1.5">
           <div
             ref={progressRef}
-            onClick={handleProgressClick}
-            className="w-full h-2 bg-muted rounded-full cursor-pointer overflow-hidden"
-            role="progressbar"
-            aria-valuenow={Math.round(progressPercent)}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            className="group relative w-full py-2 cursor-pointer"
+            role="slider"
+            aria-valuenow={Math.round(currentTime)}
             aria-valuemin={0}
-            aria-valuemax={100}
+            aria-valuemax={Math.round(displayDuration)}
+            aria-label="Seek"
+            tabIndex={0}
           >
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-100"
-              style={{ width: `${progressPercent}%` }}
-            />
+            <div className="relative w-full h-2 bg-muted rounded-full">
+              <div
+                className={`h-full bg-primary rounded-full ${dragging ? '' : 'transition-all duration-100'}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+              {/* Drag thumb */}
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-primary shadow-md transition-opacity ${dragging ? 'opacity-100 scale-110' : 'opacity-0 group-hover:opacity-100'}`}
+                style={{ left: `${progressPercent}%` }}
+              />
+            </div>
           </div>
 
           {/* Time display */}

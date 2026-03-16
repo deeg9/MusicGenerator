@@ -11,9 +11,9 @@ import { getAudioPresignedUrl } from '@/lib/r2';
 /**
  * Serve the generated audio track for a job.
  *
- * Always serves from R2 presigned URL. The serverless handler uploads
- * both WAV and MP3 to R2 before marking the job as completed, so by the
- * time this route is called the files are guaranteed to exist.
+ * Proxies the audio from R2 instead of redirecting, to avoid cross-origin
+ * issues with the browser's <audio> element (CORS + range request problems
+ * when redirecting to a different origin).
  *
  * Cache-Control: 1 hour — generated songs don't change after completion.
  */
@@ -38,7 +38,28 @@ export async function GET(
     }
 
     const presignedUrl = await getAudioPresignedUrl(song.r2Mp3Key, 3600);
-    return NextResponse.redirect(presignedUrl);
+
+    // Proxy the audio to avoid cross-origin issues with <audio> element
+    const r2Response = await fetch(presignedUrl);
+    if (!r2Response.ok) {
+      console.error('[audio] R2 fetch failed:', r2Response.status, r2Response.statusText);
+      return NextResponse.json(
+        { error: 'Failed to retrieve audio from storage.' },
+        { status: 502 },
+      );
+    }
+
+    const audioBuffer = await r2Response.arrayBuffer();
+
+    return new NextResponse(audioBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Content-Length': audioBuffer.byteLength.toString(),
+        'Cache-Control': 'public, max-age=3600, immutable',
+        'Accept-Ranges': 'bytes',
+      },
+    });
   } catch (error) {
     console.error('[audio] Failed to serve audio:', error);
     return NextResponse.json(

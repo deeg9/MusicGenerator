@@ -8,7 +8,7 @@ import { songs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import type { QuizData } from '@/lib/quiz-types';
-import { canGenerate, decrementSongCredit } from '@/lib/subscription';
+import { getUserSubscription, decrementSongCredit } from '@/lib/subscription';
 import { RateLimitError } from '@/lib/gemini';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,23 +103,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id ?? null;
 
-  // 3b. Subscription gate (server-side enforcement — authoritative check)
-  if (userId) {
-    const allowed = await canGenerate(userId);
-    if (!allowed) {
-      // Check if they have a subscription at all
-      const { getUserSubscription } = await import('@/lib/subscription');
-      const sub = await getUserSubscription(userId);
-      const code = !sub || !sub.active ? 'subscription_required' : 'credits_exhausted';
-      const userMessage = code === 'subscription_required'
-        ? 'An active subscription is required to generate songs.'
-        : 'You have used all your song credits for this billing period.';
-      return NextResponse.json(
-        { error: { code, userMessage } },
-        { status: 402 },
-      );
-    }
-  }
+  // 3b. Credit check — only enforce limits for subscribed users
+  // (Free users can generate but get 30s preview only)
 
   let sessionToken: string | null = null;
   if (!userId) {
@@ -207,10 +192,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Non-fatal — job is running, don't fail the response
   }
 
-  // 8. Decrement song credit (after successful generation)
+  // 8. Decrement song credit (only for subscribed users)
   if (userId) {
     try {
-      await decrementSongCredit(userId);
+      const sub = await getUserSubscription(userId);
+      if (sub?.active) {
+        await decrementSongCredit(userId);
+      }
     } catch (err) {
       console.error('[quiz-generate] Failed to decrement song credit:', err);
       // Non-fatal — song is already generating

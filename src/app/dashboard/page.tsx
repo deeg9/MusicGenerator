@@ -121,6 +121,7 @@ export default async function DashboardPage() {
                 createdAt={song.createdAt.toISOString()}
                 audioUrl={song.audioUrl}
                 downloadFilename={song.downloadFilename}
+                hasSubscription={!!subscription?.active}
               />
             ))}
           </div>

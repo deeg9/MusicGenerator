@@ -59,6 +59,26 @@ export async function GET(
 ): Promise<NextResponse> {
   const { jobId } = await params;
 
+  // Fast path: if the song is already finalized in DB, skip RunPod entirely.
+  // This handles cases where RunPod has purged the job from its queue but our
+  // DB already has the completed/failed state from a previous poll.
+  try {
+    const [existingSong] = await db
+      .select({ status: songs.status, r2Mp3Key: songs.r2Mp3Key })
+      .from(songs)
+      .where(eq(songs.heartbulaJobId, jobId))
+      .limit(1);
+
+    if (existingSong?.status === 'completed' && existingSong.r2Mp3Key) {
+      return NextResponse.json({ status: 'COMPLETED', error: null });
+    }
+    if (existingSong?.status === 'failed') {
+      return NextResponse.json({ status: 'FAILED', error: 'Song generation failed.' });
+    }
+  } catch (dbError) {
+    console.error('[poll-job] DB fast-path check failed (non-fatal):', dbError);
+  }
+
   try {
     const result = await queryJobStatus(jobId);
 
