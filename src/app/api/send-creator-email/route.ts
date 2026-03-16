@@ -6,8 +6,16 @@ import { songs } from '@/db/schema';
 import { resend } from '@/lib/resend';
 import { getAudioPresignedUrl } from '@/lib/r2';
 import { SongReadyEmail } from '@/emails/SongReadyEmail';
+import { render } from '@react-email/components';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  try { return await handlePost(request); } catch (err) {
+    console.error('[send-creator-email] Unhandled error:', err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
+
+async function handlePost(request: NextRequest): Promise<NextResponse> {
   // 1. Parse and validate request body
   let songId: string | undefined;
   let creatorEmail: string | undefined;
@@ -79,16 +87,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   ]);
 
   // 6. Send email via Resend
+  const html = await render(SongReadyEmail({
+    recipientName: song.recipientName,
+    listenUrl,
+    downloadUrl,
+    genre: song.genre,
+  }));
+
   const { data, error } = await resend.emails.send({
     from: 'Notevra <hello@notevra.net>',
     to: [recipientEmail],
     subject: `Your song for ${song.recipientName} is ready`,
-    react: SongReadyEmail({
-      recipientName: song.recipientName,
-      listenUrl,
-      downloadUrl,
-      genre: song.genre,
-    }),
+    html,
   });
 
   if (error || !data) {

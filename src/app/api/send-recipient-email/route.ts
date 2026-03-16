@@ -6,6 +6,7 @@ import { songs } from '@/db/schema';
 import { resend } from '@/lib/resend';
 import { getAudioPresignedUrl } from '@/lib/r2';
 import { GiftDeliveryEmail } from '@/emails/GiftDeliveryEmail';
+import { render } from '@react-email/components';
 
 /**
  * Extract the first name from a Supabase user's full_name metadata
@@ -83,18 +84,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const listenUrl = await getAudioPresignedUrl(song.r2Mp3Key, 604800);
 
   // 6. Send email via Resend
+  const html = await render(GiftDeliveryEmail({
+    recipientName: song.recipientName,
+    creatorFirstName,
+    relationship: song.relationship,
+    message,
+    genre: song.genre,
+    listenUrl,
+  }));
+
   const { data, error } = await resend.emails.send({
     from: 'Notevra <hello@notevra.net>',
     to: [recipientEmail],
     subject: `${creatorFirstName} made something just for you`,
-    react: GiftDeliveryEmail({
-      recipientName: song.recipientName,
-      creatorFirstName,
-      relationship: song.relationship,
-      message,
-      genre: song.genre,
-      listenUrl,
-    }),
+    html,
   });
 
   if (error || !data) {
