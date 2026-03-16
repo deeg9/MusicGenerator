@@ -175,7 +175,7 @@ export function SongReadyEmail({
 
 SongReadyEmail.PreviewProps = {
   recipientName: 'Sarah',
-  listenUrl: 'https://example.com/listen/demo.mp3',
-  downloadUrl: 'https://example.com/download/demo.mp3',
+  listenUrl: 'https://notevra.net/quiz/success/demo-job-id?name=Sarah&songId=demo-song-id',
+  downloadUrl: 'https://notevra.net/api/audio/demo-job-id?download=true&name=Sarah-song.mp3',
   genre: 'Jazz',
 } satisfies SongReadyEmailProps;

@@ -220,5 +220,5 @@ GiftDeliveryEmail.PreviewProps = {
   relationship: 'friend',
   message: 'I wanted to give you something special to celebrate your birthday!',
   genre: 'Pop',
-  listenUrl: 'https://example.com/listen/demo.mp3',
+  listenUrl: 'https://notevra.net/listen/demo-song-id',
 } satisfies GiftDeliveryEmailProps;
