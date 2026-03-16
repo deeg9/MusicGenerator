@@ -130,10 +130,11 @@ None.
 | 2 | Auto-send creator email when song finishes generating | 2026-03-16 | a4d8f27 | [2-email-notifications-when-songs-are-ready](./quick/2-email-notifications-when-songs-are-ready/) |
 | 3 | Professional privacy policy, terms of service, and cookie consent banner (GDPR/CCPA) | 2026-03-16 | 23d9cad | [3-research-and-create-professional-privacy](./quick/3-research-and-create-professional-privacy/) |
 | 4 | Validate Audible-style credit system across 9 files | 2026-03-16 | 1821179 | [4-validate-audible-style-credit-system-for](./quick/4-validate-audible-style-credit-system-for/) |
+| 6 | Fix email links — app pages instead of raw R2 URLs + new /listen/[songId] page | 2026-03-16 | 6a9f6d7 | [6-fix-email-links-app-pages-instead-of-raw](./quick/6-fix-email-links-app-pages-instead-of-raw/) |
 
 ## Session Continuity
 
 Last session: 2026-03-16T07:00:00Z
-Stopped at: Completed quick task 4 — credit system validation (8 PASS, 1 PARTIAL PASS, 0 blockers)
+Stopped at: Completed quick task 6 — email links now use app URLs, new /listen/[songId] page created
 Resume file: None
 Next action: Execute 30-02 (React Email templates)
