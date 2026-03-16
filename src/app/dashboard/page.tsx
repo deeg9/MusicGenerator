@@ -54,6 +54,7 @@ export default async function DashboardPage() {
     genre: string;
     createdAt: Date;
     audioUrl: string;
+    downloadUrl: string;
     downloadFilename: string;
   }> = [];
   try {
@@ -68,10 +69,12 @@ export default async function DashboardPage() {
     songsWithUrls = await Promise.all(
       completedSongs.map(async (song) => {
         const downloadFilename = buildDownloadFilename(song.recipientName);
-        const audioUrl = await getAudioPresignedUrl(song.r2Mp3Key!, 3600, downloadFilename);
+        const audioUrl = await getAudioPresignedUrl(song.r2Mp3Key!, 3600);
+        const downloadUrl = await getAudioPresignedUrl(song.r2Mp3Key!, 3600, downloadFilename);
         return {
           ...song,
           audioUrl,
+          downloadUrl,
           downloadFilename,
         };
       }),
@@ -120,6 +123,7 @@ export default async function DashboardPage() {
                 genre={song.genre}
                 createdAt={song.createdAt.toISOString()}
                 audioUrl={song.audioUrl}
+                downloadUrl={song.downloadUrl}
                 downloadFilename={song.downloadFilename}
                 hasSubscription={!!subscription?.active}
               />

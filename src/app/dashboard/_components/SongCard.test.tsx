@@ -21,6 +21,7 @@ const defaultProps = {
   genre: 'pop',
   createdAt: '2026-01-15T12:00:00.000Z',
   audioUrl: 'https://r2.example.com/presigned/audio.mp3',
+  downloadUrl: 'https://r2.example.com/presigned/audio.mp3?response-content-disposition=attachment',
   downloadFilename: 'notevra-song-for-emma.mp3',
 };
 
@@ -56,10 +57,10 @@ describe('SongCard', () => {
   });
 
   // Test 4: Download anchor has correct href and download attributes
-  it('download anchor has href={audioUrl} and download={downloadFilename} attributes', () => {
+  it('download anchor has href={downloadUrl} and download={downloadFilename} attributes', () => {
     render(<SongCard {...defaultProps} />);
     const anchor = screen.getByRole('link', { name: /download/i });
-    expect(anchor).toHaveAttribute('href', defaultProps.audioUrl);
+    expect(anchor).toHaveAttribute('href', defaultProps.downloadUrl);
     expect(anchor).toHaveAttribute('download', defaultProps.downloadFilename);
   });
 

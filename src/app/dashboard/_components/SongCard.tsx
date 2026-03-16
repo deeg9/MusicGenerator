@@ -9,7 +9,8 @@ interface SongCardProps {
   relationship: string;
   genre: string;
   createdAt: string;       // ISO string — serialized from server component
-  audioUrl: string;        // presigned R2 URL
+  audioUrl: string;        // presigned R2 URL (no Content-Disposition — for playback)
+  downloadUrl: string;     // presigned R2 URL (with Content-Disposition: attachment — for download)
   downloadFilename: string; // e.g. "notevra-song-for-emma.mp3"
   hasSubscription?: boolean;
 }
@@ -20,6 +21,7 @@ export function SongCard({
   genre,
   createdAt,
   audioUrl,
+  downloadUrl,
   downloadFilename,
   hasSubscription = false,
 }: SongCardProps) {
@@ -47,7 +49,7 @@ export function SongCard({
 
       {hasSubscription ? (
         <a
-          href={audioUrl}
+          href={downloadUrl}
           download={downloadFilename}
           className="inline-flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-muted transition-colors"
         >
