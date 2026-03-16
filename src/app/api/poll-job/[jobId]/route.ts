@@ -54,7 +54,7 @@ async function finalizeSong(
  * On FAILED: marks the song row as failed with failedAt timestamp.
  */
 export async function GET(
-  _req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
 ): Promise<NextResponse> {
   const { jobId } = await params;
@@ -88,6 +88,35 @@ export async function GET(
         await finalizeSong(jobId, result.r2_wav_key, result.r2_mp3_key);
       } catch (finalizationError) {
         console.error('[poll-job] finalizeSong failed (non-fatal):', finalizationError);
+      }
+
+      // Send creator email — non-blocking, failures must never break the poll response
+      try {
+        const [songForEmail] = await db
+          .select({ id: songs.id, userId: songs.userId, creatorEmailSentAt: songs.creatorEmailSentAt })
+          .from(songs)
+          .where(eq(songs.heartbulaJobId, jobId))
+          .limit(1);
+
+        if (songForEmail && songForEmail.userId && !songForEmail.creatorEmailSentAt) {
+          const emailResponse = await fetch(
+            new URL('/api/send-creator-email', request.url),
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ songId: songForEmail.id }),
+            },
+          );
+
+          if (emailResponse.ok) {
+            await db
+              .update(songs)
+              .set({ creatorEmailSentAt: new Date() })
+              .where(eq(songs.id, songForEmail.id));
+          }
+        }
+      } catch (emailError) {
+        console.error('[poll-job] creator email failed (non-fatal):', emailError);
       }
     }
 

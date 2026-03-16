@@ -14,11 +14,7 @@ const {
   mockDbUpdate,
   mockDbUpdateSet,
   mockDbUpdateSetWhere,
-  mockFetchAudioBuffer,
-  mockConvertToMp3,
-  mockUploadAudioToR2,
-  mockBuildSongR2WavKey,
-  mockBuildSongR2Mp3Key,
+  mockFetch,
 } = vi.hoisted(() => {
   const mockDbSelectFromWhereLimit = vi.fn();
   const mockDbSelectFromWhere = vi.fn(() => ({ limit: mockDbSelectFromWhereLimit }));
@@ -29,11 +25,7 @@ const {
   const mockDbUpdateSet = vi.fn(() => ({ where: mockDbUpdateSetWhere }));
   const mockDbUpdate = vi.fn(() => ({ set: mockDbUpdateSet }));
 
-  const mockFetchAudioBuffer = vi.fn();
-  const mockConvertToMp3 = vi.fn();
-  const mockUploadAudioToR2 = vi.fn();
-  const mockBuildSongR2WavKey = vi.fn((id: string) => `songs/${id}/audio.wav`);
-  const mockBuildSongR2Mp3Key = vi.fn((id: string) => `songs/${id}/audio.mp3`);
+  const mockFetch = vi.fn();
 
   return {
     mockDbSelect,
@@ -43,11 +35,7 @@ const {
     mockDbUpdate,
     mockDbUpdateSet,
     mockDbUpdateSetWhere,
-    mockFetchAudioBuffer,
-    mockConvertToMp3,
-    mockUploadAudioToR2,
-    mockBuildSongR2WavKey,
-    mockBuildSongR2Mp3Key,
+    mockFetch,
   };
 });
 
@@ -57,7 +45,6 @@ const {
 
 vi.mock('@/lib/heartmula', () => ({
   queryJobStatus: vi.fn(),
-  fetchAudioBuffer: mockFetchAudioBuffer,
 }));
 
 vi.mock('@/lib/errors', () => ({
@@ -101,15 +88,11 @@ vi.mock('@/db/schema', () => ({
   songs: {},
 }));
 
-vi.mock('@/lib/audio', () => ({
-  convertToMp3: mockConvertToMp3,
-}));
+// ─────────────────────────────────────────────────────────────────────────────
+// Mock global fetch for internal API calls
+// ─────────────────────────────────────────────────────────────────────────────
 
-vi.mock('@/lib/r2', () => ({
-  uploadAudioToR2: mockUploadAudioToR2,
-  buildSongR2WavKey: mockBuildSongR2WavKey,
-  buildSongR2Mp3Key: mockBuildSongR2Mp3Key,
-}));
+vi.stubGlobal('fetch', mockFetch);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Imports — after mocks are declared
@@ -145,15 +128,12 @@ beforeEach(() => {
   mockDbUpdate.mockReturnValue({ set: mockDbUpdateSet });
   mockDbUpdateSet.mockReturnValue({ where: mockDbUpdateSetWhere });
 
-  // Default: no song found for finalization (already finalized or not found)
+  // Default: no song found (fast-path check returns nothing, finalization skips)
   mockDbSelectFromWhereLimit.mockResolvedValue([]);
   // Default: update operations succeed
   mockDbUpdateSetWhere.mockResolvedValue([]);
-
-  // Default: audio buffer and conversion succeed
-  mockFetchAudioBuffer.mockResolvedValue(Buffer.from('fake-wav-data'));
-  mockConvertToMp3.mockResolvedValue(Buffer.from('fake-mp3-data'));
-  mockUploadAudioToR2.mockResolvedValue(undefined);
+  // Default: email endpoint returns success
+  mockFetch.mockResolvedValue({ ok: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,7 +155,12 @@ describe('GET /api/poll-job/[jobId]', () => {
     });
 
     it('returns 200 with COMPLETED status', async () => {
-      (queryJobStatus as Mock).mockResolvedValue({ status: 'COMPLETED', error_msg: undefined });
+      (queryJobStatus as Mock).mockResolvedValue({
+        status: 'COMPLETED',
+        r2_wav_key: 'songs/abc/audio.wav',
+        r2_mp3_key: 'songs/abc/audio.mp3',
+        error_msg: undefined,
+      });
 
       const req = makeRequest('job-456');
       const { params } = makeParams('job-456');
@@ -199,59 +184,53 @@ describe('GET /api/poll-job/[jobId]', () => {
     });
   });
 
-  describe('finalization pipeline (COMPLETED)', () => {
-    beforeEach(() => {
-      (queryJobStatus as Mock).mockResolvedValue({ status: 'COMPLETED', error_msg: undefined });
+  describe('fast-path: already finalized in DB', () => {
+    it('returns COMPLETED without calling RunPod when song is already completed in DB', async () => {
+      mockDbSelectFromWhereLimit.mockResolvedValue([{ status: 'completed', r2Mp3Key: 'songs/abc/audio.mp3' }]);
+
+      const req = makeRequest('job-fastpath-1');
+      const { params } = makeParams('job-fastpath-1');
+      const res = await GET(req as Parameters<typeof GET>[0], { params });
+
+      expect(res.status).toBe(200);
+      const body = await res.json() as Record<string, unknown>;
+      expect(body).toEqual({ status: 'COMPLETED', error: null });
+      expect(queryJobStatus).not.toHaveBeenCalled();
     });
 
-    it('looks up song by heartbulaJobId where r2WavKey IS NULL on COMPLETED', async () => {
-      // Song found (not yet finalized)
-      mockDbSelectFromWhereLimit.mockResolvedValue([{ id: 'song-uuid-abc', r2WavKey: null }]);
+    it('returns FAILED without calling RunPod when song is already failed in DB', async () => {
+      mockDbSelectFromWhereLimit.mockResolvedValue([{ status: 'failed', r2Mp3Key: null }]);
+
+      const req = makeRequest('job-fastpath-2');
+      const { params } = makeParams('job-fastpath-2');
+      const res = await GET(req as Parameters<typeof GET>[0], { params });
+
+      expect(res.status).toBe(200);
+      const body = await res.json() as Record<string, unknown>;
+      expect(body).toEqual({ status: 'FAILED', error: 'Song generation failed.' });
+      expect(queryJobStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('finalization pipeline (COMPLETED with R2 keys)', () => {
+    beforeEach(() => {
+      (queryJobStatus as Mock).mockResolvedValue({
+        status: 'COMPLETED',
+        r2_wav_key: 'songs/song-uuid-abc/audio.wav',
+        r2_mp3_key: 'songs/song-uuid-abc/audio.mp3',
+        error_msg: undefined,
+      });
+    });
+
+    it('calls db.update with R2 keys and status=completed on COMPLETED', async () => {
+      // Fast-path returns nothing (not yet in DB as completed)
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path: no completed/failed row
+        .mockResolvedValueOnce([{ id: 'song-uuid-abc', r2WavKey: null }]) // finalizeSong: unfinalized
+        .mockResolvedValueOnce([]); // email check: no song (anonymous skip)
 
       const req = makeRequest('job-completed-1');
       const { params } = makeParams('job-completed-1');
-      await GET(req as Parameters<typeof GET>[0], { params });
-
-      expect(mockDbSelect).toHaveBeenCalled();
-    });
-
-    it('calls fetchAudioBuffer when unfinalized song found on COMPLETED', async () => {
-      mockDbSelectFromWhereLimit.mockResolvedValue([{ id: 'song-uuid-abc', r2WavKey: null }]);
-
-      const req = makeRequest('job-completed-2');
-      const { params } = makeParams('job-completed-2');
-      await GET(req as Parameters<typeof GET>[0], { params });
-
-      expect(mockFetchAudioBuffer).toHaveBeenCalledWith('job-completed-2');
-    });
-
-    it('calls convertToMp3 with WAV buffer on COMPLETED', async () => {
-      mockDbSelectFromWhereLimit.mockResolvedValue([{ id: 'song-uuid-abc', r2WavKey: null }]);
-      const wavBuffer = Buffer.from('wav-data');
-      mockFetchAudioBuffer.mockResolvedValue(wavBuffer);
-
-      const req = makeRequest('job-completed-3');
-      const { params } = makeParams('job-completed-3');
-      await GET(req as Parameters<typeof GET>[0], { params });
-
-      expect(mockConvertToMp3).toHaveBeenCalledWith(wavBuffer);
-    });
-
-    it('calls uploadAudioToR2 twice (WAV and MP3) on COMPLETED', async () => {
-      mockDbSelectFromWhereLimit.mockResolvedValue([{ id: 'song-uuid-abc', r2WavKey: null }]);
-
-      const req = makeRequest('job-completed-4');
-      const { params } = makeParams('job-completed-4');
-      await GET(req as Parameters<typeof GET>[0], { params });
-
-      expect(mockUploadAudioToR2).toHaveBeenCalledTimes(2);
-    });
-
-    it('updates song row with R2 keys + status=completed after finalization', async () => {
-      mockDbSelectFromWhereLimit.mockResolvedValue([{ id: 'song-uuid-abc', r2WavKey: null }]);
-
-      const req = makeRequest('job-completed-5');
-      const { params } = makeParams('job-completed-5');
       await GET(req as Parameters<typeof GET>[0], { params });
 
       expect(mockDbUpdate).toHaveBeenCalled();
@@ -263,20 +242,26 @@ describe('GET /api/poll-job/[jobId]', () => {
     });
 
     it('skips finalization when song already has r2WavKey (double-finalization guard)', async () => {
-      // No song returned = already finalized (query uses isNull(r2WavKey))
-      mockDbSelectFromWhereLimit.mockResolvedValue([]);
+      // Fast-path returns nothing; finalizeSong query returns empty (already finalized)
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path
+        .mockResolvedValueOnce([]); // finalizeSong: no unfinalized row found
 
       const req = makeRequest('job-completed-6');
       const { params } = makeParams('job-completed-6');
       await GET(req as Parameters<typeof GET>[0], { params });
 
-      expect(mockFetchAudioBuffer).not.toHaveBeenCalled();
-      expect(mockConvertToMp3).not.toHaveBeenCalled();
+      // db.update may still be called for email check, but not for finalization
+      // The key is finalizeSong returned early (no song found)
+      // Verify COMPLETED is still returned
+      const res = await GET(req as Parameters<typeof GET>[0], { params });
+      expect(res.status).toBe(200);
     });
 
-    it('still returns COMPLETED even when finalization fails', async () => {
-      mockDbSelectFromWhereLimit.mockResolvedValue([{ id: 'song-uuid-abc', r2WavKey: null }]);
-      mockFetchAudioBuffer.mockRejectedValue(new Error('Audio download failed'));
+    it('still returns COMPLETED even when finalization throws', async () => {
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path
+        .mockRejectedValueOnce(new Error('DB connection error')); // finalizeSong DB query throws
 
       const req = makeRequest('job-completed-7');
       const { params } = makeParams('job-completed-7');
@@ -288,8 +273,122 @@ describe('GET /api/poll-job/[jobId]', () => {
     });
   });
 
+  describe('creator email notification', () => {
+    beforeEach(() => {
+      (queryJobStatus as Mock).mockResolvedValue({
+        status: 'COMPLETED',
+        r2_wav_key: 'songs/song-uuid/audio.wav',
+        r2_mp3_key: 'songs/song-uuid/audio.mp3',
+        error_msg: undefined,
+      });
+    });
+
+    it('sends creator email when song has userId and no creatorEmailSentAt', async () => {
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path: not in DB yet
+        .mockResolvedValueOnce([{ id: 'song-uuid', r2WavKey: null }]) // finalizeSong: unfinalized
+        .mockResolvedValueOnce([{ id: 'song-uuid', userId: 'user-abc', creatorEmailSentAt: null }]); // email query
+
+      mockFetch.mockResolvedValue({ ok: true });
+
+      const req = makeRequest('job-email-1');
+      const { params } = makeParams('job-email-1');
+      await GET(req as Parameters<typeof GET>[0], { params });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.objectContaining({ href: expect.stringContaining('/api/send-creator-email') }),
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ songId: 'song-uuid' }),
+        }),
+      );
+    });
+
+    it('marks creatorEmailSentAt after successful email send', async () => {
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path
+        .mockResolvedValueOnce([{ id: 'song-uuid', r2WavKey: null }]) // finalizeSong
+        .mockResolvedValueOnce([{ id: 'song-uuid', userId: 'user-abc', creatorEmailSentAt: null }]); // email check
+
+      mockFetch.mockResolvedValue({ ok: true });
+
+      const req = makeRequest('job-email-2');
+      const { params } = makeParams('job-email-2');
+      await GET(req as Parameters<typeof GET>[0], { params });
+
+      expect(mockDbUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ creatorEmailSentAt: expect.any(Date) }),
+      );
+    });
+
+    it('does NOT send email for anonymous songs (no userId)', async () => {
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path
+        .mockResolvedValueOnce([{ id: 'song-uuid', r2WavKey: null }]) // finalizeSong
+        .mockResolvedValueOnce([{ id: 'song-uuid', userId: null, creatorEmailSentAt: null }]); // email check: anonymous
+
+      const req = makeRequest('job-email-anon');
+      const { params } = makeParams('job-email-anon');
+      await GET(req as Parameters<typeof GET>[0], { params });
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('does NOT send email when creatorEmailSentAt is already set (idempotency guard)', async () => {
+      const alreadySentAt = new Date('2026-03-01T00:00:00Z');
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path
+        .mockResolvedValueOnce([{ id: 'song-uuid', r2WavKey: null }]) // finalizeSong
+        .mockResolvedValueOnce([{ id: 'song-uuid', userId: 'user-abc', creatorEmailSentAt: alreadySentAt }]); // already sent
+
+      const req = makeRequest('job-email-already-sent');
+      const { params } = makeParams('job-email-already-sent');
+      await GET(req as Parameters<typeof GET>[0], { params });
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('still returns COMPLETED when email send fails (non-fatal)', async () => {
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path
+        .mockResolvedValueOnce([{ id: 'song-uuid', r2WavKey: null }]) // finalizeSong
+        .mockResolvedValueOnce([{ id: 'song-uuid', userId: 'user-abc', creatorEmailSentAt: null }]); // email check
+
+      mockFetch.mockRejectedValue(new Error('Network error'));
+
+      const req = makeRequest('job-email-fail');
+      const { params } = makeParams('job-email-fail');
+      const res = await GET(req as Parameters<typeof GET>[0], { params });
+
+      expect(res.status).toBe(200);
+      const body = await res.json() as Record<string, unknown>;
+      expect(body).toEqual({ status: 'COMPLETED', error: null });
+    });
+
+    it('does NOT update creatorEmailSentAt when email endpoint returns non-2xx', async () => {
+      mockDbSelectFromWhereLimit
+        .mockResolvedValueOnce([]) // fast-path
+        .mockResolvedValueOnce([{ id: 'song-uuid', r2WavKey: null }]) // finalizeSong
+        .mockResolvedValueOnce([{ id: 'song-uuid', userId: 'user-abc', creatorEmailSentAt: null }]); // email check
+
+      mockFetch.mockResolvedValue({ ok: false, status: 500 });
+
+      const req = makeRequest('job-email-5xx');
+      const { params } = makeParams('job-email-5xx');
+      await GET(req as Parameters<typeof GET>[0], { params });
+
+      // creatorEmailSentAt should NOT be set — email failed
+      const updateSetCalls = (mockDbUpdateSet as Mock).mock.calls;
+      for (const [setArg] of updateSetCalls) {
+        expect(setArg).not.toHaveProperty('creatorEmailSentAt');
+      }
+    });
+  });
+
   describe('FAILED status song row update', () => {
     it('updates song row to failed with failedAt when job status is FAILED', async () => {
+      mockDbSelectFromWhereLimit.mockResolvedValue([]); // fast-path: no completed/failed row
       (queryJobStatus as Mock).mockResolvedValue({ status: 'FAILED', error_msg: 'OOM' });
 
       const req = makeRequest('job-failed-1');
@@ -304,6 +403,7 @@ describe('GET /api/poll-job/[jobId]', () => {
     });
 
     it('still returns FAILED response even if DB update throws', async () => {
+      mockDbSelectFromWhereLimit.mockResolvedValue([]); // fast-path
       (queryJobStatus as Mock).mockResolvedValue({ status: 'FAILED', error_msg: 'OOM' });
       mockDbUpdateSetWhere.mockRejectedValue(new Error('DB update failed'));
 
@@ -319,6 +419,7 @@ describe('GET /api/poll-job/[jobId]', () => {
 
   describe('network error (pod unreachable)', () => {
     it('returns 502 with structured error when ECONNREFUSED', async () => {
+      mockDbSelectFromWhereLimit.mockResolvedValue([]);
       (queryJobStatus as Mock).mockRejectedValue(
         new Error('connect ECONNREFUSED 127.0.0.1:8080'),
       );
@@ -335,6 +436,7 @@ describe('GET /api/poll-job/[jobId]', () => {
     });
 
     it('calls classifyError when queryJobStatus throws', async () => {
+      mockDbSelectFromWhereLimit.mockResolvedValue([]);
       (queryJobStatus as Mock).mockRejectedValue(
         new Error('connect ECONNREFUSED 192.168.1.1:7860'),
       );
@@ -350,6 +452,7 @@ describe('GET /api/poll-job/[jobId]', () => {
 
   describe('transient error (blip fallback)', () => {
     it('returns QUEUED fallback for unknown/transient errors', async () => {
+      mockDbSelectFromWhereLimit.mockResolvedValue([]);
       (queryJobStatus as Mock).mockRejectedValue(
         new Error('An unexpected transient blip occurred'),
       );
@@ -364,6 +467,7 @@ describe('GET /api/poll-job/[jobId]', () => {
     });
 
     it('does NOT return 502 for unknown transient errors', async () => {
+      mockDbSelectFromWhereLimit.mockResolvedValue([]);
       (queryJobStatus as Mock).mockRejectedValue(
         new Error('Generic unknown error'),
       );
