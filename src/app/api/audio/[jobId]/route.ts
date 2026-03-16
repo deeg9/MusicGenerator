@@ -11,8 +11,9 @@ import { getAudioPresignedUrl } from '@/lib/r2';
 /**
  * Serve the generated audio track for a job.
  *
- * Redirects to a presigned R2 URL. The browser's <audio> element follows
- * the redirect and streams directly from R2 (CORS is configured on the bucket).
+ * - Default: returns JSON `{ url }` with a presigned R2 URL for client-side playback.
+ * - `?download=true&name=...`: redirects to a presigned R2 URL with Content-Disposition
+ *   attachment header, triggering a browser download.
  */
 export async function GET(
   _req: NextRequest,
@@ -34,9 +35,16 @@ export async function GET(
       );
     }
 
-    const presignedUrl = await getAudioPresignedUrl(song.r2Mp3Key, 3600);
+    const download = _req.nextUrl.searchParams.get('download');
 
-    return NextResponse.redirect(presignedUrl);
+    if (download) {
+      const filename = _req.nextUrl.searchParams.get('name') || 'notevra-song.mp3';
+      const downloadUrl = await getAudioPresignedUrl(song.r2Mp3Key, 3600, filename);
+      return NextResponse.redirect(downloadUrl);
+    }
+
+    const presignedUrl = await getAudioPresignedUrl(song.r2Mp3Key, 3600);
+    return NextResponse.json({ url: presignedUrl });
   } catch (error) {
     console.error('[audio] Failed to serve audio:', error);
     return NextResponse.json(

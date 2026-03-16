@@ -154,7 +154,13 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
 
           if (data.status === 'COMPLETED') {
             if (!cancelled) {
-              setAudioUrl(`/api/audio/${jobId}`);
+              try {
+                const audioRes = await fetch(`/api/audio/${jobId}`);
+                const { url } = await audioRes.json();
+                setAudioUrl(url);
+              } catch {
+                setAudioUrl(`/api/audio/${jobId}`);
+              }
               setPageState('ready');
             }
             return;
@@ -425,8 +431,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
                 </Link>
               ) : (
                 <a
-                  href={audioUrl}
-                  download={buildGiftFilename(recipientName)}
+                  href={`/api/audio/${jobId}?download=true&name=${encodeURIComponent(buildGiftFilename(recipientName))}`}
                   className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity"
                 >
                   <Download className="w-4 h-4" />
