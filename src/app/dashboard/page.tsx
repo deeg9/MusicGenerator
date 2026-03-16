@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { db } from '@/db';
 import { songs } from '@/db/schema';
-import { eq, desc, and, isNotNull } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { getAudioPresignedUrl } from '@/lib/r2';
 import { Music } from 'lucide-react';
 import Link from 'next/link';
@@ -46,33 +46,39 @@ export default async function DashboardPage() {
     // Connection timeout — show "no subscription" gracefully
   }
 
-  // Query completed songs — graceful fallback on DB timeout
-  let songsWithUrls: Array<{
+  // Query all user songs — graceful fallback on DB timeout
+  let userSongsWithUrls: Array<{
     id: string;
     recipientName: string;
     relationship: string;
     genre: string;
+    status: 'generating' | 'completed' | 'failed';
     createdAt: Date;
-    audioUrl: string;
-    downloadUrl: string;
+    audioUrl: string | null;
+    downloadUrl: string | null;
     downloadFilename: string;
   }> = [];
   try {
     const userSongs = await db
       .select()
       .from(songs)
-      .where(and(eq(songs.userId, user.id), isNotNull(songs.r2Mp3Key)))
+      .where(eq(songs.userId, user.id))
       .orderBy(desc(songs.createdAt));
 
-    const completedSongs = userSongs.filter((s) => s.r2Mp3Key !== null);
-
-    songsWithUrls = await Promise.all(
-      completedSongs.map(async (song) => {
+    userSongsWithUrls = await Promise.all(
+      userSongs.map(async (song) => {
         const downloadFilename = buildDownloadFilename(song.recipientName);
-        const audioUrl = await getAudioPresignedUrl(song.r2Mp3Key!, 3600);
-        const downloadUrl = await getAudioPresignedUrl(song.r2Mp3Key!, 3600, downloadFilename);
+        let audioUrl: string | null = null;
+        let downloadUrl: string | null = null;
+
+        if (song.r2Mp3Key) {
+          audioUrl = await getAudioPresignedUrl(song.r2Mp3Key, 3600);
+          downloadUrl = await getAudioPresignedUrl(song.r2Mp3Key, 3600, downloadFilename);
+        }
+
         return {
           ...song,
+          status: song.status as 'generating' | 'completed' | 'failed',
           audioUrl,
           downloadUrl,
           downloadFilename,
@@ -91,7 +97,7 @@ export default async function DashboardPage() {
         {/* Subscription status */}
         <SubscriptionCard subscription={subscription} />
 
-        {songsWithUrls.length === 0 ? (
+        {userSongsWithUrls.length === 0 ? (
           // Empty state
           <div className="flex flex-col items-center gap-6 py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
@@ -115,12 +121,13 @@ export default async function DashboardPage() {
         ) : (
           // Song list
           <div className="flex flex-col gap-6">
-            {songsWithUrls.map((song) => (
+            {userSongsWithUrls.map((song) => (
               <SongCard
                 key={song.id}
                 recipientName={song.recipientName}
                 relationship={song.relationship}
                 genre={song.genre}
+                status={song.status}
                 createdAt={song.createdAt.toISOString()}
                 audioUrl={song.audioUrl}
                 downloadUrl={song.downloadUrl}
