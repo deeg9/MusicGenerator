@@ -42,8 +42,8 @@ export default async function DashboardPage() {
   let subscription: SubscriptionInfo | null = null;
   try {
     subscription = await getUserSubscription(user.id);
-  } catch {
-    // Connection timeout — show "no subscription" gracefully
+  } catch (err) {
+    console.error('[Dashboard] Failed to fetch subscription:', err);
   }
 
   // Query all user songs — graceful fallback on DB timeout
@@ -85,8 +85,8 @@ export default async function DashboardPage() {
         };
       }),
     );
-  } catch {
-    // Connection timeout — show empty song list gracefully
+  } catch (err) {
+    console.error('[Dashboard] Failed to fetch songs:', err);
   }
 
   return (
