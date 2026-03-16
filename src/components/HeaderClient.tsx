@@ -88,20 +88,13 @@ export function HeaderClient({ user }: { user: User | null }) {
                   >
                     My Songs
                   </Link>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setDropdownOpen(false);
-                      const res = await fetch('/api/stripe/portal', { method: 'POST' });
-                      if (res.ok) {
-                        const { url } = await res.json();
-                        window.location.href = url;
-                      }
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  <Link
+                    href="/subscription"
+                    onClick={() => setDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
                   >
                     Manage Subscription
-                  </button>
+                  </Link>
                   <div className="border-t border-border/40 my-1" />
                   <form action={signOut}>
                     <button
