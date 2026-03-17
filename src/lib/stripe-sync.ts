@@ -55,14 +55,23 @@ export async function upsertSubscription(
   };
 
   const [existing] = await db
-    .select({ id: subscriptions.id })
+    .select({ id: subscriptions.id, tier: subscriptions.tier })
     .from(subscriptions)
     .where(eq(subscriptions.userId, userId))
     .limit(1);
 
   if (existing) {
-    await db.update(subscriptions).set(values).where(eq(subscriptions.id, existing.id));
+    const tierChanged = existing.tier !== tier;
+    if (tierChanged) {
+      // Tier changed (upgrade/downgrade) — reset credits to new tier's allocation
+      await db.update(subscriptions).set(values).where(eq(subscriptions.id, existing.id));
+    } else {
+      // Same tier — sync metadata but preserve songsRemaining (don't reset credits)
+      const { songsRemaining: _, ...updateValues } = values;
+      await db.update(subscriptions).set(updateValues).where(eq(subscriptions.id, existing.id));
+    }
   } else {
+    // New subscription — start with full credits
     await db.insert(subscriptions).values(values);
   }
 }
