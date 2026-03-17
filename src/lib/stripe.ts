@@ -1,5 +1,11 @@
 import Stripe from 'stripe';
 
+/** Ensure origin has an explicit scheme — Stripe rejects URLs without one. */
+function ensureScheme(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `https://${url}`;
+}
+
 // Lazy-initialized to avoid build-time crash when env vars aren't set
 let _stripe: Stripe | null = null;
 
@@ -88,7 +94,7 @@ export async function createCheckoutSession(
   userId: string,
   returnPath?: string,
 ): Promise<string> {
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const origin = ensureScheme(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000');
 
   const successUrl = returnPath
     ? `${origin}${returnPath}`
@@ -115,7 +121,7 @@ export async function createCheckoutSession(
 // ── Customer Portal ─────────────────────────────────────────────────────────
 
 export async function createPortalSession(customerId: string): Promise<string> {
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const origin = ensureScheme(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000');
 
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
