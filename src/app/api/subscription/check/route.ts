@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getUserSubscription } from '@/lib/subscription';
+import { syncSubscriptionFromStripe } from '@/lib/stripe-sync';
 
 export async function GET(): Promise<NextResponse> {
   const supabase = await createClient();
@@ -9,6 +10,9 @@ export async function GET(): Promise<NextResponse> {
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
+
+  // Always re-sync from Stripe to self-heal stale/incorrect local data
+  await syncSubscriptionFromStripe(user.id);
 
   const sub = await getUserSubscription(user.id);
 
