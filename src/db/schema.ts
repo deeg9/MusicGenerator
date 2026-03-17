@@ -47,6 +47,7 @@ export const songs = pgTable(
       language?: string;
       email?: string;
       emailOptIn?: boolean;
+      recipientEmail?: string;
     }>(),
 
     // Lyrics logging (raw template vs Gemini-enhanced)
@@ -62,6 +63,7 @@ export const songs = pgTable(
     completedAt: timestamp('completed_at', { withTimezone: true }),
     failedAt: timestamp('failed_at', { withTimezone: true }),
     creatorEmailSentAt: timestamp('creator_email_sent_at', { withTimezone: true }),
+    recipientEmailSentAt: timestamp('recipient_email_sent_at', { withTimezone: true }),
     unlockedAt: timestamp('unlocked_at', { withTimezone: true }),
   },
   (t) => [

@@ -20,6 +20,8 @@ export interface QuizData {
   memories: string;
   // Step 5 — Message
   message: string;
+  // Recipient email (optional — for auto-sending gift notification)
+  recipientEmail: string;
   // Step 6 — Language & email (optional)
   language: string;
   email: string;
@@ -34,6 +36,7 @@ export const INITIAL_QUIZ_DATA: QuizData = {
   qualities: '',
   memories: '',
   message: '',
+  recipientEmail: '',
   language: 'English',
   email: '',
   emailOptIn: false,

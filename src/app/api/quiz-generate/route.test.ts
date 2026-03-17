@@ -109,6 +109,7 @@ const COMPLETE_QUIZ: QuizData = {
   qualities: 'caring, patient, always there for me',
   memories: 'Sunday morning pancakes',
   message: 'Thank you for everything',
+  recipientEmail: '',
   language: 'English',
   email: 'test@example.com',
   emailOptIn: false,

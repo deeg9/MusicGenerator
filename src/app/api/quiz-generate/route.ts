@@ -45,6 +45,7 @@ function validateQuizData(
       qualities: typeof obj.qualities === 'string' ? obj.qualities : '',
       memories: typeof obj.memories === 'string' ? obj.memories : '',
       message: typeof obj.message === 'string' ? obj.message : '',
+      recipientEmail: typeof obj.recipientEmail === 'string' ? obj.recipientEmail : '',
       language: typeof obj.language === 'string' ? obj.language : 'English',
       email: typeof obj.email === 'string' ? obj.email : '',
       emailOptIn: obj.emailOptIn === true,
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         language: validation.data.language,
         email: validation.data.emailOptIn ? validation.data.email : undefined,
         emailOptIn: validation.data.emailOptIn,
+        recipientEmail: validation.data.recipientEmail || undefined,
       },
     }).returning({ id: songs.id });
     songId = song.id;
