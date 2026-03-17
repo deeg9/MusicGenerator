@@ -85,11 +85,23 @@ export async function syncSubscriptionFromStripe(userId: string): Promise<boolea
     const subs = await stripe.subscriptions.list({
       customer: customer.id,
       status: 'active',
-      limit: 1,
     });
 
-    // Also check trialing if no active
+    // Pick the highest-tier subscription when multiples exist (defensive)
+    const tierRank: Record<string, number> = { unlimited: 3, pro: 2, starter: 1 };
     let sub = subs.data[0];
+    let bestRank = 0;
+    for (const s of subs.data) {
+      const priceId = s.items.data[0]?.price.id;
+      const tier = tierFromPriceId(priceId ?? '');
+      const rank = tier ? tierRank[tier] ?? 0 : 0;
+      if (rank > bestRank) {
+        bestRank = rank;
+        sub = s;
+      }
+    }
+
+    // Also check trialing if no active
     if (!sub) {
       const trialingSubs = await stripe.subscriptions.list({
         customer: customer.id,

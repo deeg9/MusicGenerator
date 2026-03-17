@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getOrCreateCustomer, createCheckoutSession, PRICE_IDS } from '@/lib/stripe';
+import { getOrCreateCustomer, createCheckoutSession, PRICE_IDS, stripe } from '@/lib/stripe';
 import type { SubscriptionTier } from '@/lib/stripe';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -27,6 +27,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const returnTo = body.returnTo && body.returnTo.startsWith('/') ? body.returnTo : undefined;
 
   const customerId = await getOrCreateCustomer(user.id, user.email);
+
+  // Cancel any existing active subscriptions to prevent stacking on upgrade
+  const existingSubs = await stripe.subscriptions.list({
+    customer: customerId,
+    status: 'active',
+  });
+  for (const sub of existingSubs.data) {
+    await stripe.subscriptions.cancel(sub.id);
+  }
+
   const checkoutUrl = await createCheckoutSession(customerId, PRICE_IDS[tier], user.id, returnTo);
 
   return NextResponse.json({ url: checkoutUrl });
