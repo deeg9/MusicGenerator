@@ -51,6 +51,7 @@ export default async function DashboardPage() {
 
   let userSongsWithUrls: Array<{
     id: string;
+    title: string | null;
     recipientName: string;
     relationship: string;
     genre: string;
@@ -129,6 +130,7 @@ export default async function DashboardPage() {
               <SongCard
                 key={song.id}
                 songId={song.id}
+                title={song.title}
                 recipientName={song.recipientName}
                 relationship={song.relationship}
                 genre={song.genre}

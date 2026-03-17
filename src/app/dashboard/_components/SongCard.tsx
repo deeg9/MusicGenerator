@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Download, Lock, Loader2, AlertCircle, Share2, MoreVertical, Pencil, Trash2, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SongPlayer } from '@/app/quiz/success/[jobId]/_components/SongPlayer';
@@ -9,11 +9,12 @@ import { UnlockModal, type CreditState } from '@/components/UnlockModal';
 
 interface SongCardProps {
   songId: string;
+  title: string | null;
   recipientName: string;
   relationship: string;
   genre: string;
   status: 'generating' | 'completed' | 'failed';
-  createdAt: string;       // ISO string — serialized from server component
+  createdAt: string;
   audioUrl: string | null;
   downloadUrl: string | null;
   downloadFilename: string;
@@ -24,6 +25,7 @@ interface SongCardProps {
 
 export function SongCard({
   songId,
+  title,
   recipientName,
   relationship,
   genre,
@@ -41,18 +43,72 @@ export function SongCard({
   const showFull = !!(isUnlocked || isUnlimitedTier || localUnlocked);
   const formattedDate = new Date(createdAt).toLocaleDateString();
 
-  // Unlock modal state
+  const displayTitle = title || `A song for ${recipientName}`;
+
+  // ── Unlock modal state ──────────────────────────────────────────────────
   const [showModal, setShowModal] = useState(false);
   const [creditState, setCreditState] = useState<CreditState | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [loadingCheck, setLoadingCheck] = useState(false);
+
+  // ── Three-dot menu state ────────────────────────────────────────────────
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // ── Inline edit state ───────────────────────────────────────────────────
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(displayTitle);
+  const [saving, setSaving] = useState(false);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Share state ─────────────────────────────────────────────────────────
+  const [copied, setCopied] = useState(false);
+
+  // Close menu on click outside or Escape
+  useEffect(() => {
+    if (!menuOpen) {
+      setDeleteConfirm(false);
+      return;
+    }
+
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false);
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [menuOpen]);
+
+  // Reset delete confirm after 3 seconds
+  useEffect(() => {
+    if (!deleteConfirm) return;
+    const timer = setTimeout(() => setDeleteConfirm(false), 3000);
+    return () => clearTimeout(timer);
+  }, [deleteConfirm]);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editing) editInputRef.current?.focus();
+  }, [editing]);
+
+  // ── Handlers ────────────────────────────────────────────────────────────
 
   async function handleUnlockClick() {
     setLoadingCheck(true);
     try {
       const res = await fetch('/api/subscription/check');
       if (res.status === 401) {
-        // Not logged in — shouldn't happen on dashboard, but handle gracefully
         router.push('/login');
         return;
       }
@@ -96,7 +152,7 @@ export function SongCard({
       if (data.unlocked) {
         setShowModal(false);
         setLocalUnlocked(true);
-        router.refresh(); // Refresh server data for download URL
+        router.refresh();
       } else if (data.error === 'insufficient_credits') {
         setCreditState({
           type: 'no-credits',
@@ -106,43 +162,204 @@ export function SongCard({
         });
       }
     } catch {
-      // Network error — close modal
       setShowModal(false);
     } finally {
       setConfirming(false);
     }
   }
 
+  async function handleShare() {
+    const shareUrl = `${window.location.origin}/share/${songId}`;
+    const shareData = {
+      title: displayTitle,
+      text: `Listen to "${displayTitle}" — a personalized song made on Notevra`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
+
+    // Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Last resort: prompt
+      window.prompt('Copy this link:', shareUrl);
+    }
+  }
+
+  function handleEditStart() {
+    setEditValue(displayTitle);
+    setEditing(true);
+    setMenuOpen(false);
+  }
+
+  async function handleEditSave() {
+    const trimmed = editValue.trim();
+    if (!trimmed || trimmed.length > 100) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/songs/${songId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmed }),
+      });
+      if (res.ok) {
+        setEditing(false);
+        router.refresh();
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleEditCancel() {
+    setEditing(false);
+    setEditValue(displayTitle);
+  }
+
+  const handleEditKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') handleEditSave();
+      if (e.key === 'Escape') handleEditCancel();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [editValue],
+  );
+
+  async function handleDelete() {
+    if (!deleteConfirm) {
+      setDeleteConfirm(true);
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/songs/${songId}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.refresh();
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setDeleting(false);
+      setMenuOpen(false);
+    }
+  }
+
   return (
-    <div className="bg-card rounded-2xl border border-border p-6 flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <h2 className="font-display text-xl text-foreground">
-            A song for {recipientName}
-          </h2>
-          {status === 'completed' && !showFull && (
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-              30s Preview
-            </span>
-          )}
-          {status === 'generating' && (
-            <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Generating
-            </span>
-          )}
-          {status === 'failed' && (
-            <span className="text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              Failed
-            </span>
+    <div className="relative bg-card rounded-2xl border border-border p-6 flex flex-col gap-4">
+      {/* Header: title + badges + three-dot menu */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {editing ? (
+              <div className="flex items-center gap-1.5 flex-1">
+                <input
+                  ref={editInputRef}
+                  type="text"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={handleEditKeyDown}
+                  maxLength={100}
+                  className="font-display text-xl text-foreground bg-transparent border-b-2 border-primary outline-none flex-1 min-w-0"
+                />
+                <button
+                  onClick={handleEditSave}
+                  disabled={saving || !editValue.trim()}
+                  className="p-1 text-primary hover:bg-primary/10 rounded transition-colors disabled:opacity-50"
+                  aria-label="Save title"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={handleEditCancel}
+                  className="p-1 text-muted-foreground hover:bg-muted rounded transition-colors"
+                  aria-label="Cancel editing"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <h2 className="font-display text-xl text-foreground truncate">
+                {displayTitle}
+              </h2>
+            )}
+            {!editing && status === 'completed' && !showFull && (
+              <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0">
+                30s Preview
+              </span>
+            )}
+            {status === 'generating' && (
+              <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Generating
+              </span>
+            )}
+            {status === 'failed' && (
+              <span className="text-xs font-medium text-red-700 bg-red-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0">
+                <AlertCircle className="w-3 h-3" />
+                Failed
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground capitalize">
+            {relationship} · {genre} · {formattedDate}
+          </p>
+        </div>
+
+        {/* Three-dot menu */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+            aria-label="Song options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-border/40 py-1 min-w-[160px] z-10">
+              <button
+                onClick={handleEditStart}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors text-left"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit Title
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-left ${
+                  deleteConfirm
+                    ? 'text-red-600 hover:bg-red-50 font-medium'
+                    : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                {deleting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                {deleteConfirm ? 'Are you sure?' : 'Delete'}
+              </button>
+            </div>
           )}
         </div>
-        <p className="text-sm text-muted-foreground capitalize">
-          {relationship} · {genre} · {formattedDate}
-        </p>
       </div>
 
+      {/* Audio player */}
       {status === 'completed' && audioUrl && (
         <SongPlayer src={audioUrl} isPreview={!showFull} />
       )}
@@ -161,16 +378,26 @@ export function SongCard({
         </div>
       )}
 
+      {/* Action buttons */}
       {status === 'completed' && (
         showFull ? (
-          <a
-            href={downloadUrl ?? '#'}
-            download={downloadFilename}
-            className="inline-flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-muted transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Download
-          </a>
+          <div className="flex gap-3">
+            <a
+              href={downloadUrl ?? '#'}
+              download={downloadFilename}
+              className="flex-1 inline-flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </a>
+            <button
+              onClick={handleShare}
+              className="flex-1 inline-flex items-center justify-center gap-2 border border-border text-foreground px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              {copied ? 'Copied!' : 'Share'}
+            </button>
+          </div>
         ) : (
           <button
             onClick={handleUnlockClick}

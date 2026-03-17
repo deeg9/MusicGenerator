@@ -37,8 +37,9 @@ function SignupContent() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({})
   const [serverError, setServerError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isGooglePending, startGoogleTransition] = useTransition()
@@ -55,6 +56,11 @@ function SignupContent() {
         email: errors.email?.[0],
         password: errors.password?.[0],
       })
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setFieldErrors({ confirmPassword: 'Passwords do not match' })
       return
     }
 
@@ -147,6 +153,25 @@ function SignupContent() {
             </div>
             {fieldErrors.password && (
               <p className="text-sm text-red-600 mt-1">{fieldErrors.password}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-1.5">
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="Re-enter your password"
+              disabled={isPending}
+            />
+            {fieldErrors.confirmPassword && (
+              <p className="text-sm text-red-600 mt-1">{fieldErrors.confirmPassword}</p>
             )}
           </div>
 

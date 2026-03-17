@@ -64,6 +64,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // 4. Extract creator context
   let creatorFirstName = 'Someone';
+  let creatorEmail: string | undefined;
 
   if (song.userId) {
     // Authenticated song — look up creator name via Supabase admin client
@@ -74,30 +75,35 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(song.userId);
     if (user) {
       creatorFirstName = extractFirstName(user);
+      creatorEmail = user.email ?? undefined;
     }
   }
 
   const message = (song.quizData as { message?: string })?.message ?? '';
 
-  // 5. Build app URL for listen page (no presigned R2 URL — branded page instead)
+  // 5. Build app URL for share page (public, no auth required)
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  const listenUrl = `${siteUrl}/listen/${song.id}`;
+  const listenUrl = `${siteUrl}/share/${song.id}`;
 
   // 6. Send email via Resend
-  const html = await render(GiftDeliveryEmail({
+  const emailComponent = GiftDeliveryEmail({
     recipientName: song.recipientName,
     creatorFirstName,
     relationship: song.relationship,
     message,
     genre: song.genre,
     listenUrl,
-  }));
+  });
+  const html = await render(emailComponent);
+  const text = await render(emailComponent, { plainText: true });
 
   const { data, error } = await resend.emails.send({
     from: 'Notevra <hello@notevra.net>',
+    replyTo: creatorEmail ?? 'hello@notevra.net',
     to: [recipientEmail],
-    subject: `${creatorFirstName} made something just for you`,
+    subject: `${creatorFirstName} made you a song on Notevra`,
     html,
+    text,
   });
 
   if (error || !data) {

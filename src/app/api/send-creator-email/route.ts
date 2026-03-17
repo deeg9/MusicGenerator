@@ -85,18 +85,22 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
   const downloadUrl = `${siteUrl}/api/audio/${song.heartbulaJobId}?download=true&name=${encodeURIComponent(`${song.recipientName}-song.mp3`)}`;
 
   // 6. Send email via Resend
-  const html = await render(SongReadyEmail({
+  const emailComponent = SongReadyEmail({
     recipientName: song.recipientName,
     listenUrl,
     downloadUrl,
     genre: song.genre,
-  }));
+  });
+  const html = await render(emailComponent);
+  const text = await render(emailComponent, { plainText: true });
 
   const { data, error } = await resend.emails.send({
     from: 'Notevra <hello@notevra.net>',
+    replyTo: 'hello@notevra.net',
     to: [recipientEmail],
     subject: `Your song for ${song.recipientName} is ready`,
     html,
+    text,
   });
 
   if (error || !data) {

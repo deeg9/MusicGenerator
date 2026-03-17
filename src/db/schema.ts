@@ -32,6 +32,9 @@ export const songs = pgTable(
     status: songStatusEnum('status').notNull().default('generating'),
     heartbulaJobId: text('heartbula_job_id').notNull(),
 
+    // User-editable title (nullable — falls back to "A song for {recipientName}")
+    title: text('title'),
+
     // Quiz fields (top-level for dashboard display/filtering)
     recipientName: text('recipient_name').notNull(),
     relationship: text('relationship').notNull(),
