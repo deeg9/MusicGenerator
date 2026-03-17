@@ -48,7 +48,9 @@ export const TIER_CONFIG: Record<SubscriptionTier, { songsPerMonth: number; labe
 };
 
 export function tierFromPriceId(priceId: string): SubscriptionTier | null {
-  for (const [tier, id] of Object.entries(PRICE_IDS)) {
+  // Use getPriceIds() directly — PRICE_IDS is a Proxy whose empty target
+  // makes Object.entries() return [], breaking iteration.
+  for (const [tier, id] of Object.entries(getPriceIds())) {
     if (id === priceId) return tier as SubscriptionTier;
   }
   return null;

@@ -79,6 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             tier: tier as 'starter' | 'pro' | 'unlimited',
             status: mapStripeStatus(subscription.status),
             songsPerMonth: config.songsPerMonth,
+            songsRemaining: config.songsPerMonth,
             currentPeriodStart: period.start,
             currentPeriodEnd: period.end,
             cancelAtPeriodEnd: subscription.cancel_at_period_end,
