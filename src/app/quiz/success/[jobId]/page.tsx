@@ -50,6 +50,8 @@ interface PollResponse {
   status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   error: string | null;
   unlockedAt: string | null;
+  recipientEmailSentAt: string | null;
+  recipientEmail: string | null;
 }
 
 interface PodDownResponse {
@@ -114,6 +116,10 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
       trackSongGenerationStarted(jobId, songId);
     }
   }, [jobId, songId]);
+
+  // Recipient email state from poll response
+  const [recipientEmailSentAt, setRecipientEmailSentAt] = useState<string | null>(null);
+  const [recipientEmailFromQuiz, setRecipientEmailFromQuiz] = useState<string | null>(null);
 
   // Preview paywall — default to true (restrict first, unlock after check)
   const [isPreview, setIsPreview] = useState(true);
@@ -194,6 +200,14 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
                 setAudioUrl(url);
               } catch {
                 setAudioUrl(`/api/audio/${jobId}`);
+              }
+
+              // Thread recipient email info from poll response
+              if (data.recipientEmailSentAt) {
+                setRecipientEmailSentAt(data.recipientEmailSentAt);
+              }
+              if (data.recipientEmail) {
+                setRecipientEmailFromQuiz(data.recipientEmail);
               }
 
               // If song is already unlocked (e.g. from a previous session), skip preview
@@ -600,7 +614,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
           <AuthPrompt jobId={jobId} />
 
           {/* Gift email form — only show if songId is available */}
-          {songId && <RecipientEmailForm songId={songId} />}
+          {songId && <RecipientEmailForm songId={songId} recipientEmailSentAt={recipientEmailSentAt} recipientEmail={recipientEmailFromQuiz} />}
         </motion.div>
       </AnimatePresence>
 

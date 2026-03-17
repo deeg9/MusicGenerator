@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 Phase: 28 of 32 (Auth Infrastructure)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-03-16 - Completed quick task 7: PostHog analytics instrumentation + dashboards
+Last activity: 2026-03-17 - Completed quick task 9: Fix Stripe checkout 500 error — ensureScheme() URL normalization
 
 Progress: [██████████] 96% (v4.2)
 

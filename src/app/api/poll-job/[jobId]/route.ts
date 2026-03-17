@@ -64,13 +64,13 @@ export async function GET(
   // DB already has the completed/failed state from a previous poll.
   try {
     const [existingSong] = await db
-      .select({ status: songs.status, r2Mp3Key: songs.r2Mp3Key, unlockedAt: songs.unlockedAt })
+      .select({ status: songs.status, r2Mp3Key: songs.r2Mp3Key, unlockedAt: songs.unlockedAt, recipientEmailSentAt: songs.recipientEmailSentAt, quizData: songs.quizData })
       .from(songs)
       .where(eq(songs.heartbulaJobId, jobId))
       .limit(1);
 
     if (existingSong?.status === 'completed' && existingSong.r2Mp3Key) {
-      return NextResponse.json({ status: 'COMPLETED', error: null, unlockedAt: existingSong.unlockedAt?.toISOString() ?? null });
+      return NextResponse.json({ status: 'COMPLETED', error: null, unlockedAt: existingSong.unlockedAt?.toISOString() ?? null, recipientEmailSentAt: existingSong.recipientEmailSentAt?.toISOString() ?? null, recipientEmail: existingSong.quizData?.recipientEmail ?? null });
     }
     if (existingSong?.status === 'failed') {
       return NextResponse.json({ status: 'FAILED', error: 'Song generation failed.' });
@@ -98,6 +98,7 @@ export async function GET(
             userId: songs.userId,
             quizData: songs.quizData,
             creatorEmailSentAt: songs.creatorEmailSentAt,
+            recipientEmailSentAt: songs.recipientEmailSentAt,
           })
           .from(songs)
           .where(eq(songs.heartbulaJobId, jobId))
@@ -136,6 +137,39 @@ export async function GET(
       } catch (emailError) {
         console.error('[poll-job] creator email failed (non-fatal):', emailError);
       }
+
+      // Send recipient email — non-blocking, failures must never break the poll response
+      try {
+        const [songForRecipientEmail] = await db
+          .select({
+            id: songs.id,
+            quizData: songs.quizData,
+            recipientEmailSentAt: songs.recipientEmailSentAt,
+          })
+          .from(songs)
+          .where(eq(songs.heartbulaJobId, jobId))
+          .limit(1);
+
+        const recipientEmail = songForRecipientEmail?.quizData?.recipientEmail;
+        if (songForRecipientEmail && recipientEmail && !songForRecipientEmail.recipientEmailSentAt) {
+          const recipientRes = await fetch(
+            new URL('/api/send-recipient-email', request.url),
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ songId: songForRecipientEmail.id, recipientEmail }),
+            },
+          );
+          if (recipientRes.ok) {
+            await db
+              .update(songs)
+              .set({ recipientEmailSentAt: new Date() })
+              .where(eq(songs.id, songForRecipientEmail.id));
+          }
+        }
+      } catch (recipientEmailError) {
+        console.error('[poll-job] recipient email failed (non-fatal):', recipientEmailError);
+      }
     }
 
     // FAILED: mark song row as failed
@@ -150,20 +184,24 @@ export async function GET(
       }
     }
 
-    // Include unlockedAt for COMPLETED status
+    // Include extra fields for COMPLETED status
     let unlockedAt: string | null = null;
+    let recipientEmailSentAt: string | null = null;
+    let recipientEmail: string | null = null;
     if (result.status === 'COMPLETED') {
       try {
         const [songRow] = await db
-          .select({ unlockedAt: songs.unlockedAt })
+          .select({ unlockedAt: songs.unlockedAt, recipientEmailSentAt: songs.recipientEmailSentAt, quizData: songs.quizData })
           .from(songs)
           .where(eq(songs.heartbulaJobId, jobId))
           .limit(1);
         unlockedAt = songRow?.unlockedAt?.toISOString() ?? null;
+        recipientEmailSentAt = songRow?.recipientEmailSentAt?.toISOString() ?? null;
+        recipientEmail = songRow?.quizData?.recipientEmail ?? null;
       } catch { /* non-fatal */ }
     }
 
-    return NextResponse.json({ status: result.status, error: result.error_msg ?? null, unlockedAt });
+    return NextResponse.json({ status: result.status, error: result.error_msg ?? null, unlockedAt, recipientEmailSentAt, recipientEmail });
   } catch (rawError) {
     const classified = classifyError(rawError);
     console.error('[poll-job] queryJobStatus failed:', classified.technicalMessage);

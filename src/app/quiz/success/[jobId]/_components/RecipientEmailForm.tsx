@@ -1,15 +1,33 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Loader2, Send } from 'lucide-react';
+import { Check, Loader2, Send } from 'lucide-react';
 import { trackEmailFormSubmitted } from '@/lib/analytics';
 
 interface RecipientEmailFormProps {
   songId: string; // UUID from songs table — must be provided by parent
+  recipientEmailSentAt?: string | null;
+  recipientEmail?: string | null;
 }
 
-export function RecipientEmailForm({ songId }: RecipientEmailFormProps) {
-  const [email, setEmail] = useState('');
+export function RecipientEmailForm({ songId, recipientEmailSentAt, recipientEmail: recipientEmailProp }: RecipientEmailFormProps) {
+  // If auto-sent, show confirmation instead of form
+  if (recipientEmailSentAt) {
+    return (
+      <div className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-green-50 border border-green-200">
+        <Check size={16} className="text-green-600 flex-shrink-0" />
+        <p className="text-sm text-green-800">
+          Gift email sent to {recipientEmailProp || 'the recipient'}! They&apos;ll receive it shortly.
+        </p>
+      </div>
+    );
+  }
+
+  return <RecipientEmailFormInner songId={songId} initialEmail={recipientEmailProp ?? ''} />;
+}
+
+function RecipientEmailFormInner({ songId, initialEmail }: { songId: string; initialEmail: string }) {
+  const [email, setEmail] = useState(initialEmail);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
