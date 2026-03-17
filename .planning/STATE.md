@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 Phase: 28 of 32 (Auth Infrastructure)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-03-17 - Completed quick task 12: Always re-sync subscription from Stripe
+Last activity: 2026-03-17 - Completed quick task 13: Fix subscription upgrade stacking
 
 Progress: [██████████] 96% (v4.2)
 
@@ -137,6 +137,7 @@ None.
 | 10 | Thank-you page with Meta Pixel Purchase, GA4 purchase, and PostHog conversion tracking | 2026-03-17 | 0a85c06 | [10-add-thank-you-page-with-meta-pixel-purch](./quick/10-add-thank-you-page-with-meta-pixel-purch/) |
 | 11 | Fix tierFromPriceId Proxy bug + webhook missing songsRemaining | 2026-03-17 | 25f2cbb | [11-fix-tierfrompriceid-proxy-bug-and-subscr](./quick/11-fix-tierfrompriceid-proxy-bug-and-subscr/) |
 | 12 | Always re-sync subscription from Stripe on dashboard load | 2026-03-17 | 2be8684 | [12-fix-stale-subscription-data-always-re-s](./quick/12-fix-stale-subscription-data-always-re-s/) |
+| 13 | Fix subscription upgrade stacking + sync picks highest tier | 2026-03-17 | 81119db | [13-fix-subscription-upgrade-stacking](./quick/13-fix-subscription-upgrade-stacking/) |
 
 ## Session Continuity
 
