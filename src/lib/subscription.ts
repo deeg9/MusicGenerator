@@ -13,36 +13,16 @@ export type SubscriptionInfo = {
 };
 
 export async function getUserSubscription(userId: string): Promise<SubscriptionInfo | null> {
+  // Always re-sync from Stripe to self-heal stale/incorrect local data
+  await syncSubscriptionFromStripe(userId);
+
   const [sub] = await db
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.userId, userId))
     .limit(1);
 
-  if (!sub) {
-    // No local record — try syncing from Stripe (self-healing for missed webhooks)
-    const synced = await syncSubscriptionFromStripe(userId);
-    if (synced) {
-      // Re-query after backfill
-      const [backfilled] = await db
-        .select()
-        .from(subscriptions)
-        .where(eq(subscriptions.userId, userId))
-        .limit(1);
-
-      if (backfilled) {
-        return {
-          active: backfilled.status === 'active' || backfilled.status === 'trialing',
-          tier: backfilled.tier,
-          songsRemaining: backfilled.songsRemaining,
-          songsPerMonth: backfilled.songsPerMonth,
-          cancelAtPeriodEnd: backfilled.cancelAtPeriodEnd,
-          currentPeriodEnd: backfilled.currentPeriodEnd,
-        };
-      }
-    }
-    return null;
-  }
+  if (!sub) return null;
 
   return {
     active: sub.status === 'active' || sub.status === 'trialing',
