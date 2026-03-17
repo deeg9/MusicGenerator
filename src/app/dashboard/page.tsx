@@ -128,6 +128,7 @@ export default async function DashboardPage() {
             {userSongsWithUrls.map((song) => (
               <SongCard
                 key={song.id}
+                songId={song.id}
                 recipientName={song.recipientName}
                 relationship={song.relationship}
                 genre={song.genre}

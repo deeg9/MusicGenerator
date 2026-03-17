@@ -11,18 +11,25 @@ vi.mock('@/app/quiz/success/[jobId]/_components/SongPlayer', () => ({
   ),
 }));
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Test helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 const defaultProps = {
+  songId: 'test-song-123',
   recipientName: 'Emma',
   relationship: 'sister',
   genre: 'pop',
+  status: 'completed' as const,
   createdAt: '2026-01-15T12:00:00.000Z',
   audioUrl: 'https://r2.example.com/presigned/audio.mp3',
   downloadUrl: 'https://r2.example.com/presigned/audio.mp3?response-content-disposition=attachment',
   downloadFilename: 'notevra-song-for-emma.mp3',
+  isUnlocked: true,
 };
 
 import { SongCard } from './SongCard';

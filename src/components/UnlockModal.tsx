@@ -100,19 +100,13 @@ function HasCreditsContent({
         </div>
       </div>
 
-      <div className="flex gap-3 w-full pt-2">
-        <button
-          onClick={onClose}
-          className="flex-1 border border-border text-foreground px-4 py-2.5 rounded-xl font-medium hover:bg-muted transition-colors"
-        >
-          Cancel
-        </button>
+      <div className="w-full pt-2">
         <button
           onClick={onConfirm}
           disabled={confirming}
-          className="flex-1 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="w-full bg-primary text-primary-foreground px-4 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          {confirming ? 'Unlocking...' : 'Use 1 Credit'}
+          {confirming ? 'Unlocking...' : 'Confirm'}
         </button>
       </div>
     </div>

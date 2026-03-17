@@ -1,10 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { Download, Lock, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { SongPlayer } from '@/app/quiz/success/[jobId]/_components/SongPlayer';
+import { UnlockModal, type CreditState } from '@/components/UnlockModal';
 
 interface SongCardProps {
+  songId: string;
   recipientName: string;
   relationship: string;
   genre: string;
@@ -19,6 +23,7 @@ interface SongCardProps {
 }
 
 export function SongCard({
+  songId,
   recipientName,
   relationship,
   genre,
@@ -31,8 +36,82 @@ export function SongCard({
   isUnlocked = false,
   isUnlimitedTier = false,
 }: SongCardProps) {
-  const showFull = !!(isUnlocked || isUnlimitedTier);
+  const router = useRouter();
+  const [localUnlocked, setLocalUnlocked] = useState(false);
+  const showFull = !!(isUnlocked || isUnlimitedTier || localUnlocked);
   const formattedDate = new Date(createdAt).toLocaleDateString();
+
+  // Unlock modal state
+  const [showModal, setShowModal] = useState(false);
+  const [creditState, setCreditState] = useState<CreditState | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [loadingCheck, setLoadingCheck] = useState(false);
+
+  async function handleUnlockClick() {
+    setLoadingCheck(true);
+    try {
+      const res = await fetch('/api/subscription/check');
+      if (res.status === 401) {
+        // Not logged in — shouldn't happen on dashboard, but handle gracefully
+        router.push('/login');
+        return;
+      }
+      if (res.status === 404 || !res.ok) {
+        setCreditState({ type: 'no-subscription' });
+        setShowModal(true);
+        return;
+      }
+      const data = await res.json();
+      if (!data.active) {
+        setCreditState({ type: 'no-subscription' });
+      } else if (data.songsRemaining > 0) {
+        setCreditState({
+          type: 'has-credits',
+          songsRemaining: data.songsRemaining,
+          songsPerMonth: data.songsPerMonth,
+          tier: data.tier,
+        });
+      } else {
+        setCreditState({
+          type: 'no-credits',
+          songsPerMonth: data.songsPerMonth,
+          tier: data.tier,
+          currentPeriodEnd: data.currentPeriodEnd,
+        });
+      }
+      setShowModal(true);
+    } catch {
+      setCreditState({ type: 'no-subscription' });
+      setShowModal(true);
+    } finally {
+      setLoadingCheck(false);
+    }
+  }
+
+  async function handleConfirmUnlock() {
+    setConfirming(true);
+    try {
+      const res = await fetch(`/api/songs/${songId}/unlock`, { method: 'POST' });
+      const data = await res.json();
+      if (data.unlocked) {
+        setShowModal(false);
+        setLocalUnlocked(true);
+        router.refresh(); // Refresh server data for download URL
+      } else if (data.error === 'insufficient_credits') {
+        setCreditState({
+          type: 'no-credits',
+          songsPerMonth: data.songsPerMonth,
+          tier: data.tier,
+          currentPeriodEnd: data.currentPeriodEnd,
+        });
+      }
+    } catch {
+      // Network error — close modal
+      setShowModal(false);
+    } finally {
+      setConfirming(false);
+    }
+  }
 
   return (
     <div className="bg-card rounded-2xl border border-border p-6 flex flex-col gap-4">
@@ -93,13 +172,18 @@ export function SongCard({
             Download
           </a>
         ) : (
-          <Link
-            href="/pricing"
-            className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors"
+          <button
+            onClick={handleUnlockClick}
+            disabled={loadingCheck}
+            className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            <Lock className="w-4 h-4" />
-            Subscribe to Unlock Full Song
-          </Link>
+            {loadingCheck ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Lock className="w-4 h-4" />
+            )}
+            Use Credit to Unlock Full Song
+          </button>
         )
       )}
 
@@ -110,6 +194,16 @@ export function SongCard({
         >
           Try Again
         </Link>
+      )}
+
+      {creditState && (
+        <UnlockModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onConfirm={handleConfirmUnlock}
+          confirming={confirming}
+          creditState={creditState}
+        />
       )}
     </div>
   );

@@ -13,7 +13,7 @@ import { AuthPrompt } from './_components/AuthPrompt';
 import { RecipientEmailForm } from './_components/RecipientEmailForm';
 import { PreviewBanner, PreviewCTA } from './_components/PreviewPaywall';
 import { SubscribeToDownload } from './_components/SubscribeToDownload';
-import { UnlockModal, type CreditState } from './_components/UnlockModal';
+import { UnlockModal, type CreditState } from '@/components/UnlockModal';
 import {
   trackSongGenerationStarted,
   trackSongGenerationCompleted,
