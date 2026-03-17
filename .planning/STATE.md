@@ -132,10 +132,11 @@ None.
 | 4 | Validate Audible-style credit system across 9 files | 2026-03-16 | 1821179 | [4-validate-audible-style-credit-system-for](./quick/4-validate-audible-style-credit-system-for/) |
 | 6 | Fix email links — app pages instead of raw R2 URLs + new /listen/[songId] page | 2026-03-16 | 6a9f6d7 | [6-fix-email-links-app-pages-instead-of-raw](./quick/6-fix-email-links-app-pages-instead-of-raw/) |
 | 7 | PostHog analytics instrumentation + dashboard creation script | 2026-03-16 | e0b27a5 | [7-research-and-set-up-posthog-dashboards-a](./quick/7-research-and-set-up-posthog-dashboards-a/) |
+| 9 | Fix Stripe checkout 500 error — ensureScheme() URL normalization in stripe.ts | 2026-03-16 | f77749f | [9-fix-stripe-checkout-500-error-by-adding-](./quick/9-fix-stripe-checkout-500-error-by-adding-/) |
 
 ## Session Continuity
 
-Last session: 2026-03-16T23:22:00Z
-Stopped at: Completed quick task 7 — PostHog analytics instrumentation across all app touchpoints
+Last session: 2026-03-16T23:24:00Z
+Stopped at: Completed quick task 9 — Stripe URL scheme normalization
 Resume file: None
 Next action: Execute 30-02 (React Email templates)
