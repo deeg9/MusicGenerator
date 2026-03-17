@@ -118,6 +118,16 @@ export function trackCtaClicked(ctaLocation: string, ctaText: string): void {
   });
 }
 
+// ─── Subscription ────────────────────────────────────────────────────────────
+
+export function trackSubscriptionPurchased(plan: string, value: number): void {
+  posthog.capture('subscription_purchased', {
+    plan,
+    value,
+    currency: 'USD',
+  });
+}
+
 // ─── Identity ─────────────────────────────────────────────────────────────────
 
 export function identifyUser(

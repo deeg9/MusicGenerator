@@ -95,10 +95,11 @@ export async function createCheckoutSession(
   returnPath?: string,
 ): Promise<string> {
   const origin = ensureScheme(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000');
+  const tier = tierFromPriceId(priceId) ?? 'unknown';
 
   const successUrl = returnPath
     ? `${origin}${returnPath}`
-    : `${origin}/pricing?success=true`;
+    : `${origin}/thank-you?plan=${tier}`;
   const cancelUrl = returnPath
     ? `${origin}${returnPath}`
     : `${origin}/pricing?canceled=true`;
