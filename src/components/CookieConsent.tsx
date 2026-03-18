@@ -23,11 +23,13 @@ export function CookieConsent() {
 
   function handleAccept() {
     localStorage.setItem(STORAGE_KEY, 'accepted');
+    window.dispatchEvent(new Event('consent-change'));
     setVisible(false);
   }
 
   function handleDecline() {
     localStorage.setItem(STORAGE_KEY, 'declined');
+    window.dispatchEvent(new Event('consent-change'));
     setVisible(false);
   }
 
