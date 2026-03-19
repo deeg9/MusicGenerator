@@ -361,7 +361,12 @@ export function SongCard({
 
       {/* Audio player */}
       {status === 'completed' && audioUrl && (
-        <SongPlayer src={audioUrl} isPreview={!showFull} />
+        <SongPlayer
+          src={audioUrl}
+          isPreview={!showFull}
+          songTitle={displayTitle}
+          recipientName={recipientName}
+        />
       )}
 
       {status === 'generating' && (

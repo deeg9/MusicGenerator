@@ -35,7 +35,9 @@ vi.mock('./_components/ConfettiBlast', () => ({
 }));
 
 vi.mock('./_components/SongPlayer', () => ({
-  SongPlayer: ({ src }: { src: string }) => <audio data-testid="song-player" src={src} />,
+  SongPlayer: ({ src, songTitle, recipientName }: { src: string; songTitle?: string; recipientName?: string }) => (
+    <audio data-testid="song-player" src={src} data-title={songTitle} data-recipient={recipientName} />
+  ),
 }));
 
 vi.mock('./_components/SharePrompt', () => ({

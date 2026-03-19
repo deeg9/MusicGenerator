@@ -81,9 +81,12 @@ export default async function SharePage({ params }: Props) {
         </div>
 
         {/* Player */}
-        <div className="bg-card rounded-2xl border border-border p-6">
-          <SongPlayer src={audioUrl} isPreview={false} />
-        </div>
+        <SongPlayer
+          src={audioUrl}
+          isPreview={false}
+          songTitle={song.title || undefined}
+          recipientName={song.recipientName}
+        />
 
         {/* CTA */}
         <div className="text-center flex flex-col gap-3 pt-4">

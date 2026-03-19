@@ -564,6 +564,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
               onPreviewEnd={() => setPreviewEnded(true)}
               songId={songId}
               source="success_page"
+              recipientName={recipientName || undefined}
             />
           )}
 
