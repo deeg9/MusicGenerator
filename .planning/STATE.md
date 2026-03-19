@@ -138,10 +138,11 @@ None.
 | 11 | Fix tierFromPriceId Proxy bug + webhook missing songsRemaining | 2026-03-17 | 25f2cbb | [11-fix-tierfrompriceid-proxy-bug-and-subscr](./quick/11-fix-tierfrompriceid-proxy-bug-and-subscr/) |
 | 12 | Always re-sync subscription from Stripe on dashboard load | 2026-03-17 | 2be8684 | [12-fix-stale-subscription-data-always-re-s](./quick/12-fix-stale-subscription-data-always-re-s/) |
 | 13 | Fix subscription upgrade stacking + sync picks highest tier | 2026-03-17 | 81119db | [13-fix-subscription-upgrade-stacking](./quick/13-fix-subscription-upgrade-stacking/) |
+| 14 | Homepage chat box with genre dropdown — caches input, routes to quiz | 2026-03-19 | 0799c25 | [14-homepage-chat-box-with-genre-dropdown-si](./quick/14-homepage-chat-box-with-genre-dropdown-si/) |
 
 ## Session Continuity
 
-Last session: 2026-03-17T01:00:00Z
-Stopped at: Completed quick task 11 — Fixed tier lookup + credits bug
+Last session: 2026-03-19T16:24:06Z
+Stopped at: Completed quick task 14 — Homepage chat box with genre dropdown
 Resume file: None
 Next action: Execute 30-02 (React Email templates)
