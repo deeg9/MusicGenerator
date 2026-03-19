@@ -243,29 +243,6 @@ describe('POST /api/send-creator-email', () => {
     expect(body).toHaveProperty('error');
   });
 
-  // Additional: presigned URL uses 24h expiry for listen URL
-  it('generates presigned listenUrl with 86400s (24h) expiry', async () => {
-    const req = makeRequest({ songId: 'song-uuid-1234' });
-    await POST(req as Parameters<typeof POST>[0]);
-
-    expect(mockGetAudioPresignedUrl).toHaveBeenCalledWith(
-      MOCK_SONG.r2Mp3Key,
-      86400,
-    );
-  });
-
-  // Additional: presigned download URL includes recipient filename
-  it('generates presigned downloadUrl with Content-Disposition filename', async () => {
-    const req = makeRequest({ songId: 'song-uuid-1234' });
-    await POST(req as Parameters<typeof POST>[0]);
-
-    expect(mockGetAudioPresignedUrl).toHaveBeenCalledWith(
-      MOCK_SONG.r2Mp3Key,
-      86400,
-      `${MOCK_SONG.recipientName}-song.mp3`,
-    );
-  });
-
   // Additional: SongReadyEmail called with correct props
   it('calls SongReadyEmail with correct props', async () => {
     const req = makeRequest({ songId: 'song-uuid-1234' });

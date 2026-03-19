@@ -17,14 +17,12 @@ import React from 'react';
 interface SongReadyEmailProps {
   recipientName: string;
   listenUrl: string;
-  downloadUrl: string;
   genre: string;
 }
 
 export function SongReadyEmail({
   recipientName,
   listenUrl,
-  downloadUrl,
   genre,
 }: SongReadyEmailProps) {
   return (
@@ -129,19 +127,6 @@ export function SongReadyEmail({
               Listen Now
             </Button>
 
-            <Text style={{ margin: '0 0 8px 0' }}>
-              <Link
-                href={downloadUrl}
-                style={{
-                  color: '#6ba3c9',
-                  fontSize: '15px',
-                  textDecoration: 'underline',
-                  fontFamily: "'DM Sans', Helvetica, Arial, sans-serif",
-                }}
-              >
-                Download MP3
-              </Link>
-            </Text>
           </Section>
 
           {/* Footer section */}
@@ -176,6 +161,5 @@ export function SongReadyEmail({
 SongReadyEmail.PreviewProps = {
   recipientName: 'Sarah',
   listenUrl: 'https://notevra.net/quiz/success/demo-job-id?name=Sarah&songId=demo-song-id',
-  downloadUrl: 'https://notevra.net/api/audio/demo-job-id?download=true&name=Sarah-song.mp3',
   genre: 'Jazz',
 } satisfies SongReadyEmailProps;

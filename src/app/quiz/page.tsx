@@ -1,5 +1,11 @@
 'use client';
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
 import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
@@ -95,6 +101,7 @@ export default function QuizPage() {
   // Track quiz_started on mount (fires once regardless of localStorage restore)
   useEffect(() => {
     trackQuizStarted();
+    window.fbq?.('track', 'Lead');
   }, []);
 
   // Persist quiz state to localStorage on every change
@@ -197,6 +204,7 @@ export default function QuizPage() {
         voice: data.voicePreference,
         language: data.language,
       });
+      window.fbq?.('track', 'InitiateCheckout');
       void handleCreate();
     }
   }

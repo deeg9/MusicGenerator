@@ -1,5 +1,11 @@
 'use client';
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Check, Sparkles } from 'lucide-react';
@@ -72,6 +78,8 @@ function PricingContent() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (data?.tier) setCurrentTier(data.tier); })
       .catch(() => {});
+
+    window.fbq?.('track', 'ViewContent', { content_name: 'Pricing Page' });
   }, []);
 
   useEffect(() => {

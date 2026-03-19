@@ -192,6 +192,7 @@ export default function SuccessPage({ params, searchParams }: SuccessPageProps) 
                   songId,
                   Date.now() - pageMountTimeRef.current,
                 );
+                window.fbq?.('track', 'CompleteRegistration');
               }
 
               try {

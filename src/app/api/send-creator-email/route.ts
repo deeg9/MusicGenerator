@@ -82,13 +82,11 @@ async function handlePost(request: NextRequest): Promise<NextResponse> {
   // 5. Build app URLs (no presigned R2 URLs — branded pages instead)
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const listenUrl = `${siteUrl}/quiz/success/${song.heartbulaJobId}?name=${encodeURIComponent(song.recipientName)}&songId=${song.id}`;
-  const downloadUrl = `${siteUrl}/api/audio/${song.heartbulaJobId}?download=true&name=${encodeURIComponent(`${song.recipientName}-song.mp3`)}`;
 
   // 6. Send email via Resend
   const emailComponent = SongReadyEmail({
     recipientName: song.recipientName,
     listenUrl,
-    downloadUrl,
     genre: song.genre,
   });
   const html = await render(emailComponent);
