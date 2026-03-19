@@ -9,17 +9,19 @@ interface SampleSong {
   genre: string;
   emoji: string;
   gradient: string;
+  image?: string;
+  audioSrc?: string;
 }
 
-const SAMPLE_SONGS: SampleSong[] = [
-  { id: '1', title: 'Happy Birthday, Mom', genre: 'Pop', emoji: '🎂', gradient: 'from-pink-300 to-rose-400' },
-  { id: '2', title: 'For My Best Friend', genre: 'Folk / Acoustic', emoji: '🤝', gradient: 'from-amber-300 to-orange-400' },
-  { id: '3', title: 'Our Love Story', genre: 'R&B / Soul', emoji: '💕', gradient: 'from-red-300 to-pink-400' },
-  { id: '4', title: "Dad, You're My Hero", genre: 'Country', emoji: '🦸', gradient: 'from-sky-300 to-blue-400' },
-  { id: '5', title: 'To My Daughter', genre: 'Classical', emoji: '🌸', gradient: 'from-purple-300 to-violet-400' },
-];
+const AUDIO_SRC_DEFAULT = '/sample-song.mp3';
 
-const AUDIO_SRC = '/sample-song.mp3';
+const SAMPLE_SONGS: SampleSong[] = [
+  { id: '1', title: 'Happy Birthday, Mom', genre: 'Pop', emoji: '🎂', gradient: 'from-pink-300 to-rose-400', image: '/cover-mom.png', audioSrc: '/preview-mom.mp3' },
+  { id: '2', title: 'For My Best Friend', genre: 'Folk / Acoustic', emoji: '🤝', gradient: 'from-amber-300 to-orange-400', image: '/cover-friend.png', audioSrc: '/preview-friend.mp3' },
+  { id: '3', title: 'Our Love Story', genre: 'R&B / Soul', emoji: '💕', gradient: 'from-red-300 to-pink-400', image: '/cover-love.png', audioSrc: '/preview-love.mp3' },
+  { id: '4', title: "Dad, You're My Hero", genre: 'Country', emoji: '🦸', gradient: 'from-sky-300 to-blue-400', image: '/cover-dad.png', audioSrc: '/preview-dad.mp3' },
+  { id: '5', title: 'To My Daughter', genre: 'Classical', emoji: '🌸', gradient: 'from-purple-300 to-violet-400', image: '/cover-daughter.png', audioSrc: '/preview-daughter.mp3' },
+];
 
 export function SongPreviewCarousel() {
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export function SongPreviewCarousel() {
   useEffect(() => {
     const map: Record<string, HTMLAudioElement> = {};
     SAMPLE_SONGS.forEach((song) => {
-      const audio = new Audio(AUDIO_SRC);
+      const audio = new Audio(song.audioSrc ?? AUDIO_SRC_DEFAULT);
       audio.preload = 'metadata';
       map[song.id] = audio;
     });
@@ -113,9 +115,9 @@ export function SongPreviewCarousel() {
   };
 
   return (
-    <div className="w-full max-w-xl">
-      <p className="text-sm text-muted-foreground mb-2 font-medium">Listen to songs others have created</p>
-      <div className="flex overflow-x-auto gap-3 pb-2" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+    <div className="w-full">
+      <p className="text-sm text-muted-foreground mb-2 font-medium text-center">Listen to songs others have created</p>
+      <div className="flex overflow-x-auto gap-3 pb-2 justify-center" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
         {SAMPLE_SONGS.map((song) => {
           const progress = progressMap[song.id] || 0;
           const audio = audioRefs.current[song.id];
@@ -129,12 +131,20 @@ export function SongPreviewCarousel() {
               key={song.id}
               className="flex-shrink-0 w-[150px] rounded-xl bg-white shadow-medium flex flex-col items-center p-3"
             >
-              {/* Album art placeholder */}
-              <div
-                className={`w-full h-24 rounded-lg bg-gradient-to-br ${song.gradient} flex items-center justify-center mb-2`}
-              >
-                <span className="text-3xl">{song.emoji}</span>
-              </div>
+              {/* Album art */}
+              {song.image ? (
+                <img
+                  src={song.image}
+                  alt={song.title}
+                  className="w-full h-24 rounded-lg object-cover mb-2"
+                />
+              ) : (
+                <div
+                  className={`w-full h-24 rounded-lg bg-gradient-to-br ${song.gradient} flex items-center justify-center mb-2`}
+                >
+                  <span className="text-3xl">{song.emoji}</span>
+                </div>
+              )}
 
               {/* Title */}
               <h4 className="text-xs font-semibold text-foreground text-center mb-1 leading-tight line-clamp-2">

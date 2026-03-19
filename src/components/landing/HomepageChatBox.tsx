@@ -82,7 +82,7 @@ export function HomepageChatBox() {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute bottom-full mb-1 left-0 bg-white rounded-xl shadow-elevated py-1 z-50 min-w-[180px]">
+            <div className="absolute top-full mt-1 left-0 bg-white rounded-xl shadow-elevated py-1 z-50 min-w-[180px]">
               {GENRE_OPTIONS.map((g) => (
                 <button
                   key={g.id}

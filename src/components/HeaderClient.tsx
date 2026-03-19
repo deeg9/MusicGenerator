@@ -59,7 +59,7 @@ export function HeaderClient({ user, subscription }: { user: User | null; subscr
           <nav className="flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <Link href="/#how-it-works" className="hover:text-foreground transition-colors">How it Works</Link>
             <Link href="/#reviews" className="hover:text-foreground transition-colors">Reviews</Link>
-            <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
+            {/* <Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link> */}
           </nav>
 
           {/* Auth links or avatar dropdown */}
@@ -167,13 +167,13 @@ export function HeaderClient({ user, subscription }: { user: User | null; subscr
             >
               Reviews
             </Link>
-            <Link
+            {/* <Link
               href="/pricing"
               onClick={() => setMobileMenuOpen(false)}
               className="hover:text-foreground transition-colors py-1.5"
             >
               Pricing
-            </Link>
+            </Link> */}
 
             {/* Mobile auth links */}
             {!user ? (
