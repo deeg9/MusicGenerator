@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { QuizData, VoicePreference } from '@/lib/quiz-types';
+import { GENRE_OPTIONS } from '@/lib/genres';
 import { SelectionCard } from './SelectionCard';
 import { PillButton } from './PillButton';
 
@@ -8,18 +9,6 @@ import { PillButton } from './PillButton';
 export const step2Schema = z.object({
   genre: z.string().min(1, 'Please select a music genre'),
 });
-
-// ─── Genre options ────────────────────────────────────────────────────────────
-
-const GENRE_OPTIONS: { id: string; label: string; mood: string }[] = [
-  { id: 'Pop', label: 'Pop', mood: 'Upbeat and fun' },
-  { id: 'R&B / Soul', label: 'R&B / Soul', mood: 'Smooth and heartfelt' },
-  { id: 'Folk / Acoustic', label: 'Folk / Acoustic', mood: 'Warm and intimate' },
-  { id: 'Rock', label: 'Rock', mood: 'Bold and energetic' },
-  { id: 'Hip-Hop', label: 'Hip-Hop', mood: 'Rhythmic and expressive' },
-  { id: 'Classical', label: 'Classical', mood: 'Elegant and timeless' },
-  { id: 'Country', label: 'Country', mood: 'Storytelling and soulful' },
-];
 
 // ─── Voice preference options ─────────────────────────────────────────────────
 

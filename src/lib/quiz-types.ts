@@ -41,3 +41,10 @@ export const INITIAL_QUIZ_DATA: QuizData = {
   email: '',
   emailOptIn: false,
 };
+
+export const HOMEPAGE_INPUT_KEY = 'notevra_homepage_input';
+
+export interface HomepageInput {
+  prompt: string;
+  genre: string;
+}
