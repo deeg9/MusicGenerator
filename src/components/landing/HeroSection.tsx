@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Star, Heart, Volume2, VolumeX } from 'lucide-react';
 import { HeroAudioCard } from './HeroAudioCard';
+import { HomepageChatBox } from './HomepageChatBox';
 import { trackCtaClicked } from '@/lib/analytics';
 
 export function HeroSection() {
@@ -46,6 +47,9 @@ export function HeroSection() {
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-center lg:text-left">
               Turn your <em className="text-primary not-italic font-bold italic">feelings</em> into a song.
             </h1>
+
+            {/* Homepage chat box */}
+            <HomepageChatBox />
 
             {/* Video player */}
             <div className="relative rounded-xl overflow-hidden shadow-medium max-w-md">
