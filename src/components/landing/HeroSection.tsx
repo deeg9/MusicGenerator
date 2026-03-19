@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Star, Heart, Volume2, VolumeX } from 'lucide-react';
 import { HeroAudioCard } from './HeroAudioCard';
 import { HomepageChatBox } from './HomepageChatBox';
+import { SongPreviewCarousel } from './SongPreviewCarousel';
 import { trackCtaClicked } from '@/lib/analytics';
 
 export function HeroSection() {
@@ -50,6 +51,9 @@ export function HeroSection() {
 
             {/* Homepage chat box */}
             <HomepageChatBox />
+
+            {/* Song preview carousel */}
+            <SongPreviewCarousel />
 
             {/* Video player */}
             <div className="relative rounded-xl overflow-hidden shadow-medium max-w-md">
