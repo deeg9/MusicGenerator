@@ -23,7 +23,7 @@ import { Step4Memories, step4Schema } from './_components/Step4Memories';
 import { Step5Message, step5Schema } from './_components/Step5Message';
 import { Step6Language, step6Schema } from './_components/Step6Language';
 import type { QuizData } from '@/lib/quiz-types';
-import { INITIAL_QUIZ_DATA } from '@/lib/quiz-types';
+import { INITIAL_QUIZ_DATA, HOMEPAGE_INPUT_KEY, type HomepageInput } from '@/lib/quiz-types';
 import {
   trackQuizStarted,
   trackQuizStepCompleted,
@@ -95,6 +95,21 @@ export default function QuizPage() {
       }
     } catch {
       // Ignore corrupt/missing storage
+    }
+
+    try {
+      const homepageRaw = localStorage.getItem(HOMEPAGE_INPUT_KEY);
+      if (homepageRaw) {
+        const homepageInput = JSON.parse(homepageRaw) as HomepageInput;
+        localStorage.removeItem(HOMEPAGE_INPUT_KEY); // consume once
+        setData((prev) => ({
+          ...prev,
+          ...(homepageInput.genre && !prev.genre ? { genre: homepageInput.genre } : {}),
+          ...(homepageInput.prompt && !prev.memories ? { memories: homepageInput.prompt } : {}),
+        }));
+      }
+    } catch {
+      // Ignore corrupt homepage input
     }
   }, []);
 
