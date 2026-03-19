@@ -197,7 +197,6 @@ export function HeaderClient({ user, subscription }: { user: User | null; subscr
                   <button
                     type="submit"
                     className="w-full text-left hover:text-foreground transition-colors py-1.5"
-                    onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign Out
                   </button>
