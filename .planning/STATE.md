@@ -141,10 +141,11 @@ None.
 | 14 | Homepage chat box with genre dropdown — caches input, routes to quiz | 2026-03-19 | 0799c25 | [14-homepage-chat-box-with-genre-dropdown-si](./quick/14-homepage-chat-box-with-genre-dropdown-si/) |
 | 15 | Song preview carousel below homepage chat box | 2026-03-19 | 67275ac | [15-song-preview-carousel-below-homepage-cha](./quick/15-song-preview-carousel-below-homepage-cha/) |
 | 16 | SongPlayer modern music player UI with album art, animated controls, song metadata | 2026-03-19 | 1fb7abf | [16-update-my-songs-player-ui-with-modern-mu](./quick/16-update-my-songs-player-ui-with-modern-mu/) |
+| 17 | Mobile-first homepage conversion optimization — above-fold hero, remove signup gate, lazy-load videos | 2026-03-24 | 2171f65 | [17-mobile-first-homepage-conversion-optimiz](./quick/17-mobile-first-homepage-conversion-optimiz/) |
 
 ## Session Continuity
 
-Last session: 2026-03-19T20:13:00Z
-Stopped at: Completed quick task 16 — SongPlayer modern music player UI
+Last session: 2026-03-24T19:34:24Z
+Stopped at: Completed quick task 17 — mobile-first homepage conversion optimization
 Resume file: None
 Next action: Execute 30-02 (React Email templates)
