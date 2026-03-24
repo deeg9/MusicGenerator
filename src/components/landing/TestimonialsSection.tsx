@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Star, Play, Pause } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -170,8 +170,25 @@ function TestimonialsColumn({
 
 export function TestimonialsSection() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const testimonialVideoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const video = testimonialVideoRef.current;
+    if (!video) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {});
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -227,56 +244,58 @@ export function TestimonialsSection() {
           </div>
         </div>
 
-        {/* Video */}
-        <div className="relative max-w-2xl mx-auto">
-          <div className="rounded-xl overflow-hidden shadow-elevated">
-            <video
-              src="/testimonial-video-new.mov"
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="w-full h-auto"
-            />
-          </div>
-          {/* Floating audio card */}
-          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 z-10">
-            <div className="flex items-center gap-4 bg-card rounded-xl px-5 py-4 shadow-medium max-w-sm w-full">
-              <button
-                onClick={togglePlay}
-                aria-label={playing ? 'Pause' : 'Play'}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
-              >
-                {playing ? (
-                  <Pause className="h-4 w-4" />
-                ) : (
-                  <Play className="h-4 w-4 ml-0.5" />
-                )}
-              </button>
-              <div className="flex flex-col gap-1 flex-1 min-w-0">
-                <span className="text-sm font-semibold text-foreground truncate">
-                  To My Daughter
-                </span>
-                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-              <audio
-                ref={audioRef}
-                src="/preview-daughter.mp3"
-                onTimeUpdate={() => {
-                  const audio = audioRef.current;
-                  if (!audio || !audio.duration) return;
-                  setProgress((audio.currentTime / audio.duration) * 100);
-                }}
-                onEnded={() => {
-                  setPlaying(false);
-                  setProgress(0);
-                }}
+        {/* Video — hidden on mobile, lazy-loaded via IntersectionObserver on desktop */}
+        <div className="hidden md:block">
+          <div className="relative max-w-2xl mx-auto">
+            <div className="rounded-xl overflow-hidden shadow-elevated">
+              <video
+                ref={testimonialVideoRef}
+                src="/testimonial-video-new.mov"
+                muted
+                loop
+                playsInline
+                className="w-full h-auto"
               />
+            </div>
+            {/* Floating audio card */}
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 z-10">
+              <div className="flex items-center gap-4 bg-card rounded-xl px-5 py-4 shadow-medium max-w-sm w-full">
+                <button
+                  onClick={togglePlay}
+                  aria-label={playing ? 'Pause' : 'Play'}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+                >
+                  {playing ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4 ml-0.5" />
+                  )}
+                </button>
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                  <span className="text-sm font-semibold text-foreground truncate">
+                    To My Daughter
+                  </span>
+                  <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+                <audio
+                  ref={audioRef}
+                  src="/preview-daughter.mp3"
+                  onTimeUpdate={() => {
+                    const audio = audioRef.current;
+                    if (!audio || !audio.duration) return;
+                    setProgress((audio.currentTime / audio.duration) * 100);
+                  }}
+                  onEnded={() => {
+                    setPlaying(false);
+                    setProgress(0);
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
