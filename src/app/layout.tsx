@@ -6,9 +6,9 @@ import { Footer } from '@/components/Footer';
 import { CookieConsent } from '@/components/CookieConsent';
 import { TrackingScripts } from '@/components/TrackingScripts';
 import { Analytics } from '@vercel/analytics/next';
-import { createClient } from '@/lib/supabase/server';
 import { PostHogProvider } from './providers';
 import { PostHogPageView } from './PostHogPageView';
+import { Suspense } from 'react';
 
 const dmSans = DM_Sans({
   variable: '--font-dm-sans',
@@ -47,23 +47,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+function HeaderFallback() {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-md">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6" />
+    </header>
+  );
+}
+
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   return (
     <html lang="en">
       <body className={`${dmSans.variable} ${libreBaskerville.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
         <PostHogProvider>
           <PostHogPageView />
           <TrackingScripts />
-          <Header user={user} />
+          <Suspense fallback={<HeaderFallback />}>
+            <Header />
+          </Suspense>
           <main className="flex-1">{children}</main>
           <Footer />
           <CookieConsent />

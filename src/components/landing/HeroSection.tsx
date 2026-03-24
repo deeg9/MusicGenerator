@@ -86,6 +86,7 @@ export function HeroSection() {
             >
               OMG Yes! Let&apos;s Go
             </Link>
+            <p className="text-sm text-muted-foreground">100% Free — No sign up required</p>
             <div className="flex items-center gap-3">
               {/* Overlapping avatars */}
               <div className="flex -space-x-2">
