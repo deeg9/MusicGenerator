@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Send } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { GENRE_OPTIONS } from '@/lib/genres';
 import { HOMEPAGE_INPUT_KEY, type HomepageInput } from '@/lib/quiz-types';
 
@@ -30,7 +29,7 @@ export function HomepageChatBox() {
     ? (GENRE_OPTIONS.find((g) => g.id === genre)?.label ?? 'Genre')
     : 'Genre';
 
-  async function handleSend() {
+  function handleSend() {
     if (!prompt.trim()) {
       setError('Tell us about your song idea');
       return;
@@ -42,16 +41,7 @@ export function HomepageChatBox() {
       JSON.stringify({ prompt: prompt.trim(), genre } as HomepageInput),
     );
 
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (user) {
-      router.push('/quiz');
-    } else {
-      router.push('/signup?next=/quiz');
-    }
+    router.push('/quiz');
   }
 
   return (

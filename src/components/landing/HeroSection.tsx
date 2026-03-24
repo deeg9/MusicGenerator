@@ -31,9 +31,18 @@ export function HeroSection() {
     };
   }, []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    if (mq.matches) {
+      video.play().catch(() => {});
+    }
+  }, []);
+
   return (
     <div className="bg-gradient-to-b from-secondary/20 via-background to-background">
-      <section className="py-16 md:py-24 px-4">
+      <section className="py-10 md:py-24 px-4">
         <div className="container mx-auto max-w-6xl flex flex-col items-center gap-8">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 rounded-full px-4 py-1.5 text-sm font-semibold">
@@ -63,20 +72,58 @@ export function HeroSection() {
             into a song.
           </h1>
 
-          {/* Chat box — centered */}
-          <HomepageChatBox />
+          {/* Subtitle — visible on all screen sizes */}
+          <p className="text-lg text-muted-foreground max-w-lg text-center">
+            Create a one-of-a-kind song for someone you love — in seconds.
+          </p>
 
-          {/* Song preview carousel — full width */}
-          <SongPreviewCarousel />
+          {/* CTA + social proof — moved above chat box and media */}
+          <div className="flex flex-col gap-4 items-center">
+            <Link
+              href="/quiz"
+              onClick={() => trackCtaClicked('hero', "OMG Yes! Let's Go")}
+              className="rounded-full bg-primary text-primary-foreground px-8 py-3.5 font-bold text-lg shadow-medium hover:bg-primary/90 hover:shadow-elevated hover:-translate-y-0.5 transition-all"
+            >
+              OMG Yes! Let&apos;s Go
+            </Link>
+            <div className="flex items-center gap-3">
+              {/* Overlapping avatars */}
+              <div className="flex -space-x-2">
+                {[12, 25, 32, 47].map((id) => (
+                  <img
+                    key={id}
+                    src={`https://i.pravatar.cc/40?img=${id}`}
+                    alt=""
+                    className="h-8 w-8 rounded-full border-2 border-white"
+                  />
+                ))}
+              </div>
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+                ))}
+              </div>
+              <span className="text-sm text-muted-foreground font-medium">10,000+ Songs</span>
+            </div>
+          </div>
 
-          {/* Two media items side by side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full items-center">
+          {/* Chat box — hidden on mobile, visible on md+ */}
+          <div className="hidden md:block w-full">
+            <HomepageChatBox />
+          </div>
+
+          {/* Song preview carousel — hidden on mobile, visible on md+ */}
+          <div className="hidden md:block w-full">
+            <SongPreviewCarousel />
+          </div>
+
+          {/* Two media items side by side — hidden on mobile, visible on md+ */}
+          <div className="hidden md:grid grid-cols-1 md:grid-cols-2 gap-8 w-full items-center">
             {/* Left: Hero video */}
             <div className="relative rounded-xl overflow-hidden shadow-medium">
               <video
                 ref={videoRef}
                 src="/hero-video-new.mov"
-                autoPlay
                 muted
                 loop
                 playsInline
@@ -112,41 +159,6 @@ export function HeroSection() {
                   <HeroAudioCard />
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Description */}
-          <p className="text-lg text-muted-foreground max-w-2xl text-center mt-4">
-            Create a one-of-a-kind personalized song for someone you love. Our AI turns your memories, inside jokes, and heartfelt feelings into a beautiful, original song in seconds.
-          </p>
-
-          {/* CTA + social proof */}
-          <div className="flex flex-col gap-4 items-center">
-            <Link
-              href="/quiz"
-              onClick={() => trackCtaClicked('hero', "OMG Yes! Let's Go")}
-              className="rounded-full bg-primary text-primary-foreground px-8 py-3.5 font-bold text-lg shadow-medium hover:bg-primary/90 hover:shadow-elevated hover:-translate-y-0.5 transition-all"
-            >
-              OMG Yes! Let&apos;s Go
-            </Link>
-            <div className="flex items-center gap-3">
-              {/* Overlapping avatars */}
-              <div className="flex -space-x-2">
-                {[12, 25, 32, 47].map((id) => (
-                  <img
-                    key={id}
-                    src={`https://i.pravatar.cc/40?img=${id}`}
-                    alt=""
-                    className="h-8 w-8 rounded-full border-2 border-white"
-                  />
-                ))}
-              </div>
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground font-medium">10,000+ Songs</span>
             </div>
           </div>
         </div>
