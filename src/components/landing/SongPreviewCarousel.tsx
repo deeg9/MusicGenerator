@@ -16,11 +16,11 @@ interface SampleSong {
 const AUDIO_SRC_DEFAULT = '/sample-song.mp3';
 
 const SAMPLE_SONGS: SampleSong[] = [
-  { id: '1', title: 'Happy Birthday, Mom', genre: 'Pop', emoji: '🎂', gradient: 'from-pink-300 to-rose-400', image: '/cover-mom.png', audioSrc: '/preview-mom.mp3' },
-  { id: '2', title: 'For My Best Friend', genre: 'Folk / Acoustic', emoji: '🤝', gradient: 'from-amber-300 to-orange-400', image: '/cover-friend.png', audioSrc: '/preview-friend.mp3' },
-  { id: '3', title: 'Our Love Story', genre: 'R&B / Soul', emoji: '💕', gradient: 'from-red-300 to-pink-400', image: '/cover-love.png', audioSrc: '/preview-love.mp3' },
-  { id: '4', title: "Dad, You're My Hero", genre: 'Country', emoji: '🦸', gradient: 'from-sky-300 to-blue-400', image: '/cover-dad.png', audioSrc: '/preview-dad.mp3' },
-  { id: '5', title: 'To My Daughter', genre: 'Classical', emoji: '🌸', gradient: 'from-purple-300 to-violet-400', image: '/cover-daughter.png', audioSrc: '/preview-daughter.mp3' },
+  { id: '1', title: 'Happy Birthday, Mom', genre: 'Pop', emoji: '🎂', gradient: 'from-pink-300 to-rose-400', image: '/cover-mom.webp', audioSrc: '/preview-mom.mp3' },
+  { id: '2', title: 'For My Best Friend', genre: 'Folk / Acoustic', emoji: '🤝', gradient: 'from-amber-300 to-orange-400', image: '/cover-friend.webp', audioSrc: '/preview-friend.mp3' },
+  { id: '3', title: 'Our Love Story', genre: 'R&B / Soul', emoji: '💕', gradient: 'from-red-300 to-pink-400', image: '/cover-love.webp', audioSrc: '/preview-love.mp3' },
+  { id: '4', title: "Dad, You're My Hero", genre: 'Country', emoji: '🦸', gradient: 'from-sky-300 to-blue-400', image: '/cover-dad.webp', audioSrc: '/preview-dad.mp3' },
+  { id: '5', title: 'To My Daughter', genre: 'Classical', emoji: '🌸', gradient: 'from-purple-300 to-violet-400', image: '/cover-daughter.webp', audioSrc: '/preview-daughter.mp3' },
 ];
 
 export function SongPreviewCarousel() {

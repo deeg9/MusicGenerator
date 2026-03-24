@@ -244,13 +244,14 @@ export function TestimonialsSection() {
           </div>
         </div>
 
-        {/* Video — hidden on mobile, lazy-loaded via IntersectionObserver on desktop */}
-        <div className="hidden md:block">
+        {/* Video — lazy-loaded via IntersectionObserver */}
+        <div>
           <div className="relative max-w-2xl mx-auto">
             <div className="rounded-xl overflow-hidden shadow-elevated">
               <video
                 ref={testimonialVideoRef}
-                src="/testimonial-video-new.mov"
+                src="/testimonial-video-new.mp4"
+                poster="/testimonial-video-poster.webp"
                 muted
                 loop
                 playsInline

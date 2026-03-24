@@ -45,7 +45,7 @@ export function HeaderClient({ user, subscription }: { user: User | null; subscr
         {/* Logo */}
         <Link href="/" className="flex items-center group">
           <Image
-            src="/logo-horizontal.png"
+            src="/logo-horizontal.webp"
             alt="Notevra"
             width={200}
             height={200}

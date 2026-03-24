@@ -34,10 +34,18 @@ export function HeroSection() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const mq = window.matchMedia('(min-width: 768px)');
-    if (mq.matches) {
-      video.play().catch(() => {});
-    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -118,13 +126,14 @@ export function HeroSection() {
             <SongPreviewCarousel />
           </div>
 
-          {/* Two media items side by side — hidden on mobile, visible on md+ */}
-          <div className="hidden md:grid grid-cols-1 md:grid-cols-2 gap-8 w-full items-center">
+          {/* Media: video stacked on mobile, side-by-side on desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full items-center">
             {/* Left: Hero video */}
             <div className="relative rounded-xl overflow-hidden shadow-medium">
               <video
                 ref={videoRef}
-                src="/hero-video-new.mov"
+                src="/hero-video-new.mp4"
+                poster="/hero-video-poster.webp"
                 muted
                 loop
                 playsInline
@@ -144,16 +153,15 @@ export function HeroSection() {
               </button>
             </div>
 
-            {/* Right: Hero image with floating audio card */}
-            <div className="relative flex flex-col items-center">
+            {/* Right: Hero image with floating audio card — desktop only */}
+            <div className="relative flex-col items-center hidden md:flex">
               <div className="relative w-full">
                 <Image
-                  src="/hero-emotional.png"
+                  src="/hero-emotional.webp"
                   alt="A couple sharing an emotional moment with a personalized song"
                   width={500}
                   height={600}
                   className="rounded-2xl shadow-elevated w-full h-auto"
-                  priority
                 />
                 {/* Floating audio card */}
                 <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 z-10">

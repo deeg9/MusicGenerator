@@ -10,7 +10,7 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="inline-flex items-center gap-2 group">
               <Image
-                src="/logo-icon.png"
+                src="/logo-icon.webp"
                 alt="Notevra"
                 width={32}
                 height={32}
