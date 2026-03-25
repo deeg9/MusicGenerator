@@ -51,16 +51,17 @@ Anyone can create a deeply personal, one-of-a-kind song for someone they love �
 - Remixing / editing tools — adds complexity, not core to gift service
 - Social features — not core to gift value
 
-## Current Milestone: v4.2 Auth & Email Delivery
+## Current Milestone: v4.3 E-Card Feature
 
-**Goal:** Add Supabase Auth for user accounts and Resend email delivery so creators can save songs and send them as gifts to recipients.
+**Goal:** Add e-card creation and delivery so users can attach their AI-generated song to a beautiful card and send it as a complete gift.
 
 **Target features:**
-- Full Supabase Auth (email+password sign up, login, password reset)
-- Auth prompt on success page after generation (quiz stays public)
-- Resend email: song-ready link to creator
-- Resend email: gift delivery to recipient (email entered on success page)
-- Song dashboard for signed-in users (past songs with playback + re-download)
+- Card editor with 4-step wizard (occasion → template → customize → preview & send)
+- 4 occasion categories MVP (Birthday, Anniversary, Congratulations, Just Because)
+- ~16-20 Konva-rendered card templates with accent color customization
+- Card PNG export to R2 + email delivery with card image
+- Animated card reveal on listen page (Framer Motion envelope open)
+- Analytics tracking for e-card funnel
 
 ## Context
 
@@ -99,5 +100,22 @@ Anyone can create a deeply personal, one-of-a-kind song for someone they love �
 | canvas-confetti | Appends own canvas to body, zero-config celebration effect | ✓ Good |
 | A40 pod migration | Migrated from RTX 4090 to A40 for v4.0 testing | — Pending |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-03-06 after v4.2 milestone start*
+*Last updated: 2026-03-25 after v4.3 milestone start*
