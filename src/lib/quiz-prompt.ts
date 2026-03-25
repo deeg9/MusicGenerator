@@ -33,14 +33,21 @@ const RELATIONSHIP_MOOD: Record<string, string> = {
 export const GENRE_TAG_MAP: Record<string, string> = {
   Pop: 'pop',
   'R&B': 'rnb, soul',
+  'R&B / Soul': 'rnb, soul',
   Classical: 'orchestral, classical',
   Country: 'country',
   Jazz: 'jazz',
   Rock: 'rock',
   'Hip-Hop': 'hip-hop',
   Folk: 'folk, acoustic',
+  'Folk / Acoustic': 'folk, acoustic',
   Electronic: 'electronic, synth',
   Latin: 'latin',
+  Reggae: 'reggae',
+  Blues: 'blues',
+  Gospel: 'gospel, choir',
+  Indie: 'indie, alternative',
+  Lullaby: 'lullaby, soft, gentle',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,16 +110,31 @@ function resolveGenreTag(genre: string): string {
 }
 
 /**
- * Build the complete tags string from genre and voice preference.
+ * Build the complete tags string from genre, voice preference, energy, and instrumental.
  */
 function buildTags(data: QuizData): string {
   const genreTag = resolveGenreTag(data.genre);
   const parts = [genreTag];
 
-  if (data.voicePreference === 'Male') {
+  if (data.instrumental) {
+    // Instrumental: skip all voice tags, add instrumental tag
+    parts.push('instrumental');
+  } else if (data.voicePreference === 'Male') {
     parts.push('male vocals');
   } else if (data.voicePreference === 'Female') {
     parts.push('female vocals');
+  } else if (data.voicePreference === 'Duet') {
+    parts.push('duet, male vocals, female vocals');
+  } else if (data.voicePreference === 'Choir') {
+    parts.push('choir vocals');
+  }
+
+  if (data.energy === 'low') {
+    parts.push('mellow, slow tempo');
+  } else if (data.energy === 'medium') {
+    parts.push('moderate tempo');
+  } else if (data.energy === 'high') {
+    parts.push('energetic, upbeat');
   }
 
   parts.push('full song', 'natural ending');
@@ -211,6 +233,8 @@ function formatQuizForGemini(data: QuizData): string {
     `Relationship: ${data.relationshipType || 'Someone special'}`,
     `Genre: ${data.genre}`,
     `Voice Preference: ${data.voicePreference || 'No Preference'}`,
+    `Energy: ${data.energy || 'medium'}`,
+    `Instrumental: ${data.instrumental ? 'Yes' : 'No'}`,
     `What makes them special: ${data.qualities || '(not provided)'}`,
     `A special memory: ${data.memories || '(not provided)'}`,
     `Message from the heart: ${data.message || '(not provided)'}`,

@@ -5,7 +5,7 @@
 
 export type RelationshipType = 'Mom' | 'Dad' | 'Partner' | 'Friend' | 'Child' | 'Other';
 
-export type VoicePreference = 'Male' | 'Female' | 'No Preference';
+export type VoicePreference = 'Male' | 'Female' | 'Duet' | 'Choir' | 'No Preference';
 
 export interface QuizData {
   // Step 1 — Relationship & recipient
@@ -14,6 +14,8 @@ export interface QuizData {
   // Step 2 — Genre & voice
   genre: string;
   voicePreference: VoicePreference;
+  energy: 'low' | 'medium' | 'high' | '';
+  instrumental: boolean;
   // Step 3 — Qualities
   qualities: string;
   // Step 4 — Memories
@@ -33,6 +35,8 @@ export const INITIAL_QUIZ_DATA: QuizData = {
   recipientName: '',
   genre: '',
   voicePreference: 'No Preference',
+  energy: '',
+  instrumental: false,
   qualities: '',
   memories: '',
   message: '',
