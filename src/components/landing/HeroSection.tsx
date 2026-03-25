@@ -121,8 +121,8 @@ export function HeroSection() {
             <HomepageChatBox />
           </div>
 
-          {/* Song preview carousel — hidden on mobile, visible on md+ */}
-          <div className="hidden md:block w-full">
+          {/* Song preview carousel */}
+          <div className="w-full">
             <SongPreviewCarousel />
           </div>
 
