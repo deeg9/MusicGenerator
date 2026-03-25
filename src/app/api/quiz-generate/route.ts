@@ -49,6 +49,8 @@ function validateQuizData(
       language: typeof obj.language === 'string' ? obj.language : 'English',
       email: typeof obj.email === 'string' ? obj.email : '',
       emailOptIn: obj.emailOptIn === true,
+      energy: (obj.energy as QuizData['energy']) ?? '',
+      instrumental: obj.instrumental === true,
     },
   };
 }
