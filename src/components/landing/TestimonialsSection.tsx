@@ -170,25 +170,8 @@ function TestimonialsColumn({
 
 export function TestimonialsSection() {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const testimonialVideoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const video = testimonialVideoRef.current;
-    if (!video) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          video.play().catch(() => {});
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 },
-    );
-    observer.observe(video);
-    return () => observer.disconnect();
-  }, []);
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -244,20 +227,14 @@ export function TestimonialsSection() {
           </div>
         </div>
 
-        {/* Video — lazy-loaded via IntersectionObserver */}
+        {/* Hero image with floating audio card */}
         <div>
-          <div className="relative max-w-2xl mx-auto">
-            <div className="rounded-xl overflow-hidden shadow-elevated">
-              <video
-                ref={testimonialVideoRef}
-                src="/testimonial-video-new.mp4"
-                poster="/testimonial-video-poster.webp"
-                muted
-                loop
-                playsInline
-                className="w-full h-auto"
-              />
-            </div>
+          <div className="relative max-w-md mx-auto">
+            <img
+              src="/hero-emotional.webp"
+              alt="A woman smiling while listening to a personalized song on her phone"
+              className="rounded-2xl shadow-elevated w-full h-auto"
+            />
             {/* Floating audio card */}
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 z-10">
               <div className="flex items-center gap-4 bg-card rounded-xl px-5 py-4 shadow-medium max-w-sm w-full">
@@ -274,7 +251,7 @@ export function TestimonialsSection() {
                 </button>
                 <div className="flex flex-col gap-1 flex-1 min-w-0">
                   <span className="text-sm font-semibold text-foreground truncate">
-                    To My Daughter
+                    Happy Birthday, Mom
                   </span>
                   <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
@@ -285,7 +262,7 @@ export function TestimonialsSection() {
                 </div>
                 <audio
                   ref={audioRef}
-                  src="/preview-daughter.mp3"
+                  src="/preview-mom.mp3"
                   onTimeUpdate={() => {
                     const audio = audioRef.current;
                     if (!audio || !audio.duration) return;

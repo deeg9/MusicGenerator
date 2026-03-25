@@ -2,11 +2,8 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Star, Heart, Volume2, VolumeX } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HeroAudioCard } from './HeroAudioCard';
-import { HomepageChatBox } from './HomepageChatBox';
 import { SongPreviewCarousel } from './SongPreviewCarousel';
 import { trackCtaClicked } from '@/lib/analytics';
 
@@ -94,7 +91,7 @@ export function HeroSection() {
             >
               OMG Yes! Let&apos;s Go
             </Link>
-            <p className="text-sm text-muted-foreground">100% Free — No sign up required</p>
+            <p className="text-sm text-muted-foreground">100% Free — Create your song in seconds</p>
             <div className="flex items-center gap-3">
               {/* Overlapping avatars */}
               <div className="flex -space-x-2">
@@ -116,19 +113,13 @@ export function HeroSection() {
             </div>
           </div>
 
-          {/* Chat box — hidden on mobile, visible on md+ */}
-          <div className="hidden md:block w-full">
-            <HomepageChatBox />
-          </div>
-
           {/* Song preview carousel */}
           <div className="w-full">
             <SongPreviewCarousel />
           </div>
 
-          {/* Media: video stacked on mobile, side-by-side on desktop */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full items-center">
-            {/* Left: Hero video */}
+          {/* Hero video — centered */}
+          <div className="w-full max-w-2xl mx-auto">
             <div className="relative rounded-xl overflow-hidden shadow-medium">
               <video
                 ref={videoRef}
@@ -151,23 +142,6 @@ export function HeroSection() {
               >
                 {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
               </button>
-            </div>
-
-            {/* Right: Hero image with floating audio card — desktop only */}
-            <div className="relative flex-col items-center hidden md:flex">
-              <div className="relative w-full">
-                <Image
-                  src="/hero-emotional.webp"
-                  alt="A couple sharing an emotional moment with a personalized song"
-                  width={500}
-                  height={600}
-                  className="rounded-2xl shadow-elevated w-full h-auto"
-                />
-                {/* Floating audio card */}
-                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 z-10">
-                  <HeroAudioCard />
-                </div>
-              </div>
             </div>
           </div>
         </div>

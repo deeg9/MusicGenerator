@@ -6,16 +6,17 @@ declare global {
   }
 }
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
 import type { ZodTypeAny } from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { QuizProgress } from './_components/QuizProgress';
 import { QuizCard } from './_components/QuizCard';
 import { GeneratingOverlay } from './_components/GeneratingOverlay';
+import { AuthGate } from './_components/AuthGate';
 import { Step1Relationship, step1Schema } from './_components/Step1Relationship';
 import { Step2GenreVoice, step2Schema } from './_components/Step2GenreVoice';
 import { Step3Qualities, step3Schema } from './_components/Step3Qualities';
@@ -68,14 +69,23 @@ const slideVariants = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function QuizPage() {
+  return (
+    <Suspense>
+      <QuizPageContent />
+    </Suspense>
+  );
+}
+
+function QuizPageContent() {
   const reducedMotion = useReducedMotion();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [data, setData] = useState<QuizData>(INITIAL_QUIZ_DATA);
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [genStatus, setGenStatus] = useState<'idle' | 'generating' | 'error'>('idle');
+  const [genStatus, setGenStatus] = useState<'idle' | 'generating' | 'error' | 'auth-gate'>('idle');
   const [genError, setGenError] = useState<string | null>(null);
 
   // Analytics timing refs
@@ -133,16 +143,31 @@ export default function QuizPage() {
     window.scrollTo(0, 0);
   }, [currentStep]);
 
+  // Auto-trigger generation when returning from auth (?generate=true)
+  const autoGenerateTriggered = useRef(false);
+  useEffect(() => {
+    if (searchParams.get('generate') === 'true' && !autoGenerateTriggered.current) {
+      autoGenerateTriggered.current = true;
+      // Clean up URL param
+      const url = new URL(window.location.href);
+      url.searchParams.delete('generate');
+      window.history.replaceState({}, '', url.toString());
+      // Trigger generation (data is restored from localStorage)
+      void handleCreate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // ─── Generation ──────────────────────────────────────────────────────────────
 
   async function handleCreate() {
     setGenStatus('generating');
     try {
-      // Check auth + subscription before generating
+      // Check auth before generating — show inline gate if not logged in
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/signup?next=/quiz');
+        setGenStatus('auth-gate');
         return;
       }
 
@@ -351,6 +376,19 @@ export default function QuizPage() {
             >
               Try Again
             </button>
+          </motion.div>
+        ) : genStatus === 'auth-gate' ? (
+          <motion.div
+            key="auth-gate"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.2 }}
+            className="flex-1 flex items-center justify-center px-4 py-12"
+          >
+            <AuthGate
+              onBack={() => setGenStatus('idle')}
+            />
           </motion.div>
         ) : (
           <motion.div
