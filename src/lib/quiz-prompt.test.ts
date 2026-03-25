@@ -11,11 +11,15 @@ const BASE_QUIZ: QuizData = {
   recipientName: 'Sarah',
   genre: 'Pop',
   voicePreference: 'Female',
+  energy: '',
+  instrumental: false,
   qualities: 'caring, patient, always there for me',
   memories: 'Sunday morning pancakes and road trips',
   message: 'Thank you for everything you do',
   language: 'English',
   email: 'test@example.com',
+  recipientEmail: '',
+  emailOptIn: false,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -203,5 +207,96 @@ describe('quizToPrompt — voice preference in tags', () => {
   it('does NOT append voice tag when preference is No Preference', () => {
     const result = quizToPrompt({ ...BASE_QUIZ, voicePreference: 'No Preference' });
     expect(result.tags).not.toContain('vocals');
+  });
+
+  it('appends duet tags when voice preference is Duet', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, voicePreference: 'Duet' });
+    expect(result.tags).toContain('duet');
+  });
+
+  it('appends choir vocals when voice preference is Choir', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, voicePreference: 'Choir' });
+    expect(result.tags).toContain('choir vocals');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// New genre tag mappings
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('quizToPrompt — new genre tag mappings', () => {
+  it('maps Reggae to "reggae"', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, genre: 'Reggae' });
+    expect(result.tags).toContain('reggae');
+  });
+
+  it('maps Blues to "blues"', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, genre: 'Blues' });
+    expect(result.tags).toContain('blues');
+  });
+
+  it('maps Gospel to "gospel" and "choir"', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, genre: 'Gospel' });
+    expect(result.tags).toContain('gospel');
+    expect(result.tags).toContain('choir');
+  });
+
+  it('maps Indie to "indie" and "alternative"', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, genre: 'Indie' });
+    expect(result.tags).toContain('indie');
+    expect(result.tags).toContain('alternative');
+  });
+
+  it('maps Lullaby to "lullaby", "soft", and "gentle"', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, genre: 'Lullaby' });
+    expect(result.tags).toContain('lullaby');
+    expect(result.tags).toContain('soft');
+    expect(result.tags).toContain('gentle');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Instrumental tag
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('quizToPrompt — instrumental flag', () => {
+  it('adds instrumental tag and omits voice tags when instrumental is true', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, instrumental: true, voicePreference: 'Female' });
+    expect(result.tags).toContain('instrumental');
+    expect(result.tags).not.toContain('female vocals');
+    expect(result.tags).not.toContain('male vocals');
+  });
+
+  it('does not add instrumental tag when instrumental is false', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, instrumental: false });
+    expect(result.tags).not.toContain('instrumental');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Energy tags
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('quizToPrompt — energy tags', () => {
+  it('adds energy tags for high energy', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, energy: 'high' });
+    expect(result.tags).toMatch(/energetic|upbeat/);
+  });
+
+  it('adds energy tags for low energy', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, energy: 'low' });
+    expect(result.tags).toContain('mellow');
+  });
+
+  it('adds energy tags for medium energy', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, energy: 'medium' });
+    expect(result.tags).toContain('moderate tempo');
+  });
+
+  it('does not add energy tags when energy is empty', () => {
+    const result = quizToPrompt({ ...BASE_QUIZ, energy: '' });
+    expect(result.tags).not.toContain('mellow');
+    expect(result.tags).not.toContain('moderate tempo');
+    expect(result.tags).not.toContain('energetic');
   });
 });
