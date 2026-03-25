@@ -91,7 +91,7 @@ export function HeroSection() {
             >
               OMG Yes! Let&apos;s Go
             </Link>
-            <p className="text-sm text-muted-foreground">100% Free — Create your song in seconds</p>
+            <p className="text-sm text-muted-foreground">Free to start — Create your song in seconds</p>
             <div className="flex items-center gap-3">
               {/* Overlapping avatars */}
               <div className="flex -space-x-2">
