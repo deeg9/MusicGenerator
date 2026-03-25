@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 Phase: 28 of 32 (Auth Infrastructure)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-03-19 - Completed quick task 16: SongPlayer modern music player UI
+Last activity: 2026-03-25 - Completed quick task 260324-w5x: Add 8 new genres, duet/choir voice, energy selector, instrumental toggle
 
 Progress: [██████████] 96% (v4.2)
 
@@ -142,6 +142,7 @@ None.
 | 15 | Song preview carousel below homepage chat box | 2026-03-19 | 67275ac | [15-song-preview-carousel-below-homepage-cha](./quick/15-song-preview-carousel-below-homepage-cha/) |
 | 16 | SongPlayer modern music player UI with album art, animated controls, song metadata | 2026-03-19 | 1fb7abf | [16-update-my-songs-player-ui-with-modern-mu](./quick/16-update-my-songs-player-ui-with-modern-mu/) |
 | 17 | Mobile-first homepage conversion optimization — above-fold hero, remove signup gate, lazy-load videos | 2026-03-24 | 2171f65 | [17-mobile-first-homepage-conversion-optimiz](./quick/17-mobile-first-homepage-conversion-optimiz/) |
+| 260324-w5x | Add 8 new genres, duet/choir voice options, mood/energy selector, and instrumental-only toggle to quiz | 2026-03-25 | ae66cfd | [260324-w5x-add-8-new-genres-duet-choir-voice-option](./quick/260324-w5x-add-8-new-genres-duet-choir-voice-option/) |
 
 ## Session Continuity
 
