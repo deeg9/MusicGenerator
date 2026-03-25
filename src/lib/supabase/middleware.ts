@@ -33,10 +33,10 @@ export async function updateSession(request: NextRequest) {
   // This triggers token refresh on every non-static request
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect /quiz routes — redirect unauthenticated users to signup
-  if (request.nextUrl.pathname.startsWith('/quiz') && !user) {
+  // Protect /dashboard — redirect unauthenticated users to login
+  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
     const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/signup'
+    redirectUrl.pathname = '/login'
     redirectUrl.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
     return NextResponse.redirect(redirectUrl)
   }
