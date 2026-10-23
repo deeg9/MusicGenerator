@@ -46,6 +46,10 @@ Notevra was built in 2026 and is no longer live. The code is published here as a
 
 </details>
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 ---
 
 Built by [Diego Fill](https://diegofill.com).
