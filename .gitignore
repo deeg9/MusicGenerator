@@ -42,3 +42,6 @@ Thumbs.db
 
 # Git backup
 .git-backup/
+
+# Local dev screenshots
+/*.png
